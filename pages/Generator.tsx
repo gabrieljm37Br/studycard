@@ -869,7 +869,6 @@ const Generator: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Submit Button */}
                         <button
                             type="submit"
                             disabled={buttonDisabled}
@@ -878,7 +877,8 @@ const Generator: React.FC = () => {
                         >
                             {isGenerating ? (
                                 <>
-                                    <span className="animate-spin">⏳</span> Gerando...
+                                    <span className="animate-spin">⏳</span>
+                                    <span>Criando seus flashcards... Isso pode levar alguns segundos!</span>
                                 </>
                             ) : isParsing ? (
                                 <>
