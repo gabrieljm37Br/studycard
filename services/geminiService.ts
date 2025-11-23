@@ -146,10 +146,10 @@ const extractJson = (text: string): string => {
  * Generates flashcards using web search for topic-based generation
  */
 export const generateFlashcardsWithSearch = async (topic: string, mode: CardMode): Promise<FlashcardData[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("A variável de ambiente API_KEY não está definida.");
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("A variável de ambiente GEMINI_API_KEY não está definida.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   try {
     const { prompt: promptTemplate, schema } = getPromptAndSchema(mode);
@@ -162,7 +162,7 @@ Use as informações encontradas na pesquisa para criar flashcards educativos e 
 ${promptTemplate.replace('{text}', `informações sobre ${topic} que você encontrou na pesquisa`)}`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash-exp",
       contents: searchPrompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -215,10 +215,10 @@ ${promptTemplate.replace('{text}', `informações sobre ${topic} que você encon
 
 
 export const generateFlashcards = async (text: string, mode: CardMode): Promise<FlashcardData[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("A variável de ambiente API_KEY não está definida.");
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("A variável de ambiente GEMINI_API_KEY não está definida.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   try {
     if (mode === CardMode.PracticalExample) {
@@ -236,7 +236,7 @@ ${text}
 Responda APENAS com o array JSON de flashcards. Não inclua nenhum texto introdutório, formatação markdown ou explicações adicionais.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash-exp",
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
@@ -270,7 +270,7 @@ Responda APENAS com o array JSON de flashcards. Não inclua nenhum texto introdu
       const prompt = promptTemplate.replace('{text}', text);
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash-exp",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -460,7 +460,7 @@ Para fill_in_the_blank:
 }`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash-exp",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -545,11 +545,11 @@ Para fill_in_the_blank:
  * Main function to interpret and classify flashcards from file records
  */
 export const interpretAndClassifyFlashcards = async (records: string[]): Promise<FlashcardData[]> => {
-  if (!process.env.API_KEY) {
-    throw new Error("A variável de ambiente API_KEY não está definida.");
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("A variável de ambiente GEMINI_API_KEY não está definida.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const flashcards: FlashcardData[] = [];
 
   // Process records in batches to avoid rate limits

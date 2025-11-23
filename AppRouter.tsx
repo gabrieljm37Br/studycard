@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Generator from './pages/Generator';
 import Study from './pages/Study';
 import DeckDetails from './pages/DeckDetails';
+import Help from './pages/Help';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -65,6 +66,14 @@ const AppRouter: React.FC = () => {
                             element={
                                 <ProtectedRoute>
                                     <DeckDetails />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/help"
+                            element={
+                                <ProtectedRoute>
+                                    <Help />
                                 </ProtectedRoute>
                             }
                         />

@@ -131,16 +131,24 @@ const DeckDetails: React.FC = () => {
         if (!confirm('Tem certeza que deseja excluir este flashcard?')) return;
 
         try {
-            const { error } = await supabase
+            console.log('Tentando excluir flashcard:', cardId);
+
+            const { data, error } = await supabase
                 .from('flashcards')
                 .delete()
-                .eq('id', cardId);
+                .eq('id', cardId)
+                .select(); // Add select to get confirmation
 
-            if (error) throw error;
-            loadFlashcards(); // Reload list
-        } catch (error) {
+            if (error) {
+                console.error('Erro do Supabase ao excluir:', error);
+                throw error;
+            }
+
+            console.log('Flashcard excluído com sucesso:', data);
+            await loadFlashcards(); // Reload list
+        } catch (error: any) {
             console.error('Error deleting flashcard:', error);
-            alert('Erro ao excluir flashcard');
+            alert(`Erro ao excluir flashcard: ${error.message || 'Erro desconhecido'}. Verifique o console para mais detalhes.`);
         }
     };
 

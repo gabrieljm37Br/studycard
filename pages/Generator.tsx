@@ -14,7 +14,7 @@ const Generator: React.FC = () => {
     const location = useLocation();
     const deckId = (location.state as any)?.deckId || null;
 
-    const [inputType, setInputType] = useState<'topic' | 'text' | 'pdf' | 'file'>('text');
+    const [inputType, setInputType] = useState<'topic' | 'text' | 'pdf' | 'file' | 'manual'>('text');
     const [topic, setTopic] = useState('');
     const [text, setText] = useState('');
     const [file, setFile] = useState<File | null>(null);
@@ -26,6 +26,27 @@ const Generator: React.FC = () => {
     const [selectedDeckId, setSelectedDeckId] = useState<string | null>(deckId);
     const [isCreatingNewDeck, setIsCreatingNewDeck] = useState(false);
     const [newDeckName, setNewDeckName] = useState('');
+
+    // Manual flashcard creation state
+    const [manualCards, setManualCards] = useState<any[]>([]);
+    const [manualFormData, setManualFormData] = useState<any>({
+        // Q&A
+        question: '',
+        answer: '',
+        // True/False
+        statement: '',
+        isTrue: true,
+        explanation: '',
+        // Multiple Choice
+        options: ['', '', '', ''],
+        correctAnswerIndex: 0,
+        // Practical Example
+        problem: '',
+        solution: '',
+        // Fill in the Blank
+        sentence: '',
+        correctAnswer: ''
+    });
 
     useEffect(() => {
         const loadDecks = async () => {
@@ -82,6 +103,98 @@ const Generator: React.FC = () => {
         });
     };
 
+    // Manual flashcard helper functions
+    const addManualCard = () => {
+        try {
+            let newCard: any = {
+                id: crypto.randomUUID(),
+                mode: mode,
+                feedback: 'unseen'
+            };
+
+            // Validate and build card based on mode
+            switch (mode) {
+                case CardMode.QA:
+                    if (!manualFormData.question.trim() || !manualFormData.answer.trim()) {
+                        throw new Error('Por favor, preencha a pergunta e a resposta.');
+                    }
+                    newCard.question = manualFormData.question.trim();
+                    newCard.answer = manualFormData.answer.trim();
+                    break;
+
+                case CardMode.TrueFalse:
+                    if (!manualFormData.statement.trim() || !manualFormData.explanation.trim()) {
+                        throw new Error('Por favor, preencha a afirmação e a explicação.');
+                    }
+                    newCard.statement = manualFormData.statement.trim();
+                    newCard.isTrue = manualFormData.isTrue;
+                    newCard.explanation = manualFormData.explanation.trim();
+                    break;
+
+                case CardMode.MultipleChoice:
+                    if (!manualFormData.question.trim() || !manualFormData.explanation.trim()) {
+                        throw new Error('Por favor, preencha a pergunta e a explicação.');
+                    }
+                    const filledOptions = manualFormData.options.filter((opt: string) => opt.trim());
+                    if (filledOptions.length < 2) {
+                        throw new Error('Por favor, preencha pelo menos 2 opções.');
+                    }
+                    newCard.question = manualFormData.question.trim();
+                    newCard.options = manualFormData.options.map((opt: string) => opt.trim());
+                    newCard.correctAnswerIndex = manualFormData.correctAnswerIndex;
+                    newCard.explanation = manualFormData.explanation.trim();
+                    break;
+
+                case CardMode.PracticalExample:
+                    if (!manualFormData.problem.trim() || !manualFormData.question.trim() || !manualFormData.solution.trim()) {
+                        throw new Error('Por favor, preencha o problema, a pergunta e a solução.');
+                    }
+                    newCard.problem = manualFormData.problem.trim();
+                    newCard.question = manualFormData.question.trim();
+                    newCard.solution = manualFormData.solution.trim();
+                    newCard.sources = [];
+                    break;
+
+                case CardMode.FillInTheBlank:
+                    if (!manualFormData.sentence.trim() || !manualFormData.correctAnswer.trim()) {
+                        throw new Error('Por favor, preencha a frase e a resposta correta.');
+                    }
+                    if (!manualFormData.sentence.includes('____')) {
+                        throw new Error('A frase deve conter ____ (quatro sublinhados) para indicar a lacuna.');
+                    }
+                    newCard.question = manualFormData.sentence.trim();
+                    newCard.answer = manualFormData.correctAnswer.trim();
+                    break;
+            }
+
+            setManualCards(prev => [...prev, newCard]);
+            resetManualForm();
+            setError('');
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
+
+    const deleteManualCard = (cardId: string) => {
+        setManualCards(prev => prev.filter(card => card.id !== cardId));
+    };
+
+    const resetManualForm = () => {
+        setManualFormData({
+            question: '',
+            answer: '',
+            statement: '',
+            isTrue: true,
+            explanation: '',
+            options: ['', '', '', ''],
+            correctAnswerIndex: 0,
+            problem: '',
+            solution: '',
+            sentence: '',
+            correctAnswer: ''
+        });
+    };
+
     const parseFile = async (fileToParse: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -132,6 +245,12 @@ const Generator: React.FC = () => {
                 // Use AI to interpret and classify flashcards
                 generatedCards = await interpretAndClassifyFlashcards(records);
                 setIsParsing(false);
+            } else if (inputType === 'manual') {
+                // Use manually created flashcards
+                if (manualCards.length === 0) {
+                    throw new Error('Por favor, adicione pelo menos um flashcard antes de salvar.');
+                }
+                generatedCards = manualCards;
             }
 
             if (!textToGenerate.trim() && !generatedCards) {
@@ -164,7 +283,7 @@ const Generator: React.FC = () => {
                 setIsCreatingNewDeck(false);
                 setNewDeckName('');
             } else if (!targetDeckId) {
-                throw new Error('Por favor, selecione um deck ou crie um novo.');
+                throw new Error('Por favor, selecione um deck existente ou crie um novo deck antes de gerar os flashcards.');
             }
 
             // Generate flashcards using AI (if not already generated from file)
@@ -244,6 +363,7 @@ const Generator: React.FC = () => {
         (inputType === 'topic' && !topic.trim()) ||
         (inputType === 'text' && !text.trim()) ||
         ((inputType === 'pdf' || inputType === 'file') && !file) ||
+        (inputType === 'manual' && manualCards.length === 0) ||
         (!selectedDeckId && !isCreatingNewDeck) ||
         (isCreatingNewDeck && !newDeckName.trim());
 
@@ -319,12 +439,13 @@ const Generator: React.FC = () => {
                             <label className="block mb-4 font-semibold text-gray-700 dark:text-gray-300">
                                 Como você quer criar os flashcards?
                             </label>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                 {[
                                     { value: 'topic', label: '🔍 Tópico' },
                                     { value: 'text', label: '📝 Texto' },
                                     { value: 'pdf', label: '📄 PDF' },
-                                    { value: 'file', label: '📁 Arquivo' }
+                                    { value: 'file', label: '📁 Arquivo' },
+                                    { value: 'manual', label: '✍️ Manual' }
                                 ].map(({ value, label }) => (
                                     <button
                                         key={value}
@@ -439,6 +560,276 @@ const Generator: React.FC = () => {
                             </div>
                         )}
 
+                        {/* Manual Flashcard Creation */}
+                        {inputType === 'manual' && (
+                            <div className="mb-8 animate-fade-in">
+                                <label className="block mb-3 font-semibold text-gray-700 dark:text-gray-300">
+                                    Criar Flashcard Manualmente
+                                </label>
+
+                                {/* Q&A Form */}
+                                {mode === CardMode.QA && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Pergunta</label>
+                                            <input
+                                                type="text"
+                                                value={manualFormData.question}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, question: e.target.value })}
+                                                placeholder="Digite a pergunta..."
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Resposta</label>
+                                            <textarea
+                                                value={manualFormData.answer}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, answer: e.target.value })}
+                                                placeholder="Digite a resposta..."
+                                                rows={4}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* True/False Form */}
+                                {mode === CardMode.TrueFalse && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Afirmação</label>
+                                            <textarea
+                                                value={manualFormData.statement}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, statement: e.target.value })}
+                                                placeholder="Digite a afirmação..."
+                                                rows={3}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Esta afirmação é:</label>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setManualFormData({ ...manualFormData, isTrue: true })}
+                                                    className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${manualFormData.isTrue
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                                        }`}
+                                                >
+                                                    ✅ Verdadeira
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setManualFormData({ ...manualFormData, isTrue: false })}
+                                                    className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${!manualFormData.isTrue
+                                                        ? 'bg-red-500 text-white'
+                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                                        }`}
+                                                >
+                                                    ❌ Falsa
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Explicação</label>
+                                            <textarea
+                                                value={manualFormData.explanation}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, explanation: e.target.value })}
+                                                placeholder="Explique por que a afirmação é verdadeira ou falsa..."
+                                                rows={3}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Multiple Choice Form */}
+                                {mode === CardMode.MultipleChoice && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Pergunta</label>
+                                            <input
+                                                type="text"
+                                                value={manualFormData.question}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, question: e.target.value })}
+                                                placeholder="Digite a pergunta..."
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Opções</label>
+                                            {manualFormData.options.map((option: string, index: number) => (
+                                                <div key={index} className="flex items-center gap-2 mb-2">
+                                                    <input
+                                                        type="radio"
+                                                        name="correctAnswer"
+                                                        checked={manualFormData.correctAnswerIndex === index}
+                                                        onChange={() => setManualFormData({ ...manualFormData, correctAnswerIndex: index })}
+                                                        className="w-4 h-4"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={option}
+                                                        onChange={(e) => {
+                                                            const newOptions = [...manualFormData.options];
+                                                            newOptions[index] = e.target.value;
+                                                            setManualFormData({ ...manualFormData, options: newOptions });
+                                                        }}
+                                                        placeholder={`Opção ${String.fromCharCode(65 + index)}...`}
+                                                        className="flex-1 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                                    />
+                                                </div>
+                                            ))}
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">💡 Selecione a opção correta marcando o círculo</p>
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Explicação</label>
+                                            <textarea
+                                                value={manualFormData.explanation}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, explanation: e.target.value })}
+                                                placeholder="Explique por que essa é a resposta correta..."
+                                                rows={3}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Practical Example Form */}
+                                {mode === CardMode.PracticalExample && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Problema / Cenário</label>
+                                            <textarea
+                                                value={manualFormData.problem}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, problem: e.target.value })}
+                                                placeholder="Descreva o problema ou cenário prático..."
+                                                rows={4}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Pergunta</label>
+                                            <input
+                                                type="text"
+                                                value={manualFormData.question}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, question: e.target.value })}
+                                                placeholder="Qual é a pergunta sobre este cenário?"
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Solução</label>
+                                            <textarea
+                                                value={manualFormData.solution}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, solution: e.target.value })}
+                                                placeholder="Descreva a solução para o problema..."
+                                                rows={4}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Fill in the Blank Form */}
+                                {mode === CardMode.FillInTheBlank && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Frase com Lacuna</label>
+                                            <textarea
+                                                value={manualFormData.sentence}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, sentence: e.target.value })}
+                                                placeholder="Digite a frase usando ____ para indicar a lacuna..."
+                                                rows={3}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">💡 Use ____ (quatro sublinhados) para marcar a lacuna</p>
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Resposta Correta</label>
+                                            <input
+                                                type="text"
+                                                value={manualFormData.correctAnswer}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, correctAnswer: e.target.value })}
+                                                placeholder="Palavra ou expressão que preenche a lacuna..."
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Add Flashcard Button */}
+                                <button
+                                    type="button"
+                                    onClick={addManualCard}
+                                    className="w-full mt-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <span>➕</span> Adicionar Flashcard
+                                </button>
+
+                                {/* Preview of Created Cards */}
+                                {manualCards.length > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                            Flashcards Criados ({manualCards.length})
+                                        </h3>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                            {manualCards.map((card, index) => (
+                                                <div key={card.id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400 mt-1">#{index + 1}</span>
+                                                    <div className="flex-1 text-sm">
+                                                        {card.mode === CardMode.QA && (
+                                                            <div>
+                                                                <p className="font-medium text-gray-700 dark:text-gray-300">Q: {card.question}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 mt-1">A: {card.answer}</p>
+                                                            </div>
+                                                        )}
+                                                        {card.mode === CardMode.TrueFalse && (
+                                                            <div>
+                                                                <p className="font-medium text-gray-700 dark:text-gray-300">{card.statement}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                                                                    {card.isTrue ? '✅ Verdadeiro' : '❌ Falso'}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {card.mode === CardMode.MultipleChoice && (
+                                                            <div>
+                                                                <p className="font-medium text-gray-700 dark:text-gray-300">{card.question}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                                                                    Resposta: {String.fromCharCode(65 + card.correctAnswerIndex)}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {card.mode === CardMode.PracticalExample && (
+                                                            <div>
+                                                                <p className="font-medium text-gray-700 dark:text-gray-300">{card.question}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 mt-1 truncate">{card.problem}</p>
+                                                            </div>
+                                                        )}
+                                                        {card.mode === CardMode.FillInTheBlank && (
+                                                            <div>
+                                                                <p className="font-medium text-gray-700 dark:text-gray-300">{card.question}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 mt-1">Resposta: {card.answer}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteManualCard(card.id)}
+                                                        className="text-red-500 hover:text-red-700 font-bold text-lg"
+                                                        title="Remover flashcard"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Mode Selector - Only show for non-file inputs */}
                         {inputType !== 'file' && (
                             <div className="mb-8">
@@ -495,7 +886,7 @@ const Generator: React.FC = () => {
                                 </>
                             ) : (
                                 <>
-                                    ✨ Gerar Flashcards
+                                    {inputType === 'manual' ? '💾 Salvar Flashcards' : '✨ Gerar Flashcards'}
                                 </>
                             )}
                         </button>
