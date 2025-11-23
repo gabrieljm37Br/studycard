@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { AppView, AppState, CardMode, FeedbackStatus, Deck } from '../types';
-import type { FlashcardData } from '../types';
+import { AppView, AppState, CardMode, FeedbackStatus, Deck } from './types';
+import type { FlashcardData } from './types';
 import { generateFlashcards } from './services/geminiService';
 import Flashcard from './components/Flashcard';
-import EditFlashcardModal from './components/EditFlashcardModal';
 import SourceTextModal from './components/SourceTextModal';
 import MoveFlashcardModal from './components/MoveFlashcardModal';
 import MoveMultipleFlashcardsModal from './components/MoveMultipleFlashcardsModal';
@@ -254,11 +253,10 @@ const GeneratorView: React.FC<{
 const StudyView: React.FC<{
   cards: FlashcardData[],
   onExit: () => void,
-  onStartEdit: (card: FlashcardData) => void,
   onUpdateFeedback: (cardId: string, status: FeedbackStatus) => void,
   size: StudySize,
   onSizeChange: (size: StudySize) => void
-}> = ({ cards, onExit, onStartEdit, onUpdateFeedback, size, onSizeChange }) => {
+}> = ({ cards, onExit, onUpdateFeedback, size, onSizeChange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [practicalExamplePhase, setPracticalExamplePhase] = useState(0);
@@ -351,7 +349,6 @@ const StudyView: React.FC<{
         <Flashcard
           key={currentCard.id}
           card={currentCard}
-          onEdit={() => onStartEdit(currentCard)}
           onFlipStateChange={setIsFlipped}
           onPhaseChange={setPracticalExamplePhase}
         />
@@ -414,7 +411,6 @@ const App: React.FC = () => {
   const [deckPath, setDeckPath] = useState<string[]>([]);
   const [targetDeckId, setTargetDeckId] = useState<string | null>(null);
 
-  const [editingCard, setEditingCard] = useState<FlashcardData | null>(null);
   const [cardToMove, setCardToMove] = useState<FlashcardData | null>(null);
   const [isSourceTextVisible, setIsSourceTextVisible] = useState<boolean>(false);
   const [sourceText, setSourceText] = useState<string>('');
@@ -436,6 +432,7 @@ const App: React.FC = () => {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [editingCard, setEditingCard] = useState<FlashcardData | null>(null);
 
   // --- Data Persistence ---
   useEffect(() => {
@@ -699,11 +696,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSaveChanges = useCallback((updatedCard: FlashcardData) => {
-    setFlashcards(prev => prev.map(c => (c.id === updatedCard.id ? updatedCard : c)));
-    setEditingCard(null);
-  }, []);
-
   const handleDeleteCard = useCallback((cardId: string) => {
     setFlashcards(prev => prev.filter(c => c.id !== cardId));
   }, []);
@@ -772,7 +764,7 @@ const App: React.FC = () => {
     }
 
     if (appState === AppState.Studying) {
-      return <StudyView cards={studyCards} onExit={() => setAppState(AppState.Idle)} onStartEdit={setEditingCard} onUpdateFeedback={handleUpdateFeedback} size={studySize} onSizeChange={setStudySize} />;
+      return <StudyView cards={studyCards} onExit={() => setAppState(AppState.Idle)} onUpdateFeedback={handleUpdateFeedback} size={studySize} onSizeChange={setStudySize} />;
     }
 
     if (appView === AppView.Generator) {
@@ -873,46 +865,20 @@ const App: React.FC = () => {
                 let performanceTitle = '';
 
                 if (stats.total > 0) {
-                  const maxStat = Math.max(stats.correct, stats.almost, stats.incorrect);
+                  const maxStat = Math.max(stats.correct, stats.incorrect);
 
                   if (maxStat > 0) {
-                    const topStats = [];
-                    if (stats.correct === maxStat) topStats.push('correct');
-                    if (stats.almost === maxStat) topStats.push('almost');
-                    if (stats.incorrect === maxStat) topStats.push('incorrect');
-
-                    if (topStats.length === 1) {
-                      // No tie
-                      if (topStats[0] === 'correct') {
-                        performanceColorClass = 'bg-green-500';
-                      } else if (topStats[0] === 'almost') {
-                        performanceColorClass = 'bg-yellow-500';
-                      } else { // incorrect
-                        performanceColorClass = 'bg-red-500';
-                      }
+                    if (stats.correct > stats.incorrect) {
+                      performanceColorClass = 'bg-green-500';
+                    } else if (stats.incorrect > stats.correct) {
+                      performanceColorClass = 'bg-red-500';
                     } else {
-                      // Tie-breaking rules
-                      const hasCorrect = topStats.includes('correct');
-                      const hasAlmost = topStats.includes('almost');
-                      const hasIncorrect = topStats.includes('incorrect');
-
-                      if (hasIncorrect && hasAlmost && hasCorrect) {
-                        // Three-way tie: Correct, Almost, Incorrect -> Yellow
-                        performanceColorClass = 'bg-yellow-500';
-                      } else if (hasIncorrect && hasAlmost) {
-                        // Tie: Almost, Incorrect -> Red
-                        performanceColorClass = 'bg-red-500';
-                      } else if (hasCorrect && hasAlmost) {
-                        // Tie: Almost, Correct -> Green
-                        performanceColorClass = 'bg-green-500';
-                      } else if (hasCorrect && hasIncorrect) {
-                        // Tie: Correct, Incorrect -> Yellow
-                        performanceColorClass = 'bg-yellow-500';
-                      }
+                      // Tie: equal correct and incorrect
+                      performanceColorClass = 'bg-yellow-500';
                     }
                   }
 
-                  performanceTitle = `Desempenho: ${stats.correct} acerto(s), ${stats.almost} quase, ${stats.incorrect} erro(s).`;
+                  performanceTitle = `Desempenho: ${stats.correct} acerto(s), ${stats.incorrect} erro(s).`;
                 }
 
                 return (
@@ -979,7 +945,6 @@ const App: React.FC = () => {
                   <Flashcard
                     key={card.id}
                     card={card}
-                    onEdit={() => setEditingCard(card)}
                     onDelete={() => handleDeleteCard(card.id)}
                     onMove={() => setCardToMove(card)}
                     isSelectionModeActive={isSelectionModeActive}
@@ -1015,7 +980,7 @@ const App: React.FC = () => {
     e.preventDefault();
     const newParentId = (e.currentTarget.elements.namedItem('deckLocation') as HTMLSelectElement).value;
     handleConfirmMove(newParentId === 'root' ? null : newParentId);
-  }
+  }; // Added missing semicolon
 
   return (
     <main className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 pt-24 pb-32 font-sans text-slate-900 bg-slate-50 dark:text-white dark:bg-slate-900 transition-colors duration-300 overflow-auto">
@@ -1102,7 +1067,6 @@ const App: React.FC = () => {
 
       {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
       {isSourceTextVisible && <SourceTextModal text={sourceText} onClose={() => setIsSourceTextVisible(false)} />}
-      {editingCard && <EditFlashcardModal card={editingCard} onSave={handleSaveChanges} onCancel={() => setEditingCard(null)} />}
       {cardToMove && (
         <MoveFlashcardModal
           card={cardToMove}
@@ -1119,6 +1083,37 @@ const App: React.FC = () => {
           onConfirm={handleConfirmBulkMove}
           onCancel={() => setShowMoveMultipleConfirm(false)}
         />
+      )}
+      {showDeleteMultipleConfirm && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delete-multiple-confirm-title"
+        >
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md text-center border dark:border-slate-700">
+            <h2 id="delete-multiple-confirm-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Confirmar Exclusão</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Você tem certeza que deseja excluir <span className="font-bold">{selectedCardIds.size}</span> flashcard{selectedCardIds.size !== 1 ? 's' : ''}?
+              <br />
+              Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowDeleteMultipleConfirm(false)}
+                className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmBulkDelete}
+                className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-sm hover:bg-red-700 transition"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {deckToDelete && (
         <div
