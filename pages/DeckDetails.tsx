@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { CardMode } from '../../types';
-import type { FlashcardData } from '../../types';
+import { CardMode } from '../types';
+import type { FlashcardData } from '../types';
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { CardMode, FeedbackStatus } from '../../types';
-import type { FlashcardData } from '../../types';
+import { CardMode, FeedbackStatus } from '../types';
+import type { FlashcardData } from '../types';
+import { renderHTML } from '../utils/textUtils';
 
 const Study: React.FC = () => {
     const { user } = useAuth();
@@ -405,10 +406,7 @@ const Study: React.FC = () => {
         setResult(null);
     };
 
-    // Helper function to render HTML safely
-    const renderHTML = (text: string) => {
-        return { __html: text };
-    };
+
 
     if (loading) {
         return (

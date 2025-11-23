@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { CardMode, FeedbackStatus } from '../../types';
-import type { FlashcardData, WebSource } from '../../types';
+import { CardMode, FeedbackStatus } from '../types';
+import type { FlashcardData, WebSource } from '../types';
 
 // The types from the API will be slightly different (no id or mode)
 type ApiFlashcard = Omit<FlashcardData, 'id' | 'mode' | 'feedback' | 'sources'>;

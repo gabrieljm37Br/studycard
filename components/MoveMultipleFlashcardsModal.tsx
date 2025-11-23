@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Deck } from '../../types';
+import { Deck } from '../types';
 
 const MoveMultipleFlashcardsModal: React.FC<{
     count: number,

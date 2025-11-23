@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FlashcardData, Deck, CardMode } from '../../types';
+import { FlashcardData, Deck, CardMode } from '../types';
 
 // A small preview component for the card
 const CardPreview: React.FC<{ card: FlashcardData }> = ({ card }) => {
