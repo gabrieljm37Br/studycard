@@ -109,3 +109,13 @@ export interface ClassificationResult {
     fill_in_the_blank: number;
   };
 }
+
+// Flashcard Notes
+export interface FlashcardNote {
+  id: string;
+  user_id: string;
+  flashcard_id: string;
+  note_text: string;
+  created_at: string;
+  updated_at: string;
+}

@@ -564,6 +564,46 @@ const Help: React.FC = () => {
                                     </li>
                                 </ul>
                             </div>
+
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3 flex items-center gap-2">
+                                    <span>📝</span> Anotações
+                                </h3>
+                                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                                    Você pode fazer anotações pessoais em cada flashcard durante o estudo.
+                                    Essas anotações são privadas e vinculadas ao flashcard específico.
+                                </p>
+
+                                <div className="space-y-3">
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                                        <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
+                                            Como usar:
+                                        </h4>
+                                        <ol className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                                            <li className="flex items-start gap-2">
+                                                <span className="font-semibold text-amber-600 dark:text-amber-400">1.</span>
+                                                <span>Clique no botão "📝 Anotações" abaixo do flashcard</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="font-semibold text-amber-600 dark:text-amber-400">2.</span>
+                                                <span>Digite suas anotações no campo de texto (máximo 1000 caracteres)</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="font-semibold text-amber-600 dark:text-amber-400">3.</span>
+                                                <span>Clique em "Salvar Anotação" para guardar suas observações</span>
+                                            </li>
+                                        </ol>
+                                    </div>
+
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            <strong>💡 Dica:</strong> Use anotações para registrar dúvidas, insights,
+                                            exemplos adicionais ou qualquer informação que ajude na sua revisão futura.
+                                            Flashcards com anotações são marcados com um indicador visual (●) no botão.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
