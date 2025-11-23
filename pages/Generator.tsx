@@ -278,7 +278,7 @@ const Generator: React.FC = () => {
                                     <select
                                         value={selectedDeckId || ''}
                                         onChange={(e) => setSelectedDeckId(e.target.value || null)}
-                                        className="flex-1 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 text-gray-800 dark:text-white"
+                                        className="flex-1 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-white text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 text-gray-800"
                                     >
                                         <option value="">Selecione um deck...</option>
                                         {decks.map(deck => (
