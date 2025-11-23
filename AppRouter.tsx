@@ -8,6 +8,8 @@ import Generator from './pages/Generator';
 import Study from './pages/Study';
 import DeckDetails from './pages/DeckDetails';
 import Help from './pages/Help';
+import SimulatedMode from './pages/SimulatedMode';
+import SimulationDetails from './pages/SimulationDetails';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -74,6 +76,22 @@ const AppRouter: React.FC = () => {
                             element={
                                 <ProtectedRoute>
                                     <Help />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/simulations"
+                            element={
+                                <ProtectedRoute>
+                                    <SimulatedMode />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/simulation/:id"
+                            element={
+                                <ProtectedRoute>
+                                    <SimulationDetails />
                                 </ProtectedRoute>
                             }
                         />

@@ -11,6 +11,7 @@ const Study: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const deckId = (location.state as any)?.deckId;
+    const simulationId = (location.state as any)?.simulationId;
 
     const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -81,55 +82,73 @@ const Study: React.FC = () => {
     }, [currentIndex, flashcards]);
 
     useEffect(() => {
-        if (deckId) {
+        if (deckId || simulationId) {
             loadFlashcards();
         }
-    }, [deckId]);
+    }, [deckId, simulationId]);
 
     const loadFlashcards = async () => {
         try {
             setLoading(true);
 
-            // Helper function to recursively get all subdeck IDs
-            const getAllSubdeckIds = async (parentDeckId: string): Promise<string[]> => {
-                const { data: children, error } = await supabase
-                    .from('decks')
-                    .select('id')
-                    .eq('user_id', user!.id)
-                    .eq('parent_id', parentDeckId);
+            if (simulationId) {
+                // Load from simulation
+                const { data: items, error } = await supabase
+                    .from('simulation_items')
+                    .select('*, flashcard:flashcards(*)')
+                    .eq('simulation_id', simulationId);
 
-                if (error || !children || children.length === 0) {
-                    return [];
-                }
+                if (error) throw error;
 
-                const childIds = children.map(child => child.id);
+                // Map items to flashcards and shuffle if needed (though simulations are usually fixed order, let's keep them as is or shuffle if requested. 
+                // The requirement said "random sequence... for the simulation", which implies the sequence is fixed at creation.
+                // So we should probably respect the order they come back, or if we stored an order index.
+                // For now, let's just use them as they come.
+                const cards = items?.map((item: any) => item.flashcard) || [];
+                setFlashcards(cards);
 
-                // Recursively get subdecks of each child
-                const nestedIds: string[] = [];
-                for (const childId of childIds) {
-                    const nested = await getAllSubdeckIds(childId);
-                    nestedIds.push(...nested);
-                }
+            } else if (deckId) {
+                // Helper function to recursively get all subdeck IDs
+                const getAllSubdeckIds = async (parentDeckId: string): Promise<string[]> => {
+                    const { data: children, error } = await supabase
+                        .from('decks')
+                        .select('id')
+                        .eq('user_id', user!.id)
+                        .eq('parent_id', parentDeckId);
 
-                return [...childIds, ...nestedIds];
-            };
+                    if (error || !children || children.length === 0) {
+                        return [];
+                    }
 
-            // Get all subdeck IDs recursively
-            const allSubdeckIds = await getAllSubdeckIds(deckId);
-            const deckIdsToQuery = [deckId, ...allSubdeckIds];
+                    const childIds = children.map(child => child.id);
 
-            // Load flashcards from this deck and all nested subdecks
-            const { data, error } = await supabase
-                .from('flashcards')
-                .select('*')
-                .in('deck_id', deckIdsToQuery)
-                .eq('user_id', user!.id);
+                    // Recursively get subdecks of each child
+                    const nestedIds: string[] = [];
+                    for (const childId of childIds) {
+                        const nested = await getAllSubdeckIds(childId);
+                        nestedIds.push(...nested);
+                    }
 
-            if (error) throw error;
+                    return [...childIds, ...nestedIds];
+                };
 
-            // Shuffle flashcards
-            const shuffled = (data || []).sort(() => Math.random() - 0.5);
-            setFlashcards(shuffled as any);
+                // Get all subdeck IDs recursively
+                const allSubdeckIds = await getAllSubdeckIds(deckId);
+                const deckIdsToQuery = [deckId, ...allSubdeckIds];
+
+                // Load flashcards from this deck and all nested subdecks
+                const { data, error } = await supabase
+                    .from('flashcards')
+                    .select('*')
+                    .in('deck_id', deckIdsToQuery)
+                    .eq('user_id', user!.id);
+
+                if (error) throw error;
+
+                // Shuffle flashcards
+                const shuffled = (data || []).sort(() => Math.random() - 0.5);
+                setFlashcards(shuffled as any);
+            }
         } catch (error) {
             console.error('Error loading flashcards:', error);
             alert('Erro ao carregar flashcards');
@@ -658,90 +677,94 @@ const Study: React.FC = () => {
                     </h2>
                 </div>
 
-                {/* Notes Button */}
-                <div className="mb-6">
-                    <button
-                        onClick={() => setShowNotesPanel(!showNotesPanel)}
-                        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${showNotesPanel
-                            ? 'bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400'
-                            : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                    >
-                        <span className="text-xl">📝</span>
-                        <span>Anotações</span>
-                        {hasNote && (
-                            <span className="ml-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                ●
-                            </span>
-                        )}
-                        <span className="ml-auto text-sm">
-                            {showNotesPanel ? '▲' : '▼'}
-                        </span>
-                    </button>
-                </div>
-
-                {/* Notes Panel */}
-                {showNotesPanel && (
-                    <div className="mb-8 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-6 animate-slide-down">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                                <span>📝</span> Suas Anotações
-                            </h3>
-                            <span className={`text-sm font-medium ${currentNote.length > 1000
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-gray-500 dark:text-gray-400'
-                                }`}>
-                                {currentNote.length}/1000
-                            </span>
-                        </div>
-
-                        <textarea
-                            value={currentNote}
-                            onChange={(e) => {
-                                if (e.target.value.length <= 1000) {
-                                    setCurrentNote(e.target.value);
-                                }
-                            }}
-                            placeholder="Digite suas anotações sobre este flashcard... (máximo 1000 caracteres)"
-                            rows={6}
-                            className="w-full p-4 border-2 border-amber-200 dark:border-amber-700 rounded-lg text-base outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors bg-white dark:bg-gray-800 dark:text-white resize-y"
-                        />
-
-                        <div className="flex gap-3 mt-4">
+                {/* Notes Button - Only visible after answering */}
+                {showResult && (
+                    <>
+                        <div className="mb-6 animate-fade-in">
                             <button
-                                onClick={saveNote}
-                                disabled={isSavingNote}
-                                className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white border-none rounded-lg font-semibold cursor-pointer transition-all shadow-sm disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                onClick={() => setShowNotesPanel(!showNotesPanel)}
+                                className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${showNotesPanel
+                                    ? 'bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400'
+                                    : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                    }`}
                             >
-                                {isSavingNote ? (
-                                    <>
-                                        <span className="animate-spin">⏳</span>
-                                        <span>Salvando...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span>💾</span>
-                                        <span>Salvar Anotação</span>
-                                    </>
+                                <span className="text-xl">📝</span>
+                                <span>Anotações</span>
+                                {hasNote && (
+                                    <span className="ml-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                        ●
+                                    </span>
                                 )}
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setCurrentNote('');
-                                    setShowNotesPanel(false);
-                                }}
-                                className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border-none rounded-lg font-semibold cursor-pointer transition-all"
-                            >
-                                Cancelar
+                                <span className="ml-auto text-sm">
+                                    {showNotesPanel ? '▲' : '▼'}
+                                </span>
                             </button>
                         </div>
 
-                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 flex items-start gap-2">
-                            <span>💡</span>
-                            <span>Suas anotações são privadas e vinculadas a este flashcard específico.</span>
-                        </p>
-                    </div>
+                        {/* Notes Panel */}
+                        {showNotesPanel && (
+                            <div className="mb-8 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-6 animate-slide-down">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                                        <span>📝</span> Suas Anotações
+                                    </h3>
+                                    <span className={`text-sm font-medium ${currentNote.length > 1000
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-gray-500 dark:text-gray-400'
+                                        }`}>
+                                        {currentNote.length}/1000
+                                    </span>
+                                </div>
+
+                                <textarea
+                                    value={currentNote}
+                                    onChange={(e) => {
+                                        if (e.target.value.length <= 1000) {
+                                            setCurrentNote(e.target.value);
+                                        }
+                                    }}
+                                    placeholder="Digite suas anotações sobre este flashcard... (máximo 1000 caracteres)"
+                                    rows={6}
+                                    className="w-full p-4 border-2 border-amber-200 dark:border-amber-700 rounded-lg text-base outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors bg-white dark:bg-gray-800 dark:text-white resize-y"
+                                />
+
+                                <div className="flex gap-3 mt-4">
+                                    <button
+                                        onClick={saveNote}
+                                        disabled={isSavingNote}
+                                        className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white border-none rounded-lg font-semibold cursor-pointer transition-all shadow-sm disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {isSavingNote ? (
+                                            <>
+                                                <span className="animate-spin">⏳</span>
+                                                <span>Salvando...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span>💾</span>
+                                                <span>Salvar Anotação</span>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setCurrentNote('');
+                                            setShowNotesPanel(false);
+                                        }}
+                                        className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border-none rounded-lg font-semibold cursor-pointer transition-all"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 flex items-start gap-2">
+                                    <span>💡</span>
+                                    <span>Suas anotações são privadas e vinculadas a este flashcard específico.</span>
+                                </p>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {/* Answer Input */}

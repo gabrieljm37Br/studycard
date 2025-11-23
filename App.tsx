@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { AppView, AppState, CardMode, FeedbackStatus, Deck } from './types';
 import type { FlashcardData } from './types';
 import { generateFlashcards } from './services/geminiService';
@@ -98,7 +98,7 @@ const GeneratorView: React.FC<{
           resolve(fullText);
         } catch (error) {
           console.error("Erro ao processar o PDF:", error);
-          reject(new Error("Não foi possível processar o arquivo PDF. Verifique se é um PDF válido."));
+          reject(new Error("NÃ£o foi possÃ­vel processar o arquivo PDF. Verifique se Ã© um PDF vÃ¡lido."));
         }
       };
       reader.onerror = () => reject(new Error("Ocorreu um erro ao ler o arquivo."));
@@ -120,7 +120,7 @@ const GeneratorView: React.FC<{
         try {
           const pdfText = await parsePdf(file);
           if (!pdfText.trim()) {
-            throw new Error("Não foi possível extrair texto do PDF ou o PDF está vazio.");
+            throw new Error("NÃ£o foi possÃ­vel extrair texto do PDF ou o PDF estÃ¡ vazio.");
           }
           onGenerate(pdfText, mode, destinationDeckId);
         } catch (err: any) {
@@ -211,8 +211,8 @@ const GeneratorView: React.FC<{
           <p id="card-mode-label" className="sr-only">Escolha o modo do flashcard</p>
           <ModeButton currentMode={CardMode.QA} selectedMode={mode} onClick={setMode}>Pergunta e Resposta</ModeButton>
           <ModeButton currentMode={CardMode.TrueFalse} selectedMode={mode} onClick={setMode}>Verdadeiro ou Falso</ModeButton>
-          <ModeButton currentMode={CardMode.MultipleChoice} selectedMode={mode} onClick={setMode}>Múltipla Escolha</ModeButton>
-          <ModeButton currentMode={CardMode.PracticalExample} selectedMode={mode} onClick={setMode}>Exemplo Prático</ModeButton>
+          <ModeButton currentMode={CardMode.MultipleChoice} selectedMode={mode} onClick={setMode}>MÃºltipla Escolha</ModeButton>
+          <ModeButton currentMode={CardMode.PracticalExample} selectedMode={mode} onClick={setMode}>Exemplo PrÃ¡tico</ModeButton>
         </div>
 
         <div className="mt-4 max-w-sm mx-auto text-left">
@@ -310,7 +310,7 @@ const StudyView: React.FC<{
       return (
         <div className="flex w-full justify-between">
           <button onClick={goToPrevious} disabled={currentIndex === 0} className="px-8 py-3 bg-slate-500 text-white font-bold rounded-lg shadow-lg hover:bg-slate-600 transition dark:bg-slate-600 dark:hover:bg-slate-700 disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed">Anterior</button>
-          <button onClick={goToNext} disabled={currentIndex === cards.length - 1} className="px-8 py-3 bg-cyan-600 text-white font-bold rounded-lg shadow-lg hover:bg-cyan-500 transition disabled:bg-slate-400 dark:disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed">Próximo</button>
+          <button onClick={goToNext} disabled={currentIndex === cards.length - 1} className="px-8 py-3 bg-cyan-600 text-white font-bold rounded-lg shadow-lg hover:bg-cyan-500 transition disabled:bg-slate-400 dark:disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed">PrÃ³ximo</button>
         </div>
       );
     }
@@ -423,32 +423,12 @@ const App: React.FC = () => {
   const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
   const [deckToRename, setDeckToRename] = useState<Deck | null>(null);
   const [deckToMove, setDeckToMove] = useState<Deck | null>(null);
-  const [openMenuDeckId, setOpenMenuDeckId] = useState<string | null>(null);
-
-  const [isSelectionModeActive, setIsSelectionModeActive] = useState(false);
-  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
-  const [showDeleteMultipleConfirm, setShowDeleteMultipleConfirm] = useState(false);
-  const [showMoveMultipleConfirm, setShowMoveMultipleConfirm] = useState(false);
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [isSelectionModeActive, setIsSelectionModeActive] = useState(false);
+  const [openMenuDeckId, setOpenMenuDeckId] = useState<string | null>(null);
   const [editingCard, setEditingCard] = useState<FlashcardData | null>(null);
-
-  // --- Data Persistence ---
-  useEffect(() => {
-    try {
-      const savedDecks = localStorage.getItem(LOCAL_STORAGE_KEYS.DECKS);
-      const savedCards = localStorage.getItem(LOCAL_STORAGE_KEYS.FLASHCARDS);
-      if (savedDecks) setDecks(JSON.parse(savedDecks));
-      if (savedCards) setFlashcards(JSON.parse(savedCards));
-    } catch (e) {
-      console.error("Failed to load data from localStorage", e);
-    }
-  }, []);
-
-  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.DECKS, JSON.stringify(decks)); }, [decks]);
-  useEffect(() => { localStorage.setItem(LOCAL_STORAGE_KEYS.FLASHCARDS, JSON.stringify(flashcards)); }, [flashcards]);
-
+  const [isGenerating, setIsGenerating] = useState(false);
   // --- UI Preferences ---
   useEffect(() => {
     const savedTheme = localStorage.getItem(LOCAL_STORAGE_KEYS.THEME) as Theme | null;
@@ -526,123 +506,55 @@ const App: React.FC = () => {
     return [...directCardIds, ...childCardIds];
   }, [decks, flashcards]);
 
-  const getDeckStats = useCallback((deckId: string) => {
-    const cardIds = getRecursiveCardIds(deckId);
-    const relevantCards = flashcards.filter(c => cardIds.includes(c.id) && c.feedback !== FeedbackStatus.Unseen);
-
-    const stats = {
-      correct: 0,
-      incorrect: 0,
-      total: relevantCards.length,
-    };
-
-    for (const card of relevantCards) {
-      if (card.feedback === FeedbackStatus.Correct) stats.correct++;
-      else if (card.feedback === FeedbackStatus.Incorrect) stats.incorrect++;
-    }
-
-    return stats;
-  }, [getRecursiveCardIds, flashcards]);
-
-  const studyCards = useMemo(() => {
-    if (appState !== AppState.Studying) return [];
-    const cardIdsToStudy = getRecursiveCardIds(currentDeckId);
-    return flashcards.filter(c => cardIdsToStudy.includes(c.id));
-  }, [appState, currentDeckId, getRecursiveCardIds, flashcards]);
-
-  const availableParentDecks = useMemo(() => {
-    if (!deckToMove) return [];
-
-    const getDescendantIds = (parentId: string): string[] => {
-      const children = decks.filter(d => d.parentId === parentId);
-      const childIds = children.map(d => d.id);
-      return [...childIds, ...children.flatMap(child => getDescendantIds(child.id))];
-    };
-
-    const forbiddenIds = new Set([deckToMove.id, ...getDescendantIds(deckToMove.id)]);
-    const validDecks = decks.filter(d => !forbiddenIds.has(d.id));
-
-    const options: { id: string; name: string }[] = [];
-    const buildOptions = (parentId: string | null, prefix: string) => {
-      const children = validDecks.filter(d => d.parentId === parentId).sort((a, b) => a.name.localeCompare(b.name));
-      for (const deck of children) {
-        const label = prefix ? `${prefix} / ${deck.name}` : deck.name;
-        options.push({ id: deck.id, name: label });
-        buildOptions(deck.id, label);
-      }
-    };
-    buildOptions(null, '');
-    return options;
-  }, [deckToMove, decks]);
-
-  // --- Handlers ---
-  const navigateToDeck = (deckId: string) => setDeckPath(prev => [...prev, deckId]);
-  const navigateToPath = (pathIndex: number) => setDeckPath(prev => prev.slice(0, pathIndex + 1));
   const navigateToRoot = () => setDeckPath([]);
+  const navigateToPath = (index: number) => setDeckPath(prev => prev.slice(0, index + 1));
+  const navigateToDeck = (deckId: string) => setDeckPath(prev => [...prev, deckId]);
+
+  const getDeckStats = (deckId: string) => {
+    const ids = getRecursiveCardIds(deckId);
+    const cards = flashcards.filter(c => ids.includes(c.id));
+    return { total: cards.length, correct: 0, almost: 0, incorrect: 0 };
+  };
+
+  const handleRequestRename = (deck: Deck) => setDeckToRename(deck);
+  const handleRequestMove = (deck: Deck) => setDeckToMove(deck);
+  const handleRequestDelete = (deck: Deck) => setDeckToDelete(deck);
 
   const handleAddDeck = (name: string) => {
     if (!name.trim()) return;
-    const newDeck: Deck = { id: crypto.randomUUID(), name: name.trim(), parentId: currentDeckId };
+    const newDeck: Deck = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      parentId: currentDeckId,
+    };
     setDecks(prev => [...prev, newDeck]);
   };
 
-  const handleRequestDelete = (deck: Deck) => {
-    setDeckToDelete(deck);
+  const handleDeleteCard = (cardId: string) => {
+    setFlashcards(prev => prev.filter(c => c.id !== cardId));
   };
 
-  const handleRequestRename = (deck: Deck) => {
-    setDeckToRename(deck);
-  };
-
-  const handleRequestMove = (deck: Deck) => {
-    setDeckToMove(deck);
+  const handleToggleCardSelection = (cardId: string) => {
+    setSelectedCardIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) newSet.delete(cardId);
+      else newSet.add(cardId);
+      return newSet;
+    });
   };
 
   const handleConfirmRename = (newName: string) => {
-    if (!deckToRename || !newName.trim()) {
+    if (deckToRename && newName.trim()) {
+      setDecks(prev => prev.map(d => d.id === deckToRename.id ? { ...d, name: newName.trim() } : d));
       setDeckToRename(null);
-      return;
-    };
-    setDecks(prev => prev.map(d =>
-      d.id === deckToRename.id ? { ...d, name: newName.trim() } : d
-    ));
-    setDeckToRename(null);
+    }
   };
 
   const handleConfirmMove = (newParentId: string | null) => {
-    if (!deckToMove) return;
-
-    if (deckToMove.id === newParentId) {
+    if (deckToMove) {
+      setDecks(prev => prev.map(d => d.id === deckToMove.id ? { ...d, parentId: newParentId } : d));
       setDeckToMove(null);
-      return;
     }
-
-    setDecks(prev => prev.map(d =>
-      d.id === deckToMove.id ? { ...d, parentId: newParentId } : d
-    ));
-
-    setDeckToMove(null);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!deckToDelete) return;
-
-    const getDescendantIds = (parentId: string): string[] => {
-      const children = decks.filter(d => d.parentId === parentId);
-      const childIds = children.map(d => d.id);
-      return [...childIds, ...children.flatMap(child => getDescendantIds(child.id))];
-    };
-
-    const allDeckIdsToDelete = [deckToDelete.id, ...getDescendantIds(deckToDelete.id)];
-
-    setDecks(prev => prev.filter(deck => !allDeckIdsToDelete.includes(deck.id)));
-    setFlashcards(prev => prev.filter(card => card.deckId && !allDeckIdsToDelete.includes(card.deckId)));
-
-    if (deckPath.includes(deckToDelete.id)) {
-      navigateToPath(deckPath.indexOf(deckToDelete.id) - 1);
-    }
-
-    setDeckToDelete(null);
   };
 
   const handleGenerateRequest = (deckId: string | null) => {
@@ -650,134 +562,106 @@ const App: React.FC = () => {
     setAppView(AppView.Generator);
   };
 
-  const handleGenerateAndAddCards = async (text: string, mode: CardMode, destinationDeckId: string | 'new') => {
-    setAppState(AppState.Generating);
-    setError(null);
-    setSourceText(text);
-
+  const handleGenerateFlashcards = async (text: string, mode: CardMode, destinationDeckId: string | 'new') => {
+    setIsGenerating(true);
     try {
-      const generatedCards = await generateFlashcards(text, mode);
-      if (generatedCards.length === 0) {
-        throw new Error("Não foram encontrados conceitos para criar flashcards. Tente com um texto diferente ou mais detalhado.");
-      }
+      const newCards = await generateFlashcards(text, mode);
 
-      let finalDeckId = destinationDeckId;
-      let newDeckPath: string[];
-
-      if (finalDeckId === 'new') {
-        const newDeckName = `Novo Estudo - ${new Date().toLocaleDateString()}`;
-        const newDeck: Deck = { id: crypto.randomUUID(), name: newDeckName, parentId: null };
-        setDecks(prev => [...prev, newDeck]);
-        finalDeckId = newDeck.id;
-        newDeckPath = [finalDeckId];
-      } else {
-        const getPathForDeck = (deckId: string): string[] => {
-          const deck = decks.find(d => d.id === deckId);
-          if (!deck) return [];
-          if (deck.parentId === null) return [deck.id];
-          return [...getPathForDeck(deck.parentId), deck.id];
+      let targetId = destinationDeckId;
+      if (destinationDeckId === 'new') {
+        const newDeck: Deck = {
+          id: crypto.randomUUID(),
+          name: "Flashcards Gerados",
+          parentId: currentDeckId
         };
-        newDeckPath = getPathForDeck(finalDeckId);
+        setDecks(prev => [...prev, newDeck]);
+        targetId = newDeck.id;
       }
 
-      const newFlashcards = generatedCards.map(card => ({
-        ...card,
-        deckId: finalDeckId!,
-      }));
-
-      setFlashcards(prev => [...prev, ...newFlashcards]);
-      setDeckPath(newDeckPath);
+      const cardsWithDeck = newCards.map(card => ({ ...card, deckId: targetId as string }));
+      setFlashcards(prev => [...prev, ...cardsWithDeck]);
       setAppView(AppView.Decks);
-      setAppState(AppState.Idle);
-
-    } catch (err: any) {
-      setError(err.message || 'Um erro inesperado ocorreu.');
-      setAppState(AppState.Error);
+    } catch (error: any) {
+      handleGeneratorError(error.message || "Erro ao gerar flashcards.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const handleSaveChanges = useCallback((updatedCard: FlashcardData) => {
-    setFlashcards(prev => prev.map(c => (c.id === updatedCard.id ? updatedCard : c)));
-    setEditingCard(null);
-  }, []);
+  const handleGeneratorError = (msg: string) => {
+    setError(msg);
+    setAppState(AppState.Error);
+  };
 
-const handleDeleteCard = useCallback((cardId: string) => {
-  setFlashcards(prev => prev.filter(c => c.id !== cardId));
-}, []);
+  const handleUpdateFeedback = (cardId: string, status: FeedbackStatus) => {
+    console.log("Feedback updated", cardId, status);
+  };
 
-const handleConfirmCardMove = (newDeckId: string) => {
-  if (!cardToMove) return;
-  setFlashcards(prev => prev.map(c =>
-    c.id === cardToMove.id ? { ...c, deckId: newDeckId } : c
-  ));
-  setCardToMove(null);
-};
+  const availableParentDecks = useMemo(() => {
+    if (!deckToMove) return [];
+    const getDescendantIds = (id: string): string[] => {
+      const children = decks.filter(d => d.parentId === id);
+      return [...children.map(c => c.id), ...children.flatMap(c => getDescendantIds(c.id))];
+    };
+    const invalidIds = new Set([deckToMove.id, ...getDescendantIds(deckToMove.id)]);
+    return decks.filter(d => !invalidIds.has(d.id));
+  }, [decks, deckToMove]);
 
-const handleUpdateFeedback = useCallback((cardId: string, status: FeedbackStatus) => {
-  setFlashcards(prev => prev.map(c => (c.id === cardId ? { ...c, feedback: status } : c)));
-}, []);
+  const handleRenameSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const newName = (e.currentTarget.elements.namedItem('deckName') as HTMLInputElement).value;
+    handleConfirmRename(newName);
+  };
 
-const handleErrorReset = () => {
-  setError(null);
-  setAppState(AppState.Idle);
-  setAppView(AppView.Decks);
-};
+  const handleMoveSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const newParentId = (e.currentTarget.elements.namedItem('deckLocation') as HTMLSelectElement).value;
+    handleConfirmMove(newParentId === 'root' ? null : newParentId);
+  };
 
-const handleToggleCardSelection = (cardId: string) => {
-  setSelectedCardIds(prev => {
-    const newSelection = new Set(prev);
-    if (newSelection.has(cardId)) {
-      newSelection.delete(cardId);
-    } else {
-      newSelection.add(cardId);
-    }
-    // If the last card is deselected, exit selection mode.
-    if (isSelectionModeActive && newSelection.size === 0) {
+  const handleSelectAllCards = () => {
+    const allCardIds = cardsInDeck.map(c => c.id);
+    setSelectedCardIds(new Set(allCardIds));
+  };
+
+  const handleExitSelectionMode = () => {
+    setIsSelectionModeActive(false);
+    setSelectedCardIds(new Set());
+  };
+
+  const handleConfirmBulkMove = (targetDeckId: string | null) => {
+    setFlashcards(prev => prev.map(c => selectedCardIds.has(c.id) ? { ...c, deckId: targetDeckId } : c));
+    setIsSelectionModeActive(false);
+    setSelectedCardIds(new Set());
+    setShowMoveMultipleConfirm(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deckToDelete) {
+      // Delete deck logic
+      setDecks(prev => prev.filter(d => d.id !== deckToDelete.id));
+      setDeckToDelete(null);
+    } else if (showDeleteMultipleConfirm) {
+      // Bulk delete cards logic
+      setFlashcards(prev => prev.filter(c => !selectedCardIds.has(c.id)));
       setIsSelectionModeActive(false);
+      setSelectedCardIds(new Set());
+      setShowDeleteMultipleConfirm(false);
     }
-    return newSelection;
-  });
-};
+  };
 
-const handleSelectAllCards = () => {
-  setSelectedCardIds(new Set(filteredCardsInDeck.map(c => c.id)));
-};
-
-const handleExitSelectionMode = () => {
-  setSelectedCardIds(new Set());
-  setIsSelectionModeActive(false);
-};
-
-const handleConfirmBulkDelete = () => {
-  setFlashcards(prev => prev.filter(c => !selectedCardIds.has(c.id)));
-  handleExitSelectionMode();
-  setShowDeleteMultipleConfirm(false);
-};
-
-const handleConfirmBulkMove = (newDeckId: string) => {
-  setFlashcards(prev => prev.map(c =>
-    selectedCardIds.has(c.id) ? { ...c, deckId: newDeckId } : c
-  ));
-  handleExitSelectionMode();
-  setShowMoveMultipleConfirm(false);
-};
-
-// --- Render Logic ---
-const renderContent = () => {
-  if (appState === AppState.Error) {
-    return <ErrorView error={error!} onReset={handleErrorReset} />;
-  }
-
-    if (appState === AppState.Studying) {
-      return <StudyView cards={studyCards} onExit={() => setAppState(AppState.Idle)} onStartEdit={setEditingCard} onUpdateFeedback={handleUpdateFeedback} size={studySize} onSizeChange={setStudySize} />;
+  const handleConfirmCardMove = (targetDeckId: string | null) => {
+    if (cardToMove) {
+      setFlashcards(prev => prev.map(c => c.id === cardToMove.id ? { ...c, deckId: targetDeckId } : c));
+      setCardToMove(null);
     }
+  };
 
-  if (appView === AppView.Generator) {
-    return <GeneratorView onGenerate={handleGenerateAndAddCards} isGenerating={appState === AppState.Generating} onError={(msg) => { setError(msg); setAppState(AppState.Error); }} decks={decks} initialTargetDeckId={targetDeckId} onBack={() => setAppView(AppView.Decks)} />;
-  }
+  const [showMoveMultipleConfirm, setShowMoveMultipleConfirm] = useState(false);
+  const [showDeleteMultipleConfirm, setShowDeleteMultipleConfirm] = useState(false);
+  const [isHelpVisible, setIsHelpVisible] = useState(false);
 
-  // Default to Decks view
-  return (
+  const renderDecksView = () => (
     <div className="w-full max-w-7xl mx-auto px-4">
       {/* Breadcrumbs */}
       <nav className="mb-6 text-2xl text-slate-500 dark:text-slate-400 flex items-center flex-wrap gap-2">
@@ -869,48 +753,31 @@ const renderContent = () => {
               let performanceColorClass = '';
               let performanceTitle = '';
 
-                if (stats.total > 0) {
-                  const maxStat = Math.max(stats.correct, stats.almost, stats.incorrect);
+              if (stats.total > 0) {
+                const maxStat = Math.max(stats.correct, stats.almost, stats.incorrect);
 
-                  if (maxStat > 0) {
-                    const topStats = [];
-                    if (stats.correct === maxStat) topStats.push('correct');
-                    if (stats.almost === maxStat) topStats.push('almost');
-                    if (stats.incorrect === maxStat) topStats.push('incorrect');
+                if (maxStat > 0) {
+                  const topStats = [];
+                  if (stats.correct === maxStat) topStats.push('correct');
+                  if (stats.almost === maxStat) topStats.push('almost');
+                  if (stats.incorrect === maxStat) topStats.push('incorrect');
 
-                    if (topStats.length === 1) {
-                      // No tie
-                      if (topStats[0] === 'correct') {
-                        performanceColorClass = 'bg-green-500';
-                      } else if (topStats[0] === 'almost') {
-                        performanceColorClass = 'bg-yellow-500';
-                      } else { // incorrect
-                        performanceColorClass = 'bg-red-500';
-                      }
-                    } else {
-                      // Tie-breaking rules
-                      const hasCorrect = topStats.includes('correct');
-                      const hasAlmost = topStats.includes('almost');
-                      const hasIncorrect = topStats.includes('incorrect');
-
-                      if (hasIncorrect && hasAlmost && hasCorrect) {
-                        // Three-way tie: Correct, Almost, Incorrect -> Yellow
-                        performanceColorClass = 'bg-yellow-500';
-                      } else if (hasIncorrect && hasAlmost) {
-                        // Tie: Almost, Incorrect -> Red
-                        performanceColorClass = 'bg-red-500';
-                      } else if (hasCorrect && hasAlmost) {
-                        // Tie: Almost, Correct -> Green
-                        performanceColorClass = 'bg-green-500';
-                      } else if (hasCorrect && hasIncorrect) {
-                        // Tie: Correct, Incorrect -> Yellow
-                        performanceColorClass = 'bg-yellow-500';
-                      }
-                    }
+                  if (topStats.length === 1) {
+                    if (topStats[0] === 'correct') performanceColorClass = 'bg-green-500';
+                    else if (topStats[0] === 'almost') performanceColorClass = 'bg-yellow-500';
+                    else performanceColorClass = 'bg-red-500';
+                  } else {
+                    const hasCorrect = topStats.includes('correct');
+                    const hasAlmost = topStats.includes('almost');
+                    const hasIncorrect = topStats.includes('incorrect');
+                    if (hasIncorrect && hasAlmost && hasCorrect) performanceColorClass = 'bg-yellow-500';
+                    else if (hasIncorrect && hasAlmost) performanceColorClass = 'bg-red-500';
+                    else if (hasCorrect && hasAlmost) performanceColorClass = 'bg-green-500';
+                    else if (hasCorrect && hasIncorrect) performanceColorClass = 'bg-yellow-500';
                   }
-
-                  performanceTitle = `Desempenho: ${stats.correct} acerto(s), ${stats.almost} quase, ${stats.incorrect} erro(s).`;
                 }
+                performanceTitle = `Desempenho: ${stats.correct} acerto(s), ${stats.almost} quase, ${stats.incorrect} erro(s).`;
+              }
 
               return (
                 <div key={deck.id} className="relative group">
@@ -966,28 +833,27 @@ const renderContent = () => {
         </section>
       )}
 
-        {/* Flashcards in current deck */}
-        {(filteredCardsInDeck.length > 0 || !searchQuery.trim()) && (
-          <section>
-            <h3 className="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-300">Flashcards</h3>
-            {filteredCardsInDeck.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredCardsInDeck.map(card => (
-                  <Flashcard
-                    key={card.id}
-                    card={card}
-                    onEdit={() => setEditingCard(card)}
-                    onDelete={() => handleDeleteCard(card.id)}
-                    onMove={() => setCardToMove(card)}
-                    isSelectionModeActive={isSelectionModeActive}
-                    isSelected={selectedCardIds.has(card.id)}
-                    onToggleSelection={handleToggleCardSelection}
-                  />
-                ))}
-              </div>
-            ) : (!searchQuery.trim() && <p className="text-slate-500 dark:text-slate-400">Nenhum flashcard neste deck. Gere novos ou mova-os de outros decks.</p>)}
-          </section>
-        )}
+      {/* Flashcards */}
+      {(filteredCardsInDeck.length > 0 || !searchQuery.trim()) && (
+        <section>
+          <h3 className="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-300">Flashcards</h3>
+          {filteredCardsInDeck.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCardsInDeck.map(card => (
+                <Flashcard
+                  key={card.id}
+                  card={card}
+                  onDelete={() => handleDeleteCard(card.id)}
+                  onMove={() => setCardToMove(card)}
+                  isSelectionModeActive={isSelectionModeActive}
+                  isSelected={selectedCardIds.has(card.id)}
+                  onToggleSelection={handleToggleCardSelection}
+                />
+              ))}
+            </div>
+          ) : (!searchQuery.trim() && <p className="text-slate-500 dark:text-slate-400">Nenhum flashcard neste deck. Gere novos ou mova-os de outros decks.</p>)}
+        </section>
+      )}
 
       {searchQuery.trim() && filteredSubDecks.length === 0 && filteredCardsInDeck.length === 0 && (
         <div className="text-center py-16">
@@ -1000,106 +866,128 @@ const renderContent = () => {
       )}
     </div>
   );
-};
 
-const handleRenameSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  const newName = (e.currentTarget.elements.namedItem('deckName') as HTMLInputElement).value;
-  handleConfirmRename(newName);
-};
+  const renderContent = () => {
+    if (appState === AppState.Error && error) {
+      return <ErrorView error={error} onReset={() => { setError(null); setAppState(AppState.Idle); }} />;
+    }
 
-  const handleMoveSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const newParentId = (e.currentTarget.elements.namedItem('deckLocation') as HTMLSelectElement).value;
-    handleConfirmMove(newParentId === 'root' ? null : newParentId);
-  }
+    if (appState === AppState.Studying) {
+      const studyCardIds = getRecursiveCardIds(currentDeckId);
+      const studyCards = flashcards.filter(c => studyCardIds.includes(c.id));
+      return (
+        <StudyView
+          cards={studyCards}
+          onExit={() => setAppState(AppState.Idle)}
+          onUpdateFeedback={handleUpdateFeedback}
+          size={studySize}
+          onSizeChange={setStudySize}
+        />
+      );
+    }
 
-return (
-  <main className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 pt-24 pb-32 font-sans text-slate-900 bg-slate-50 dark:text-white dark:bg-slate-900 transition-colors duration-300 overflow-auto">
-    <div className="absolute inset-0 -z-0 h-full w-full bg-white dark:bg-slate-900 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+    if (appView === AppView.Generator) {
+      return (
+        <GeneratorView
+          onGenerate={handleGenerateFlashcards}
+          isGenerating={isGenerating}
+          onError={handleGeneratorError}
+          decks={decks}
+          initialTargetDeckId={currentDeckId}
+          onBack={() => setAppView(AppView.Decks)}
+        />
+      );
+    }
 
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <span className="font-bold text-xl text-slate-800 dark:text-slate-100">Flashcards AI</span>
-          </div>
-          {/* Desktop Nav */}
-          <div className="hidden md:flex md:items-center md:gap-2">
-            <button onClick={() => setAppView(AppView.Decks)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-              Gerenciar Decks
-            </button>
-            <button onClick={() => handleGenerateRequest(null)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-              Gerar Flashcards
-            </button>
-            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
-            <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
-            <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
-            <HelpButton onClick={() => setIsHelpVisible(true)} />
-          </div>
-          {/* Mobile Nav */}
-          <div className="md:hidden flex items-center">
-            <HelpButton onClick={() => setIsHelpVisible(true)} />
-            <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="ml-2 p-2 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
-              <span className="sr-only">Abrir menu</span>
-              {isMenuOpen ? (
-                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-              ) : (
-                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </nav>
+    return renderDecksView();
+  };
 
-      {/* Mobile Menu Dropdown */}
-      {isMenuOpen && (
-        <div className="md:hidden" id="mobile-menu">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <button onClick={() => { setAppView(AppView.Decks); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-              Gerenciar Decks
-            </button>
-            <button onClick={() => { handleGenerateRequest(null); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-              Gerar Flashcards
-            </button>
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-2">
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 pl-3">Tamanho da Fonte:</span>
+  return (
+    <main className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 pt-24 pb-32 font-sans text-slate-900 bg-slate-50 dark:text-white dark:bg-slate-900 transition-colors duration-300 overflow-auto">
+      <div className="absolute inset-0 -z-0 h-full w-full bg-white dark:bg-slate-900 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <span className="font-bold text-xl text-slate-800 dark:text-slate-100">Flashcards AI</span>
+            </div>
+            {/* Desktop Nav */}
+            <div className="hidden md:flex md:items-center md:gap-2">
+              <button onClick={() => setAppView(AppView.Decks)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                Gerenciar Decks
+              </button>
+              <button onClick={() => handleGenerateRequest(null)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                Gerar Flashcards
+              </button>
+              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+              <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
               <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
+              <HelpButton onClick={() => setIsHelpVisible(true)} />
+            </div>
+            {/* Mobile Nav */}
+            <div className="md:hidden flex items-center">
+              <HelpButton onClick={() => setIsHelpVisible(true)} />
+              <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
+              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="ml-2 p-2 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
+                <span className="sr-only">Abrir menu</span>
+                {isMenuOpen ? (
+                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                ) : (
+                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        {/* Mobile Menu Dropdown */}
+        {isMenuOpen && (
+          <div className="md:hidden" id="mobile-menu">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+              <button onClick={() => { setAppView(AppView.Decks); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                Gerenciar Decks
+              </button>
+              <button onClick={() => { handleGenerateRequest(null); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                Gerar Flashcards
+              </button>
+              <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-2">
+                <span className="text-sm font-medium text-slate-500 dark:text-slate-400 pl-3">Tamanho da Fonte:</span>
+                <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
+              </div>
+            </div>
+          </div>
+        )}
+      </header>
+
+      <div className="z-10 w-full flex items-center justify-center my-10">
+        {renderContent()}
+      </div>
+
+      {isSelectionModeActive && selectedCardIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 p-4 border-t dark:border-slate-700 animate-fade-in-up">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                <span className="bg-cyan-600 text-white rounded-full px-3 py-1 mr-2">{selectedCardIds.size}</span>
+                selecionado(s)
+              </p>
+              <button onClick={handleSelectAllCards} className="text-sm font-semibold text-cyan-600 hover:underline">
+                Selecionar Todos
+              </button>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button onClick={() => setShowMoveMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 transition dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Mover</button>
+              <button onClick={() => setShowDeleteMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-red-500 text-white font-semibold rounded-lg shadow hover:bg-red-600 transition">Excluir</button>
+              <button onClick={handleExitSelectionMode} className="px-4 py-2 text-sm sm:text-base font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Concluído</button>
             </div>
           </div>
         </div>
       )}
-    </header>
-
-    <div className="z-10 w-full flex items-center justify-center my-10">
-      {renderContent()}
-    </div>
-
-    {isSelectionModeActive && selectedCardIds.size > 0 && (
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 p-4 border-t dark:border-slate-700 animate-fade-in-up">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-              <span className="bg-cyan-600 text-white rounded-full px-3 py-1 mr-2">{selectedCardIds.size}</span>
-              selecionado(s)
-            </p>
-            <button onClick={handleSelectAllCards} className="text-sm font-semibold text-cyan-600 hover:underline">
-              Selecionar Todos
-            </button>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => setShowMoveMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 transition dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Mover</button>
-            <button onClick={() => setShowDeleteMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-red-500 text-white font-semibold rounded-lg shadow hover:bg-red-600 transition">Excluir</button>
-            <button onClick={handleExitSelectionMode} className="px-4 py-2 text-sm sm:text-base font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Concluído</button>
-          </div>
-        </div>
-      </div>
-    )}
 
       {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
       {isSourceTextVisible && <SourceTextModal text={sourceText} onClose={() => setIsSourceTextVisible(false)} />}
-      {editingCard && <EditFlashcardModal card={editingCard} onSave={handleSaveChanges} onCancel={() => setEditingCard(null)} />}
+      {/* {editingCard && <EditFlashcardModal card={editingCard} onSave={handleSaveChanges} onCancel={() => setEditingCard(null)} />} */}
       {cardToMove && (
         <MoveFlashcardModal
           card={cardToMove}
@@ -1124,16 +1012,43 @@ return (
           aria-modal="true"
           aria-labelledby="delete-confirm-title"
         >
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md text-center border dark:border-slate-700">
-            <h2 id="delete-confirm-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Confirmar Exclusão</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
+            <h2 id="delete-confirm-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Excluir Deck</h2>
             <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Você tem certeza que deseja excluir o deck <span className="font-bold">"{deckToDelete.name}"</span>?
-              <br />
-              Todos os sub-decks e flashcards contidos nele serão permanentemente removidos.
+              Tem certeza que deseja excluir o deck "{deckToDelete.name}"? Esta ação não pode ser desfeita e excluirá todos os sub-decks e flashcards contidos nele.
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-end gap-4 mt-6">
               <button
                 onClick={() => setDeckToDelete(null)}
+                className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-sm hover:bg-red-700 transition"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteMultipleConfirm && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delete-multiple-confirm-title"
+        >
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
+            <h2 id="delete-multiple-confirm-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Excluir Flashcards</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Tem certeza que deseja excluir os {selectedCardIds.size} flashcards selecionados? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                onClick={() => setShowDeleteMultipleConfirm(false)}
                 className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
               >
                 Cancelar
@@ -1157,9 +1072,6 @@ return (
         >
           <form onSubmit={handleRenameSubmit} className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
             <h2 id="rename-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Renomear Deck</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Insira o novo nome para o deck "{deckToRename.name}".
-            </p>
             <input
               name="deckName"
               type="text"

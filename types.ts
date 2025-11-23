@@ -119,3 +119,19 @@ export interface FlashcardNote {
   created_at: string;
   updated_at: string;
 }
+
+// Simulations
+export interface Simulation {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  item_count?: number; // Optional property for UI display
+}
+
+export interface SimulationItem {
+  id: string;
+  simulation_id: string;
+  flashcard_id: string;
+  flashcard?: FlashcardData; // Optional property for joined data
+}

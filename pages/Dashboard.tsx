@@ -400,6 +400,13 @@ const Dashboard: React.FC = () => {
                         ✨ Gerar Flashcards
                     </button>
 
+                    <button
+                        onClick={() => navigate('/simulations')}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
+                    >
+                        📝 Modo Simulado
+                    </button>
+
                     {/* Dark Mode Toggle */}
                     <button
                         onClick={toggleTheme}
