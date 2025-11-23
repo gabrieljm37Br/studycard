@@ -1,0 +1,5 @@
+{
+  "name": "Gerador de Flashcards AI",
+  "description": "Crie flashcards de estudo instantaneamente a partir de qualquer bloco de texto usando o poder da IA.",
+  "requestFramePermissions": []
+}
