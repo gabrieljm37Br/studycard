@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { CardMode, FlashcardData, QACard, TrueFalseCard, MultipleChoiceCard, PracticalExampleCard } from '../types';
-import RichTextEditor from './RichTextEditor';
 
 const inputBaseClass = "w-full p-2 rounded-md shadow-inner focus:ring-2 focus:ring-cyan-500 focus:outline-none transition bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-slate-100";
 const labelClass = "block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1";
@@ -10,20 +9,22 @@ const QACardForm: React.FC<{ card: QACard, onChange: (updatedCard: QACard) => vo
     <>
         <div className={fieldGroupClass}>
             <label htmlFor="question" className={labelClass}>Pergunta</label>
-            <RichTextEditor
+            <textarea
                 value={card.question}
-                onChange={(val) => onChange({ ...card, question: val })}
-                className="min-h-[6rem]"
+                onChange={(e) => onChange({ ...card, question: e.target.value })}
                 placeholder="Digite a pergunta..."
+                className={inputBaseClass}
+                rows={3}
             />
         </div>
         <div className={fieldGroupClass}>
             <label htmlFor="answer" className={labelClass}>Resposta</label>
-            <RichTextEditor
+            <textarea
                 value={card.answer}
-                onChange={(val) => onChange({ ...card, answer: val })}
-                className="min-h-[8rem]"
+                onChange={(e) => onChange({ ...card, answer: e.target.value })}
                 placeholder="Digite a resposta..."
+                className={inputBaseClass}
+                rows={5}
             />
         </div>
     </>
@@ -33,11 +34,12 @@ const TrueFalseCardForm: React.FC<{ card: TrueFalseCard, onChange: (updatedCard:
     <>
         <div className={fieldGroupClass}>
             <label htmlFor="statement" className={labelClass}>Afirmação</label>
-            <RichTextEditor
+            <textarea
                 value={card.statement}
-                onChange={(val) => onChange({ ...card, statement: val })}
-                className="min-h-[6rem]"
+                onChange={(e) => onChange({ ...card, statement: e.target.value })}
                 placeholder="Digite a afirmação..."
+                className={inputBaseClass}
+                rows={3}
             />
         </div>
         <div className={fieldGroupClass}>
@@ -55,11 +57,12 @@ const TrueFalseCardForm: React.FC<{ card: TrueFalseCard, onChange: (updatedCard:
         </div>
         <div className={fieldGroupClass}>
             <label htmlFor="explanation" className={labelClass}>Explicação</label>
-            <RichTextEditor
+            <textarea
                 value={card.explanation}
-                onChange={(val) => onChange({ ...card, explanation: val })}
-                className="min-h-[7rem]"
-                placeholder="Digite a explicação (opcional)..."
+                onChange={(e) => onChange({ ...card, explanation: e.target.value })}
+                placeholder="Explicação (opcional)..."
+                className={inputBaseClass}
+                rows={3}
             />
         </div>
     </>
@@ -76,11 +79,12 @@ const MultipleChoiceCardForm: React.FC<{ card: MultipleChoiceCard, onChange: (up
         <>
             <div className={fieldGroupClass}>
                 <label htmlFor="mc-question" className={labelClass}>Pergunta</label>
-                <RichTextEditor
+                <textarea
                     value={card.question}
-                    onChange={(val) => onChange({ ...card, question: val })}
-                    className="min-h-[6rem]"
+                    onChange={(e) => onChange({ ...card, question: e.target.value })}
+                    className={inputBaseClass}
                     placeholder="Digite a pergunta..."
+                    rows={3}
                 />
             </div>
             <div className={fieldGroupClass}>
@@ -109,11 +113,12 @@ const MultipleChoiceCardForm: React.FC<{ card: MultipleChoiceCard, onChange: (up
             </div>
             <div className={fieldGroupClass}>
                 <label htmlFor="mc-explanation" className={labelClass}>Explicação</label>
-                <RichTextEditor
+                <textarea
                     value={card.explanation}
-                    onChange={(val) => onChange({ ...card, explanation: val })}
-                    className="min-h-[7rem]"
+                    onChange={(e) => onChange({ ...card, explanation: e.target.value })}
+                    className={inputBaseClass}
                     placeholder="Digite a explicação (opcional)..."
+                    rows={3}
                 />
             </div>
         </>
@@ -124,29 +129,32 @@ const PracticalExampleCardForm: React.FC<{ card: PracticalExampleCard, onChange:
     <>
         <div className={fieldGroupClass}>
             <label htmlFor="problem" className={labelClass}>Situação-Problema</label>
-            <RichTextEditor
+            <textarea
                 value={card.problem}
-                onChange={(val) => onChange({ ...card, problem: val })}
-                className="min-h-[7rem]"
-                placeholder="Descreva a situação-problema..."
+                onChange={(e) => onChange({ ...card, problem: e.target.value })}
+                placeholder="Descreva o problema ou cenário..."
+                className={inputBaseClass}
+                rows={4}
             />
         </div>
         <div className={fieldGroupClass}>
             <label htmlFor="question" className={labelClass}>Pergunta</label>
-            <RichTextEditor
+            <textarea
                 value={card.question}
-                onChange={(val) => onChange({ ...card, question: val })}
-                className="min-h-[7rem]"
+                onChange={(e) => onChange({ ...card, question: e.target.value })}
+                className={inputBaseClass}
                 placeholder="Digite a pergunta sobre o problema..."
+                rows={3}
             />
         </div>
         <div className={fieldGroupClass}>
             <label htmlFor="solution" className={labelClass}>Solução</label>
-            <RichTextEditor
+            <textarea
                 value={card.solution}
-                onChange={(val) => onChange({ ...card, solution: val })}
-                className="min-h-[10rem]"
-                placeholder="Digite a solução detalhada..."
+                onChange={(e) => onChange({ ...card, solution: e.target.value })}
+                placeholder="Solução detalhada..."
+                className={inputBaseClass}
+                rows={5}
             />
         </div>
     </>
