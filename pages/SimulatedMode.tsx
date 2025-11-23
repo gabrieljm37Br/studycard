@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import type { Deck, Simulation } from '../types';
+import { CardMode } from '../types';
 
 const SimulatedMode: React.FC = () => {
     const { user } = useAuth();
@@ -17,6 +18,7 @@ const SimulatedMode: React.FC = () => {
     const [questionCount, setQuestionCount] = useState<number>(10);
     const [availableDecks, setAvailableDecks] = useState<Deck[]>([]);
     const [isCreating, setIsCreating] = useState(false);
+    const [selectedCardModes, setSelectedCardModes] = useState<Set<CardMode>>(new Set(Object.values(CardMode)));
 
     useEffect(() => {
         if (user) {
@@ -65,7 +67,7 @@ const SimulatedMode: React.FC = () => {
 
     const handleCreateSimulation = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newSimTitle.trim() || selectedDeckIds.size === 0) return;
+        if (!newSimTitle.trim() || selectedDeckIds.size === 0 || selectedCardModes.size === 0) return;
 
         setIsCreating(true);
         try {
@@ -88,7 +90,8 @@ const SimulatedMode: React.FC = () => {
             const { data: cards, error: cardsError } = await supabase
                 .from('flashcards')
                 .select('id')
-                .in('deck_id', Array.from(selectedDeckIds));
+                .in('deck_id', Array.from(selectedDeckIds))
+                .in('mode', Array.from(selectedCardModes));
 
             if (cardsError) throw cardsError;
 
@@ -116,6 +119,7 @@ const SimulatedMode: React.FC = () => {
             setShowCreateModal(false);
             setNewSimTitle('');
             setSelectedDeckIds(new Set());
+            setSelectedCardModes(new Set(Object.values(CardMode)));
             setQuestionCount(10);
             loadSimulations();
 
@@ -151,6 +155,16 @@ const SimulatedMode: React.FC = () => {
             newSelection.add(deckId);
         }
         setSelectedDeckIds(newSelection);
+    };
+
+    const toggleCardMode = (mode: CardMode) => {
+        const newSelection = new Set(selectedCardModes);
+        if (newSelection.has(mode)) {
+            newSelection.delete(mode);
+        } else {
+            newSelection.add(mode);
+        }
+        setSelectedCardModes(newSelection);
     };
 
     return (
@@ -273,6 +287,38 @@ const SimulatedMode: React.FC = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Tipos de Flashcards
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {Object.values(CardMode).map((mode) => (
+                                                <div
+                                                    key={mode}
+                                                    onClick={() => toggleCardMode(mode)}
+                                                    className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 transition-colors border ${selectedCardModes.has(mode)
+                                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600'
+                                                        }`}
+                                                >
+                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${selectedCardModes.has(mode)
+                                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                        : 'border-gray-400'
+                                                        }`}>
+                                                        {selectedCardModes.has(mode) && '✓'}
+                                                    </div>
+                                                    <span className="text-gray-800 dark:text-gray-200 text-sm">
+                                                        {mode === CardMode.QA ? 'Pergunta e Resposta' :
+                                                            mode === CardMode.TrueFalse ? 'Verdadeiro ou Falso' :
+                                                                mode === CardMode.MultipleChoice ? 'Múltipla Escolha' :
+                                                                    mode === CardMode.PracticalExample ? 'Exemplo Prático' :
+                                                                        mode === CardMode.FillInTheBlank ? 'Lacunas' : mode}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Selecione os Decks ({selectedDeckIds.size} selecionados)
                                         </label>
                                         <div className="border-2 border-gray-200 dark:border-gray-600 rounded-lg max-h-60 overflow-y-auto p-2 space-y-1">
@@ -284,13 +330,13 @@ const SimulatedMode: React.FC = () => {
                                                         key={deck.id}
                                                         onClick={() => toggleDeckSelection(deck.id)}
                                                         className={`p-3 rounded-lg cursor-pointer flex items-center gap-3 transition-colors ${selectedDeckIds.has(deck.id)
-                                                                ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700'
-                                                                : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
+                                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700'
+                                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                                             }`}
                                                     >
                                                         <div className={`w-5 h-5 rounded border flex items-center justify-center ${selectedDeckIds.has(deck.id)
-                                                                ? 'bg-indigo-600 border-indigo-600 text-white'
-                                                                : 'border-gray-400'
+                                                            ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                            : 'border-gray-400'
                                                             }`}>
                                                             {selectedDeckIds.has(deck.id) && '✓'}
                                                         </div>
@@ -314,7 +360,7 @@ const SimulatedMode: React.FC = () => {
                                 <button
                                     type="submit"
                                     form="create-sim-form"
-                                    disabled={isCreating || !newSimTitle.trim() || selectedDeckIds.size === 0}
+                                    disabled={isCreating || !newSimTitle.trim() || selectedDeckIds.size === 0 || selectedCardModes.size === 0}
                                     className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {isCreating ? (
