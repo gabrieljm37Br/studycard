@@ -18,17 +18,28 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     const contentEditableRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
+    // Helper to unescape formatting tags if they were saved as text
+    const unescapeFormatting = (html: string) => {
+        return html
+            .replace(/&lt;b&gt;/g, '<b>').replace(/&lt;\/b&gt;/g, '</b>')
+            .replace(/&lt;i&gt;/g, '<i>').replace(/&lt;\/i&gt;/g, '</i>')
+            .replace(/&lt;u&gt;/g, '<u>').replace(/&lt;\/u&gt;/g, '</u>')
+            .replace(/&lt;strong&gt;/g, '<strong>').replace(/&lt;\/strong&gt;/g, '</strong>')
+            .replace(/&lt;em&gt;/g, '<em>').replace(/&lt;\/em&gt;/g, '</em>');
+    };
+
     // Sync value to contentEditable when value changes externally
     useEffect(() => {
-        if (contentEditableRef.current && contentEditableRef.current.innerHTML !== value) {
-            // Only update if the content is actually different to avoid cursor jumping
-            // This is a simple check; for more complex apps, we might need better diffing
-            // But for this use case, it should be enough if we don't update while focused/typing aggressively
-            if (!isFocused) {
-                contentEditableRef.current.innerHTML = value;
-            } else if (value === '') {
-                // Special case for clearing
-                contentEditableRef.current.innerHTML = '';
+        if (contentEditableRef.current) {
+            const processedValue = unescapeFormatting(value);
+            if (contentEditableRef.current.innerHTML !== processedValue) {
+                // Only update if the content is actually different to avoid cursor jumping
+                if (!isFocused) {
+                    contentEditableRef.current.innerHTML = processedValue;
+                } else if (value === '') {
+                    // Special case for clearing
+                    contentEditableRef.current.innerHTML = '';
+                }
             }
         }
     }, [value, isFocused]);
