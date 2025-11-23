@@ -9,6 +9,7 @@ const Login: React.FC = () => {
     const [fullName, setFullName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const { signIn, signUp } = useAuth();
     const navigate = useNavigate();
 
@@ -136,24 +137,49 @@ const Login: React.FC = () => {
                         }}>
                             Senha
                         </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            minLength={6}
-                            style={{
-                                width: '100%',
-                                padding: '12px',
-                                border: '2px solid #e0e0e0',
-                                borderRadius: '8px',
-                                fontSize: '16px',
-                                transition: 'border-color 0.3s',
-                                outline: 'none'
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                            onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-                        />
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                minLength={6}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    paddingRight: '45px',
+                                    border: '2px solid #e0e0e0',
+                                    borderRadius: '8px',
+                                    fontSize: '16px',
+                                    transition: 'border-color 0.3s',
+                                    outline: 'none'
+                                }}
+                                onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                                onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: '20px',
+                                    padding: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#666'
+                                }}
+                                title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                            >
+                                {showPassword ? '🙈' : '👁️'}
+                            </button>
+                        </div>
                     </div>
 
                     {error && (
