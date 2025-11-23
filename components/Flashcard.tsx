@@ -172,7 +172,6 @@ const PracticalExampleCardView: React.FC<{ card: PracticalExampleCard, phase: nu
 
 interface FlashcardProps {
   card: FlashcardData;
-  onEdit: () => void;
   onDelete?: () => void;
   onMove?: () => void;
   isSelectionModeActive?: boolean;
@@ -184,7 +183,6 @@ interface FlashcardProps {
 
 const Flashcard: React.FC<FlashcardProps> = ({
   card,
-  onEdit,
   onDelete,
   onMove,
   isSelectionModeActive,
@@ -277,7 +275,6 @@ const Flashcard: React.FC<FlashcardProps> = ({
       </div>
       {!isStudyMode && !isSelectionModeActive && (
         <div className="absolute top-2 right-2 z-20 flex opacity-0 group-hover:opacity-100 transition-opacity gap-1">
-          <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="p-2 rounded-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700" aria-label="Editar card"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2-2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg></button>
           <button onClick={(e) => { e.stopPropagation(); onMove?.(); }} className="p-2 rounded-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700" aria-label="Mover card"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.428A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg></button>
           <button onClick={(e) => { e.stopPropagation(); onDelete?.(); }} className="p-2 rounded-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Excluir card"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
         </div>

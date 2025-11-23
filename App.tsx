@@ -3,7 +3,6 @@ import { AppView, AppState, CardMode, FeedbackStatus, Deck } from '../types';
 import type { FlashcardData } from '../types';
 import { generateFlashcards } from './services/geminiService';
 import Flashcard from './components/Flashcard';
-import EditFlashcardModal from './components/EditFlashcardModal';
 import SourceTextModal from './components/SourceTextModal';
 import MoveFlashcardModal from './components/MoveFlashcardModal';
 import MoveMultipleFlashcardsModal from './components/MoveMultipleFlashcardsModal';
@@ -254,11 +253,10 @@ const GeneratorView: React.FC<{
 const StudyView: React.FC<{
   cards: FlashcardData[],
   onExit: () => void,
-  onStartEdit: (card: FlashcardData) => void,
   onUpdateFeedback: (cardId: string, status: FeedbackStatus) => void,
   size: StudySize,
   onSizeChange: (size: StudySize) => void
-}> = ({ cards, onExit, onStartEdit, onUpdateFeedback, size, onSizeChange }) => {
+}> = ({ cards, onExit, onUpdateFeedback, size, onSizeChange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [practicalExamplePhase, setPracticalExamplePhase] = useState(0);
@@ -351,7 +349,6 @@ const StudyView: React.FC<{
         <Flashcard
           key={currentCard.id}
           card={currentCard}
-          onEdit={() => onStartEdit(currentCard)}
           onFlipStateChange={setIsFlipped}
           onPhaseChange={setPracticalExamplePhase}
         />
@@ -414,7 +411,6 @@ const App: React.FC = () => {
   const [deckPath, setDeckPath] = useState<string[]>([]);
   const [targetDeckId, setTargetDeckId] = useState<string | null>(null);
 
-  const [editingCard, setEditingCard] = useState<FlashcardData | null>(null);
   const [cardToMove, setCardToMove] = useState<FlashcardData | null>(null);
   const [isSourceTextVisible, setIsSourceTextVisible] = useState<boolean>(false);
   const [sourceText, setSourceText] = useState<string>('');
@@ -697,541 +693,536 @@ const App: React.FC = () => {
       setError(err.message || 'Um erro inesperado ocorreu.');
       setAppState(AppState.Error);
     }
-  };
+  }
+};
 
-  const handleSaveChanges = useCallback((updatedCard: FlashcardData) => {
-    setFlashcards(prev => prev.map(c => (c.id === updatedCard.id ? updatedCard : c)));
-    setEditingCard(null);
-  }, []);
+const handleDeleteCard = useCallback((cardId: string) => {
+  setFlashcards(prev => prev.filter(c => c.id !== cardId));
+}, []);
 
-  const handleDeleteCard = useCallback((cardId: string) => {
-    setFlashcards(prev => prev.filter(c => c.id !== cardId));
-  }, []);
+const handleConfirmCardMove = (newDeckId: string) => {
+  if (!cardToMove) return;
+  setFlashcards(prev => prev.map(c =>
+    c.id === cardToMove.id ? { ...c, deckId: newDeckId } : c
+  ));
+  setCardToMove(null);
+};
 
-  const handleConfirmCardMove = (newDeckId: string) => {
-    if (!cardToMove) return;
-    setFlashcards(prev => prev.map(c =>
-      c.id === cardToMove.id ? { ...c, deckId: newDeckId } : c
-    ));
-    setCardToMove(null);
-  };
+const handleUpdateFeedback = useCallback((cardId: string, status: FeedbackStatus) => {
+  setFlashcards(prev => prev.map(c => (c.id === cardId ? { ...c, feedback: status } : c)));
+}, []);
 
-  const handleUpdateFeedback = useCallback((cardId: string, status: FeedbackStatus) => {
-    setFlashcards(prev => prev.map(c => (c.id === cardId ? { ...c, feedback: status } : c)));
-  }, []);
+const handleErrorReset = () => {
+  setError(null);
+  setAppState(AppState.Idle);
+  setAppView(AppView.Decks);
+};
 
-  const handleErrorReset = () => {
-    setError(null);
-    setAppState(AppState.Idle);
-    setAppView(AppView.Decks);
-  };
-
-  const handleToggleCardSelection = (cardId: string) => {
-    setSelectedCardIds(prev => {
-      const newSelection = new Set(prev);
-      if (newSelection.has(cardId)) {
-        newSelection.delete(cardId);
-      } else {
-        newSelection.add(cardId);
-      }
-      // If the last card is deselected, exit selection mode.
-      if (isSelectionModeActive && newSelection.size === 0) {
-        setIsSelectionModeActive(false);
-      }
-      return newSelection;
-    });
-  };
-
-  const handleSelectAllCards = () => {
-    setSelectedCardIds(new Set(filteredCardsInDeck.map(c => c.id)));
-  };
-
-  const handleExitSelectionMode = () => {
-    setSelectedCardIds(new Set());
-    setIsSelectionModeActive(false);
-  };
-
-  const handleConfirmBulkDelete = () => {
-    setFlashcards(prev => prev.filter(c => !selectedCardIds.has(c.id)));
-    handleExitSelectionMode();
-    setShowDeleteMultipleConfirm(false);
-  };
-
-  const handleConfirmBulkMove = (newDeckId: string) => {
-    setFlashcards(prev => prev.map(c =>
-      selectedCardIds.has(c.id) ? { ...c, deckId: newDeckId } : c
-    ));
-    handleExitSelectionMode();
-    setShowMoveMultipleConfirm(false);
-  };
-
-  // --- Render Logic ---
-  const renderContent = () => {
-    if (appState === AppState.Error) {
-      return <ErrorView error={error!} onReset={handleErrorReset} />;
+const handleToggleCardSelection = (cardId: string) => {
+  setSelectedCardIds(prev => {
+    const newSelection = new Set(prev);
+    if (newSelection.has(cardId)) {
+      newSelection.delete(cardId);
+    } else {
+      newSelection.add(cardId);
     }
-
-    if (appState === AppState.Studying) {
-      return <StudyView cards={studyCards} onExit={() => setAppState(AppState.Idle)} onStartEdit={setEditingCard} onUpdateFeedback={handleUpdateFeedback} size={studySize} onSizeChange={setStudySize} />;
+    // If the last card is deselected, exit selection mode.
+    if (isSelectionModeActive && newSelection.size === 0) {
+      setIsSelectionModeActive(false);
     }
+    return newSelection;
+  });
+};
 
-    if (appView === AppView.Generator) {
-      return <GeneratorView onGenerate={handleGenerateAndAddCards} isGenerating={appState === AppState.Generating} onError={(msg) => { setError(msg); setAppState(AppState.Error); }} decks={decks} initialTargetDeckId={targetDeckId} onBack={() => setAppView(AppView.Decks)} />;
-    }
+const handleSelectAllCards = () => {
+  setSelectedCardIds(new Set(filteredCardsInDeck.map(c => c.id)));
+};
 
-    // Default to Decks view
-    return (
-      <div className="w-full max-w-7xl mx-auto px-4">
-        {/* Breadcrumbs */}
-        <nav className="mb-6 text-2xl text-slate-500 dark:text-slate-400 flex items-center flex-wrap gap-2">
-          <button onClick={navigateToRoot} className="hover:underline flex items-center gap-1.5 transition-colors hover:text-slate-800 dark:hover:text-slate-200" title="Ir para o início">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-            </svg>
-            <span>Todos os Decks</span>
-          </button>
-          {pathDecks.map((deck, i) => (
-            <React.Fragment key={deck.id}>
-              <span>/</span>
-              <button onClick={() => navigateToPath(i)} className="hover:underline">{deck.name}</button>
-            </React.Fragment>
-          ))}
-        </nav>
+const handleExitSelectionMode = () => {
+  setSelectedCardIds(new Set());
+  setIsSelectionModeActive(false);
+};
 
-        {/* Header and Actions */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3">
-            <span>{currentDeck?.name || "Meus Decks"}</span>
-            {currentDeck && !isSelectionModeActive && (
-              <button onClick={() => handleRequestRename(currentDeck)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label="Renomear deck">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                  <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2-2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
-                </svg>
-              </button>
-            )}
-          </h2>
-          <div className="flex gap-2 sm:gap-4 flex-wrap">
-            {!isSelectionModeActive && (
-              <>
-                <button onClick={() => handleGenerateRequest(currentDeckId)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 transition dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
-                  Gerar Flashcards
-                </button>
-                {cardsInDeck.length > 0 && (
-                  <button onClick={() => setIsSelectionModeActive(true)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 transition dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
-                    Selecionar
-                  </button>
-                )}
-                <button onClick={() => setAppState(AppState.Studying)} disabled={getRecursiveCardIds(currentDeckId).length === 0} className="px-4 py-2 text-sm sm:text-base bg-cyan-600 text-white font-semibold rounded-lg shadow hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed">
-                  Iniciar Estudo
-                </button>
-                {currentDeck && (
-                  <>
-                    <button onClick={() => handleRequestMove(currentDeck)} className="px-4 py-2 text-sm sm:text-base bg-slate-100 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 transition dark:bg-slate-700/80 dark:text-slate-300 dark:hover:bg-slate-700">
-                      Mover Deck
-                    </button>
-                    <button onClick={() => handleRequestDelete(currentDeck)} className="px-4 py-2 text-sm sm:text-base bg-red-100 text-red-700 font-semibold rounded-lg shadow hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 transition dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60">
-                      Excluir Deck
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+const handleConfirmBulkDelete = () => {
+  setFlashcards(prev => prev.filter(c => !selectedCardIds.has(c.id)));
+  handleExitSelectionMode();
+  setShowDeleteMultipleConfirm(false);
+};
 
-        {/* Search Input */}
-        <div className="mb-8">
-          <div className="relative">
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar decks ou flashcards neste local..."
-              className="w-full p-3 pl-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition"
-            />
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-        </div>
+const handleConfirmBulkMove = (newDeckId: string) => {
+  setFlashcards(prev => prev.map(c =>
+    selectedCardIds.has(c.id) ? { ...c, deckId: newDeckId } : c
+  ));
+  handleExitSelectionMode();
+  setShowMoveMultipleConfirm(false);
+};
 
-        {/* Sub-Decks */}
-        {(filteredSubDecks.length > 0 || !searchQuery.trim()) && (
-          <section className="mb-12">
-            <h3 className="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-300">Sub-Decks</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredSubDecks.map(deck => {
-                const stats = getDeckStats(deck.id);
-                const totalCardsCount = getRecursiveCardIds(deck.id).length;
-                const answeredCardsCount = stats.total;
-                const percentageAnswered = totalCardsCount > 0 ? Math.round((answeredCardsCount / totalCardsCount) * 100) : 0;
-
-                let performanceColorClass = '';
-                let performanceTitle = '';
-
-                if (stats.total > 0) {
-                  const maxStat = Math.max(stats.correct, stats.almost, stats.incorrect);
-
-                  if (maxStat > 0) {
-                    const topStats = [];
-                    if (stats.correct === maxStat) topStats.push('correct');
-                    if (stats.almost === maxStat) topStats.push('almost');
-                    if (stats.incorrect === maxStat) topStats.push('incorrect');
-
-                    if (topStats.length === 1) {
-                      // No tie
-                      if (topStats[0] === 'correct') {
-                        performanceColorClass = 'bg-green-500';
-                      } else if (topStats[0] === 'almost') {
-                        performanceColorClass = 'bg-yellow-500';
-                      } else { // incorrect
-                        performanceColorClass = 'bg-red-500';
-                      }
-                    } else {
-                      // Tie-breaking rules
-                      const hasCorrect = topStats.includes('correct');
-                      const hasAlmost = topStats.includes('almost');
-                      const hasIncorrect = topStats.includes('incorrect');
-
-                      if (hasIncorrect && hasAlmost && hasCorrect) {
-                        // Three-way tie: Correct, Almost, Incorrect -> Yellow
-                        performanceColorClass = 'bg-yellow-500';
-                      } else if (hasIncorrect && hasAlmost) {
-                        // Tie: Almost, Incorrect -> Red
-                        performanceColorClass = 'bg-red-500';
-                      } else if (hasCorrect && hasAlmost) {
-                        // Tie: Almost, Correct -> Green
-                        performanceColorClass = 'bg-green-500';
-                      } else if (hasCorrect && hasIncorrect) {
-                        // Tie: Correct, Incorrect -> Yellow
-                        performanceColorClass = 'bg-yellow-500';
-                      }
-                    }
-                  }
-
-                  performanceTitle = `Desempenho: ${stats.correct} acerto(s), ${stats.almost} quase, ${stats.incorrect} erro(s).`;
-                }
-
-                return (
-                  <div key={deck.id} className="relative group">
-                    <button onClick={() => navigateToDeck(deck.id)} className="w-full h-full p-4 bg-white dark:bg-slate-800 rounded-lg shadow hover:shadow-lg transition-shadow text-left border dark:border-slate-700 flex flex-col justify-between">
-                      <div>
-                        <span className="text-2xl">📁</span>
-                        <p className="mt-2 font-bold text-slate-800 dark:text-slate-100 break-words">{deck.name}</p>
-                      </div>
-                      <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center flex-wrap">
-                        <span>{totalCardsCount} card{totalCardsCount !== 1 ? 's' : ''}</span>
-                        {totalCardsCount > 0 && (
-                          <>
-                            <span className="mx-1.5 text-slate-300 dark:text-slate-600">•</span>
-                            <span>{percentageAnswered}% respondido</span>
-                          </>
-                        )}
-                      </div>
-                    </button>
-                    <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
-                      {performanceColorClass && (
-                        <span title={performanceTitle} className={`w-4 h-4 rounded-full ${performanceColorClass} shrink-0`}></span>
-                      )}
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenMenuDeckId(openMenuDeckId === deck.id ? null : deck.id)}
-                          className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
-                          aria-label={`Opções para o deck ${deck.name}`}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
-                        </button>
-                        {openMenuDeckId === deck.id && (
-                          <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20"
-                            onMouseLeave={() => setOpenMenuDeckId(null)}>
-                            <div className="py-1" role="menu" aria-orientation="vertical">
-                              <button onClick={() => { handleRequestRename(deck); setOpenMenuDeckId(null); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600" role="menuitem">Renomear</button>
-                              <button onClick={() => { handleRequestMove(deck); setOpenMenuDeckId(null); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600" role="menuitem">Mover</button>
-                              <button onClick={() => { handleRequestDelete(deck); setOpenMenuDeckId(null); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" role="menuitem">Excluir</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              {!searchQuery.trim() && (
-                <form onSubmit={(e) => { e.preventDefault(); handleAddDeck(e.currentTarget.deckName.value); e.currentTarget.reset(); }} className="p-4 bg-slate-100 dark:bg-slate-800/50 rounded-lg flex items-center gap-2 border border-dashed dark:border-slate-700">
-                  <input name="deckName" type="text" placeholder="Novo deck..." className="w-full bg-transparent focus:outline-none text-slate-800 dark:text-slate-200" />
-                  <button type="submit" className="px-3 py-1 bg-cyan-600 text-white text-sm font-bold rounded-md hover:bg-cyan-500">+</button>
-                </form>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* Flashcards in current deck */}
-        {(filteredCardsInDeck.length > 0 || !searchQuery.trim()) && (
-          <section>
-            <h3 className="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-300">Flashcards</h3>
-            {filteredCardsInDeck.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredCardsInDeck.map(card => (
-                  <Flashcard
-                    key={card.id}
-                    card={card}
-                    onEdit={() => setEditingCard(card)}
-                    onDelete={() => handleDeleteCard(card.id)}
-                    onMove={() => setCardToMove(card)}
-                    isSelectionModeActive={isSelectionModeActive}
-                    isSelected={selectedCardIds.has(card.id)}
-                    onToggleSelection={handleToggleCardSelection}
-                  />
-                ))}
-              </div>
-            ) : (!searchQuery.trim() && <p className="text-slate-500 dark:text-slate-400">Nenhum flashcard neste deck. Gere novos ou mova-os de outros decks.</p>)}
-          </section>
-        )}
-
-        {searchQuery.trim() && filteredSubDecks.length === 0 && filteredCardsInDeck.length === 0 && (
-          <div className="text-center py-16">
-            <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-16 w-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <h3 className="text-2xl font-semibold text-slate-700 dark:text-slate-300 mt-4">Nenhum resultado encontrado</h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-2">Tente uma busca diferente para encontrar seus decks ou flashcards.</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const handleRenameSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const newName = (e.currentTarget.elements.namedItem('deckName') as HTMLInputElement).value;
-    handleConfirmRename(newName);
-  };
-
-  const handleMoveSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const newParentId = (e.currentTarget.elements.namedItem('deckLocation') as HTMLSelectElement).value;
-    handleConfirmMove(newParentId === 'root' ? null : newParentId);
+// --- Render Logic ---
+const renderContent = () => {
+  if (appState === AppState.Error) {
+    return <ErrorView error={error!} onReset={handleErrorReset} />;
   }
 
+  if (appState === AppState.Studying) {
+    return <StudyView cards={studyCards} onExit={() => setAppState(AppState.Idle)} onUpdateFeedback={handleUpdateFeedback} size={studySize} onSizeChange={setStudySize} />;
+  }
+
+  if (appView === AppView.Generator) {
+    return <GeneratorView onGenerate={handleGenerateAndAddCards} isGenerating={appState === AppState.Generating} onError={(msg) => { setError(msg); setAppState(AppState.Error); }} decks={decks} initialTargetDeckId={targetDeckId} onBack={() => setAppView(AppView.Decks)} />;
+  }
+
+  // Default to Decks view
   return (
-    <main className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 pt-24 pb-32 font-sans text-slate-900 bg-slate-50 dark:text-white dark:bg-slate-900 transition-colors duration-300 overflow-auto">
-      <div className="absolute inset-0 -z-0 h-full w-full bg-white dark:bg-slate-900 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+    <div className="w-full max-w-7xl mx-auto px-4">
+      {/* Breadcrumbs */}
+      <nav className="mb-6 text-2xl text-slate-500 dark:text-slate-400 flex items-center flex-wrap gap-2">
+        <button onClick={navigateToRoot} className="hover:underline flex items-center gap-1.5 transition-colors hover:text-slate-800 dark:hover:text-slate-200" title="Ir para o início">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+          </svg>
+          <span>Todos os Decks</span>
+        </button>
+        {pathDecks.map((deck, i) => (
+          <React.Fragment key={deck.id}>
+            <span>/</span>
+            <button onClick={() => navigateToPath(i)} className="hover:underline">{deck.name}</button>
+          </React.Fragment>
+        ))}
+      </nav>
 
-      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <span className="font-bold text-xl text-slate-800 dark:text-slate-100">Flashcards AI</span>
-            </div>
-            {/* Desktop Nav */}
-            <div className="hidden md:flex md:items-center md:gap-2">
-              <button onClick={() => setAppView(AppView.Decks)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                Gerenciar Decks
-              </button>
-              <button onClick={() => handleGenerateRequest(null)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+      {/* Header and Actions */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+        <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3">
+          <span>{currentDeck?.name || "Meus Decks"}</span>
+          {currentDeck && !isSelectionModeActive && (
+            <button onClick={() => handleRequestRename(currentDeck)} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" aria-label="Renomear deck">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
+                <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2-2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </h2>
+        <div className="flex gap-2 sm:gap-4 flex-wrap">
+          {!isSelectionModeActive && (
+            <>
+              <button onClick={() => handleGenerateRequest(currentDeckId)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 transition dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
                 Gerar Flashcards
               </button>
-              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
-              <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
-              <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
-              <HelpButton onClick={() => setIsHelpVisible(true)} />
-            </div>
-            {/* Mobile Nav */}
-            <div className="md:hidden flex items-center">
-              <HelpButton onClick={() => setIsHelpVisible(true)} />
-              <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="ml-2 p-2 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
-                <span className="sr-only">Abrir menu</span>
-                {isMenuOpen ? (
-                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                ) : (
-                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                )}
+              {cardsInDeck.length > 0 && (
+                <button onClick={() => setIsSelectionModeActive(true)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-400 transition dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
+                  Selecionar
+                </button>
+              )}
+              <button onClick={() => setAppState(AppState.Studying)} disabled={getRecursiveCardIds(currentDeckId).length === 0} className="px-4 py-2 text-sm sm:text-base bg-cyan-600 text-white font-semibold rounded-lg shadow hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed">
+                Iniciar Estudo
               </button>
-            </div>
-          </div>
-        </nav>
-
-        {/* Mobile Menu Dropdown */}
-        {isMenuOpen && (
-          <div className="md:hidden" id="mobile-menu">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <button onClick={() => { setAppView(AppView.Decks); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                Gerenciar Decks
-              </button>
-              <button onClick={() => { handleGenerateRequest(null); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-                Gerar Flashcards
-              </button>
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-2">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400 pl-3">Tamanho da Fonte:</span>
-                <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
-      <div className="z-10 w-full flex items-center justify-center my-10">
-        {renderContent()}
+              {currentDeck && (
+                <>
+                  <button onClick={() => handleRequestMove(currentDeck)} className="px-4 py-2 text-sm sm:text-base bg-slate-100 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 transition dark:bg-slate-700/80 dark:text-slate-300 dark:hover:bg-slate-700">
+                    Mover Deck
+                  </button>
+                  <button onClick={() => handleRequestDelete(currentDeck)} className="px-4 py-2 text-sm sm:text-base bg-red-100 text-red-700 font-semibold rounded-lg shadow hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300 transition dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60">
+                    Excluir Deck
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {isSelectionModeActive && selectedCardIds.size > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 p-4 border-t dark:border-slate-700 animate-fade-in-up">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-4">
-              <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                <span className="bg-cyan-600 text-white rounded-full px-3 py-1 mr-2">{selectedCardIds.size}</span>
-                selecionado(s)
-              </p>
-              <button onClick={handleSelectAllCards} className="text-sm font-semibold text-cyan-600 hover:underline">
-                Selecionar Todos
-              </button>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <button onClick={() => setShowMoveMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 transition dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Mover</button>
-              <button onClick={() => setShowDeleteMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-red-500 text-white font-semibold rounded-lg shadow hover:bg-red-600 transition">Excluir</button>
-              <button onClick={handleExitSelectionMode} className="px-4 py-2 text-sm sm:text-base font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Concluído</button>
-            </div>
+      {/* Search Input */}
+      <div className="mb-8">
+        <div className="relative">
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar decks ou flashcards neste local..."
+            className="w-full p-3 pl-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition"
+          />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
           </div>
         </div>
+      </div>
+
+      {/* Sub-Decks */}
+      {(filteredSubDecks.length > 0 || !searchQuery.trim()) && (
+        <section className="mb-12">
+          <h3 className="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-300">Sub-Decks</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredSubDecks.map(deck => {
+              const stats = getDeckStats(deck.id);
+              const totalCardsCount = getRecursiveCardIds(deck.id).length;
+              const answeredCardsCount = stats.total;
+              const percentageAnswered = totalCardsCount > 0 ? Math.round((answeredCardsCount / totalCardsCount) * 100) : 0;
+
+              let performanceColorClass = '';
+              let performanceTitle = '';
+
+              if (stats.total > 0) {
+                const maxStat = Math.max(stats.correct, stats.almost, stats.incorrect);
+
+                if (maxStat > 0) {
+                  const topStats = [];
+                  if (stats.correct === maxStat) topStats.push('correct');
+                  if (stats.almost === maxStat) topStats.push('almost');
+                  if (stats.incorrect === maxStat) topStats.push('incorrect');
+
+                  if (topStats.length === 1) {
+                    // No tie
+                    if (topStats[0] === 'correct') {
+                      performanceColorClass = 'bg-green-500';
+                    } else if (topStats[0] === 'almost') {
+                      performanceColorClass = 'bg-yellow-500';
+                    } else { // incorrect
+                      performanceColorClass = 'bg-red-500';
+                    }
+                  } else {
+                    // Tie-breaking rules
+                    const hasCorrect = topStats.includes('correct');
+                    const hasAlmost = topStats.includes('almost');
+                    const hasIncorrect = topStats.includes('incorrect');
+
+                    if (hasIncorrect && hasAlmost && hasCorrect) {
+                      // Three-way tie: Correct, Almost, Incorrect -> Yellow
+                      performanceColorClass = 'bg-yellow-500';
+                    } else if (hasIncorrect && hasAlmost) {
+                      // Tie: Almost, Incorrect -> Red
+                      performanceColorClass = 'bg-red-500';
+                    } else if (hasCorrect && hasAlmost) {
+                      // Tie: Almost, Correct -> Green
+                      performanceColorClass = 'bg-green-500';
+                    } else if (hasCorrect && hasIncorrect) {
+                      // Tie: Correct, Incorrect -> Yellow
+                      performanceColorClass = 'bg-yellow-500';
+                    }
+                  }
+                }
+
+                performanceTitle = `Desempenho: ${stats.correct} acerto(s), ${stats.almost} quase, ${stats.incorrect} erro(s).`;
+              }
+
+              return (
+                <div key={deck.id} className="relative group">
+                  <button onClick={() => navigateToDeck(deck.id)} className="w-full h-full p-4 bg-white dark:bg-slate-800 rounded-lg shadow hover:shadow-lg transition-shadow text-left border dark:border-slate-700 flex flex-col justify-between">
+                    <div>
+                      <span className="text-2xl">📁</span>
+                      <p className="mt-2 font-bold text-slate-800 dark:text-slate-100 break-words">{deck.name}</p>
+                    </div>
+                    <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center flex-wrap">
+                      <span>{totalCardsCount} card{totalCardsCount !== 1 ? 's' : ''}</span>
+                      {totalCardsCount > 0 && (
+                        <>
+                          <span className="mx-1.5 text-slate-300 dark:text-slate-600">•</span>
+                          <span>{percentageAnswered}% respondido</span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+                    {performanceColorClass && (
+                      <span title={performanceTitle} className={`w-4 h-4 rounded-full ${performanceColorClass} shrink-0`}></span>
+                    )}
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenMenuDeckId(openMenuDeckId === deck.id ? null : deck.id)}
+                        className="p-2 rounded-full text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700"
+                        aria-label={`Opções para o deck ${deck.name}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
+                      </button>
+                      {openMenuDeckId === deck.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-700 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20"
+                          onMouseLeave={() => setOpenMenuDeckId(null)}>
+                          <div className="py-1" role="menu" aria-orientation="vertical">
+                            <button onClick={() => { handleRequestRename(deck); setOpenMenuDeckId(null); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600" role="menuitem">Renomear</button>
+                            <button onClick={() => { handleRequestMove(deck); setOpenMenuDeckId(null); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600" role="menuitem">Mover</button>
+                            <button onClick={() => { handleRequestDelete(deck); setOpenMenuDeckId(null); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" role="menuitem">Excluir</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {!searchQuery.trim() && (
+              <form onSubmit={(e) => { e.preventDefault(); handleAddDeck(e.currentTarget.deckName.value); e.currentTarget.reset(); }} className="p-4 bg-slate-100 dark:bg-slate-800/50 rounded-lg flex items-center gap-2 border border-dashed dark:border-slate-700">
+                <input name="deckName" type="text" placeholder="Novo deck..." className="w-full bg-transparent focus:outline-none text-slate-800 dark:text-slate-200" />
+                <button type="submit" className="px-3 py-1 bg-cyan-600 text-white text-sm font-bold rounded-md hover:bg-cyan-500">+</button>
+              </form>
+            )}
+          </div>
+        </section>
       )}
 
-      {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
-      {isSourceTextVisible && <SourceTextModal text={sourceText} onClose={() => setIsSourceTextVisible(false)} />}
-      {editingCard && <EditFlashcardModal card={editingCard} onSave={handleSaveChanges} onCancel={() => setEditingCard(null)} />}
-      {cardToMove && (
-        <MoveFlashcardModal
-          card={cardToMove}
-          decks={decks}
-          onConfirm={handleConfirmCardMove}
-          onCancel={() => setCardToMove(null)}
-        />
+      {/* Flashcards in current deck */}
+      {(filteredCardsInDeck.length > 0 || !searchQuery.trim()) && (
+        <section>
+          <h3 className="text-xl font-semibold mb-4 text-slate-700 dark:text-slate-300">Flashcards</h3>
+          {filteredCardsInDeck.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCardsInDeck.map(card => (
+                <Flashcard
+                  key={card.id}
+                  card={card}
+                  onEdit={() => setEditingCard(card)}
+                  onDelete={() => handleDeleteCard(card.id)}
+                  onMove={() => setCardToMove(card)}
+                  isSelectionModeActive={isSelectionModeActive}
+                  isSelected={selectedCardIds.has(card.id)}
+                  onToggleSelection={handleToggleCardSelection}
+                />
+              ))}
+            </div>
+          ) : (!searchQuery.trim() && <p className="text-slate-500 dark:text-slate-400">Nenhum flashcard neste deck. Gere novos ou mova-os de outros decks.</p>)}
+        </section>
       )}
-      {showMoveMultipleConfirm && (
-        <MoveMultipleFlashcardsModal
-          count={selectedCardIds.size}
-          decks={decks}
-          currentDeckId={currentDeckId}
-          onConfirm={handleConfirmBulkMove}
-          onCancel={() => setShowMoveMultipleConfirm(false)}
-        />
+
+      {searchQuery.trim() && filteredSubDecks.length === 0 && filteredCardsInDeck.length === 0 && (
+        <div className="text-center py-16">
+          <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-16 w-16 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <h3 className="text-2xl font-semibold text-slate-700 dark:text-slate-300 mt-4">Nenhum resultado encontrado</h3>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">Tente uma busca diferente para encontrar seus decks ou flashcards.</p>
+        </div>
       )}
-      {deckToDelete && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
-          role="alertdialog"
-          aria-modal="true"
-          aria-labelledby="delete-confirm-title"
-        >
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md text-center border dark:border-slate-700">
-            <h2 id="delete-confirm-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Confirmar Exclusão</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Você tem certeza que deseja excluir o deck <span className="font-bold">"{deckToDelete.name}"</span>?
-              <br />
-              Todos os sub-decks e flashcards contidos nele serão permanentemente removidos.
-            </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setDeckToDelete(null)}
-                className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-sm hover:bg-red-700 transition"
-              >
-                Excluir
-              </button>
+    </div>
+  );
+};
+
+const handleRenameSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  const newName = (e.currentTarget.elements.namedItem('deckName') as HTMLInputElement).value;
+  handleConfirmRename(newName);
+};
+
+const handleMoveSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  const newParentId = (e.currentTarget.elements.namedItem('deckLocation') as HTMLSelectElement).value;
+  handleConfirmMove(newParentId === 'root' ? null : newParentId);
+}
+
+return (
+  <main className="relative min-h-screen w-full flex flex-col items-center justify-center p-4 pt-24 pb-32 font-sans text-slate-900 bg-slate-50 dark:text-white dark:bg-slate-900 transition-colors duration-300 overflow-auto">
+    <div className="absolute inset-0 -z-0 h-full w-full bg-white dark:bg-slate-900 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <span className="font-bold text-xl text-slate-800 dark:text-slate-100">Flashcards AI</span>
+          </div>
+          {/* Desktop Nav */}
+          <div className="hidden md:flex md:items-center md:gap-2">
+            <button onClick={() => setAppView(AppView.Decks)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+              Gerenciar Decks
+            </button>
+            <button onClick={() => handleGenerateRequest(null)} className={`px-4 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+              Gerar Flashcards
+            </button>
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+            <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
+            <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
+            <HelpButton onClick={() => setIsHelpVisible(true)} />
+          </div>
+          {/* Mobile Nav */}
+          <div className="md:hidden flex items-center">
+            <HelpButton onClick={() => setIsHelpVisible(true)} />
+            <ThemeControl currentTheme={theme} onChangeTheme={setTheme} />
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="ml-2 p-2 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none" aria-controls="mobile-menu" aria-expanded={isMenuOpen}>
+              <span className="sr-only">Abrir menu</span>
+              {isMenuOpen ? (
+                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              ) : (
+                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+              )}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {isMenuOpen && (
+        <div className="md:hidden" id="mobile-menu">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <button onClick={() => { setAppView(AppView.Decks); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Decks ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+              Gerenciar Decks
+            </button>
+            <button onClick={() => { handleGenerateRequest(null); setIsMenuOpen(false); }} className={`block w-full text-left px-3 py-2 rounded-md font-semibold transition-colors ${appView === AppView.Generator ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+              Gerar Flashcards
+            </button>
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700 mt-2">
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400 pl-3">Tamanho da Fonte:</span>
+              <FontSizeControl currentSize={fontSize} onChangeSize={setFontSize} />
             </div>
           </div>
         </div>
       )}
-      {deckToRename && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="rename-modal-title"
-        >
-          <form onSubmit={handleRenameSubmit} className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
-            <h2 id="rename-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Renomear Deck</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Insira o novo nome para o deck "{deckToRename.name}".
+    </header>
+
+    <div className="z-10 w-full flex items-center justify-center my-10">
+      {renderContent()}
+    </div>
+
+    {isSelectionModeActive && selectedCardIds.size > 0 && (
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-40 p-4 border-t dark:border-slate-700 animate-fade-in-up">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <p className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+              <span className="bg-cyan-600 text-white rounded-full px-3 py-1 mr-2">{selectedCardIds.size}</span>
+              selecionado(s)
             </p>
-            <input
-              name="deckName"
-              type="text"
-              defaultValue={deckToRename.name}
-              required
-              autoFocus
-              onFocus={e => e.target.select()}
-              className="w-full p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition"
-            />
-            <div className="flex justify-end gap-4 mt-6">
-              <button
-                type="button"
-                onClick={() => setDeckToRename(null)}
-                className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-cyan-600 text-white font-semibold rounded-lg shadow-sm hover:bg-cyan-500 transition"
-              >
-                Salvar
-              </button>
-            </div>
-          </form>
+            <button onClick={handleSelectAllCards} className="text-sm font-semibold text-cyan-600 hover:underline">
+              Selecionar Todos
+            </button>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button onClick={() => setShowMoveMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-slate-200 text-slate-700 font-semibold rounded-lg shadow hover:bg-slate-300 transition dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Mover</button>
+            <button onClick={() => setShowDeleteMultipleConfirm(true)} className="px-4 py-2 text-sm sm:text-base bg-red-500 text-white font-semibold rounded-lg shadow hover:bg-red-600 transition">Excluir</button>
+            <button onClick={handleExitSelectionMode} className="px-4 py-2 text-sm sm:text-base font-semibold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Concluído</button>
+          </div>
         </div>
-      )}
-      {deckToMove && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="move-modal-title"
-        >
-          <form onSubmit={handleMoveSubmit} className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
-            <h2 id="move-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Mover Deck</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Selecione o novo local para o deck "{deckToMove.name}".
-            </p>
-            <select
-              name="deckLocation"
-              defaultValue={deckToMove.parentId || 'root'}
-              className="w-full p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition"
+      </div>
+    )}
+
+    {isHelpVisible && <HelpModal onClose={() => setIsHelpVisible(false)} />}
+    {isSourceTextVisible && <SourceTextModal text={sourceText} onClose={() => setIsSourceTextVisible(false)} />}
+    {cardToMove && (
+      <MoveFlashcardModal
+        card={cardToMove}
+        decks={decks}
+        onConfirm={handleConfirmCardMove}
+        onCancel={() => setCardToMove(null)}
+      />
+    )}
+    {showMoveMultipleConfirm && (
+      <MoveMultipleFlashcardsModal
+        count={selectedCardIds.size}
+        decks={decks}
+        currentDeckId={currentDeckId}
+        onConfirm={handleConfirmBulkMove}
+        onCancel={() => setShowMoveMultipleConfirm(false)}
+      />
+    )}
+    {deckToDelete && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-confirm-title"
+      >
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md text-center border dark:border-slate-700">
+          <h2 id="delete-confirm-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Confirmar Exclusão</h2>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">
+            Você tem certeza que deseja excluir o deck <span className="font-bold">"{deckToDelete.name}"</span>?
+            <br />
+            Todos os sub-decks e flashcards contidos nele serão permanentemente removidos.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => setDeckToDelete(null)}
+              className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
             >
-              <option value="root">-- Raiz (Todos os Decks) --</option>
-              {availableParentDecks.map(deck => (
-                <option key={deck.id} value={deck.id}>{deck.name}</option>
-              ))}
-            </select>
-            <div className="flex justify-end gap-4 mt-6">
-              <button
-                type="button"
-                onClick={() => setDeckToMove(null)}
-                className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-cyan-600 text-white font-semibold rounded-lg shadow-sm hover:bg-cyan-500 transition"
-              >
-                Mover
-              </button>
-            </div>
-          </form>
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-sm hover:bg-red-700 transition"
+            >
+              Excluir
+            </button>
+          </div>
         </div>
-      )}
-    </main>
-  );
+      </div>
+    )}
+    {deckToRename && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rename-modal-title"
+      >
+        <form onSubmit={handleRenameSubmit} className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
+          <h2 id="rename-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Renomear Deck</h2>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">
+            Insira o novo nome para o deck "{deckToRename.name}".
+          </p>
+          <input
+            name="deckName"
+            type="text"
+            defaultValue={deckToRename.name}
+            required
+            autoFocus
+            onFocus={e => e.target.select()}
+            className="w-full p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition"
+          />
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              type="button"
+              onClick={() => setDeckToRename(null)}
+              className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-cyan-600 text-white font-semibold rounded-lg shadow-sm hover:bg-cyan-500 transition"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
+    {deckToMove && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="move-modal-title"
+      >
+        <form onSubmit={handleMoveSubmit} className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-md border dark:border-slate-700">
+          <h2 id="move-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Mover Deck</h2>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">
+            Selecione o novo local para o deck "{deckToMove.name}".
+          </p>
+          <select
+            name="deckLocation"
+            defaultValue={deckToMove.parentId || 'root'}
+            className="w-full p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none transition"
+          >
+            <option value="root">-- Raiz (Todos os Decks) --</option>
+            {availableParentDecks.map(deck => (
+              <option key={deck.id} value={deck.id}>{deck.name}</option>
+            ))}
+          </select>
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              type="button"
+              onClick={() => setDeckToMove(null)}
+              className="px-6 py-2 bg-slate-200 text-slate-800 font-semibold rounded-lg shadow-sm hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-cyan-600 text-white font-semibold rounded-lg shadow-sm hover:bg-cyan-500 transition"
+            >
+              Mover
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
+  </main>
+);
 };
 
 export default App;

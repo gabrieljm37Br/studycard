@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { generateFlashcards, parseTextFile, parseCsvFile, interpretAndClassifyFlashcards } from '../services/geminiService';
+import { generateFlashcards, generateFlashcardsWithSearch, parseTextFile, parseCsvFile, interpretAndClassifyFlashcards } from '../services/geminiService';
 import { CardMode } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -22,6 +22,32 @@ const Generator: React.FC = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isParsing, setIsParsing] = useState(false);
     const [error, setError] = useState('');
+    const [decks, setDecks] = useState<{ id: string; name: string }[]>([]);
+    const [selectedDeckId, setSelectedDeckId] = useState<string | null>(deckId);
+    const [isCreatingNewDeck, setIsCreatingNewDeck] = useState(false);
+    const [newDeckName, setNewDeckName] = useState('');
+
+    useEffect(() => {
+        const loadDecks = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('decks')
+                    .select('id, name')
+                    .eq('user_id', user!.id)
+                    .is('parent_id', null)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setDecks(data || []);
+            } catch (error) {
+                console.error('Error loading decks:', error);
+            }
+        };
+
+        if (user) {
+            loadDecks();
+        }
+    }, [user]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -78,9 +104,10 @@ const Generator: React.FC = () => {
         try {
             let textToGenerate = '';
             let generatedCards;
+            let createdDeckName: string | null = null;
 
             if (inputType === 'topic') {
-                textToGenerate = `Pesquise sobre o tópico: ${topic}`;
+                textToGenerate = topic;
             } else if (inputType === 'text') {
                 textToGenerate = text;
             } else if (inputType === 'pdf' && file) {
@@ -99,7 +126,7 @@ const Generator: React.FC = () => {
                 } else if (fileName.endsWith('.csv')) {
                     records = parseCsvFile(fileContent);
                 } else {
-                    throw new Error('Apenas arquivos .txt e .csv são suportados.');
+                    throw new Error('Apenas arquivos .txt e .csv s\u00e3o suportados.');
                 }
 
                 // Use AI to interpret and classify flashcards
@@ -108,19 +135,22 @@ const Generator: React.FC = () => {
             }
 
             if (!textToGenerate.trim() && !generatedCards) {
-                throw new Error('Por favor, forneça conteúdo para gerar flashcards.');
+                throw new Error('Por favor, forne\u00e7a conte\u00fado para gerar flashcards.');
             }
 
             // Ensure we have a valid deck_id
-            let targetDeckId = deckId;
+            let targetDeckId = selectedDeckId;
 
-            if (!targetDeckId) {
-                // Create a default deck if none is selected
+            if (isCreatingNewDeck) {
+                if (!newDeckName.trim()) {
+                    throw new Error('Por favor, digite um nome para o novo deck.');
+                }
+
                 const { data: newDeck, error: deckError } = await supabase
                     .from('decks')
                     .insert({
                         user_id: user!.id,
-                        name: 'Flashcards Gerados',
+                        name: newDeckName.trim(),
                         parent_id: null
                     })
                     .select()
@@ -128,15 +158,24 @@ const Generator: React.FC = () => {
 
                 if (deckError) throw deckError;
                 targetDeckId = newDeck.id;
+                createdDeckName = newDeck.name;
+                setDecks(prev => [newDeck, ...prev]);
+                setSelectedDeckId(newDeck.id);
+                setIsCreatingNewDeck(false);
+                setNewDeckName('');
+            } else if (!targetDeckId) {
+                throw new Error('Por favor, selecione um deck ou crie um novo.');
             }
 
             // Generate flashcards using AI (if not already generated from file)
             if (!generatedCards) {
-                generatedCards = await generateFlashcards(textToGenerate, mode);
+                generatedCards = inputType === 'topic'
+                    ? await generateFlashcardsWithSearch(topic, mode)
+                    : await generateFlashcards(textToGenerate, mode);
             }
 
             if (generatedCards.length === 0) {
-                throw new Error('Não foram encontrados conceitos para criar flashcards.');
+                throw new Error('N\u00e3o foram encontrados conceitos para criar flashcards.');
             }
 
             // Save to Supabase
@@ -174,21 +213,21 @@ const Generator: React.FC = () => {
                 const breakdownText = Object.entries(breakdown)
                     .map(([mode, count]) => {
                         const modeNames: Record<string, string> = {
-                            'qa': 'Q&A',
-                            'true_false': 'Verdadeiro/Falso',
-                            'multiple_choice': 'Múltipla Escolha',
-                            'practical_example': 'Exemplo Prático',
-                            'fill_in_the_blank': 'Lacunas'
+                            qa: 'Q&A',
+                            true_false: 'Verdadeiro/Falso',
+                            multiple_choice: 'M\u00faltipla Escolha',
+                            practical_example: 'Exemplo Pr\u00e1tico',
+                            fill_in_the_blank: 'Lacunas'
                         };
-                        return `${count} ${modeNames[mode] || mode}`;
+                        return `${count} ${modeNames[mode as keyof typeof modeNames] || mode}`;
                     })
                     .join(', ');
 
                 successMessage = `${generatedCards.length} flashcards criados: ${breakdownText}`;
             } else {
-                successMessage = deckId
-                    ? `${generatedCards.length} flashcards criados com sucesso!`
-                    : `Deck "Flashcards Gerados" criado com ${generatedCards.length} flashcards!`;
+                successMessage = createdDeckName
+                    ? `Deck "${createdDeckName}" criado com ${generatedCards.length} flashcards!`
+                    : `${generatedCards.length} flashcards criados com sucesso!`;
             }
 
             navigate('/dashboard', { state: { message: successMessage } });
@@ -204,7 +243,9 @@ const Generator: React.FC = () => {
     const buttonDisabled = isGenerating || isParsing ||
         (inputType === 'topic' && !topic.trim()) ||
         (inputType === 'text' && !text.trim()) ||
-        ((inputType === 'pdf' || inputType === 'file') && !file);
+        ((inputType === 'pdf' || inputType === 'file') && !file) ||
+        (!selectedDeckId && !isCreatingNewDeck) ||
+        (isCreatingNewDeck && !newDeckName.trim());
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -227,6 +268,52 @@ const Generator: React.FC = () => {
                     </h2>
 
                     <form onSubmit={handleSubmit}>
+                        {/* Deck Selection */}
+                        <div className="mb-8">
+                            <label className="block mb-3 font-semibold text-gray-700 dark:text-gray-300">
+                                Selecione o deck
+                            </label>
+                            {!isCreatingNewDeck ? (
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <select
+                                        value={selectedDeckId || ''}
+                                        onChange={(e) => setSelectedDeckId(e.target.value || null)}
+                                        className="flex-1 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 text-gray-800 dark:text-white"
+                                    >
+                                        <option value="">Selecione um deck...</option>
+                                        {decks.map(deck => (
+                                            <option key={deck.id} value={deck.id}>{deck.name}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsCreatingNewDeck(true)}
+                                        className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-sm transition-colors whitespace-nowrap"
+                                    >
+                                        + Criar Deck
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <input
+                                        type="text"
+                                        value={newDeckName}
+                                        onChange={(e) => setNewDeckName(e.target.value)}
+                                        placeholder="Nome do novo deck..."
+                                        className="flex-1 p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 text-gray-800 dark:text-white"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsCreatingNewDeck(false); setNewDeckName(''); }}
+                                        className="px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-100 font-semibold rounded-xl shadow-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Input Type Selector */}
                         {/* Input Type Selector */}
                         <div className="mb-8">
                             <label className="block mb-4 font-semibold text-gray-700 dark:text-gray-300">
