@@ -434,17 +434,16 @@ const Generator: React.FC = () => {
                         </div>
 
                         {/* Input Type Selector */}
-                        {/* Input Type Selector */}
                         <div className="mb-8">
                             <label className="block mb-4 font-semibold text-gray-700 dark:text-gray-300">
                                 Como você quer criar os flashcards?
                             </label>
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                                 {[
-                                    { value: 'topic', label: '🔍 Tópico' },
-                                    { value: 'text', label: '📝 Texto' },
-                                    { value: 'pdf', label: '📄 PDF' },
-                                    { value: 'file', label: '📁 Arquivo' },
+                                    { value: 'topic', label: '🤖 🔍 Tópico' },
+                                    { value: 'text', label: '🤖 📝 Texto' },
+                                    { value: 'pdf', label: '🤖 📄 PDF' },
+                                    { value: 'file', label: '🤖 📁 Arquivo' },
                                     { value: 'manual', label: '✍️ Manual' }
                                 ].map(({ value, label }) => (
                                     <button
