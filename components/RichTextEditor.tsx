@@ -18,14 +18,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     const contentEditableRef = useRef<HTMLDivElement>(null);
     const [isFocused, setIsFocused] = useState(false);
 
-    // Helper to unescape formatting tags if they were saved as text
+    // Helper to unescape formatting tags using DOM parser
     const unescapeFormatting = (html: string) => {
-        return html
-            .replace(/&lt;b&gt;/g, '<b>').replace(/&lt;\/b&gt;/g, '</b>')
-            .replace(/&lt;i&gt;/g, '<i>').replace(/&lt;\/i&gt;/g, '</i>')
-            .replace(/&lt;u&gt;/g, '<u>').replace(/&lt;\/u&gt;/g, '</u>')
-            .replace(/&lt;strong&gt;/g, '<strong>').replace(/&lt;\/strong&gt;/g, '</strong>')
-            .replace(/&lt;em&gt;/g, '<em>').replace(/&lt;\/em&gt;/g, '</em>');
+        const txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
     };
 
     // Sync value to contentEditable when value changes externally
