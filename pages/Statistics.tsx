@@ -10,7 +10,7 @@ import {
   Pie,
   Cell,
   LineChart,
-  Line,
+  Line
 } from 'recharts';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -184,7 +184,7 @@ const Statistics: React.FC = () => {
         {/* Heatmap */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Atividade (últimos 365 dias)</h3>
-          <div className="grid grid-cols-53 gap-1">
+          <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(53, minmax(0, 1fr))' }}>
             {Array.from({ length: 7 }).map((_, row) => (
               <div key={row} className="flex flex-col gap-1">
                 {heatmapDays.filter((_, idx) => idx % 7 === row).map(day => (
