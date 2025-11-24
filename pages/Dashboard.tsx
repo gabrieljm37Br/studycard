@@ -406,6 +406,14 @@ const Dashboard: React.FC = () => {
                     >
                         📝 Modo Simulado
                     </button>
+                    <button
+                        onClick={() => navigate('/calendar')}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
+                        title="Calendário de Estudos"
+                        aria-label="Abrir calendário de estudos"
+                    >
+                        📅 Calendário
+                    </button>
 
                     {/* Dark Mode Toggle */}
                     <button
