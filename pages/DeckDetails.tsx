@@ -293,6 +293,7 @@ const DeckDetails: React.FC = () => {
             case CardMode.MultipleChoice: return 'Múltipla Escolha';
             case CardMode.PracticalExample: return 'Exemplo Prático';
             case CardMode.FillInTheBlank: return 'Lacunas';
+            case CardMode.Dictionary: return 'Dicionário';
             default: return mode;
         }
     };
@@ -328,6 +329,10 @@ const DeckDetails: React.FC = () => {
             case CardMode.FillInTheBlank:
                 formData.question = card.question;
                 formData.answer = card.answer;
+                break;
+            case CardMode.Dictionary:
+                formData.term = (card as any).term || card.question;
+                formData.definition = (card as any).definition || card.answer;
                 break;
         }
 
@@ -371,12 +376,25 @@ const DeckDetails: React.FC = () => {
                     alert('Pergunta e resposta são obrigatórias');
                     return;
                 }
+            } else if (editFormData.mode === CardMode.Dictionary) {
+                if (!editFormData.term?.trim() || !editFormData.definition?.trim()) {
+                    alert('Termo e definição são obrigatórios');
+                    return;
+                }
             }
 
             // Update flashcard in database
+            const updatePayload = { ...editFormData } as any;
+            if (editFormData.mode === CardMode.Dictionary) {
+                updatePayload.question = editFormData.term;
+                updatePayload.answer = editFormData.definition;
+                delete updatePayload.term;
+                delete updatePayload.definition;
+            }
+
             const { error } = await supabase
                 .from('flashcards')
-                .update(editFormData)
+                .update(updatePayload)
                 .eq('id', cardToEdit.id);
 
             if (error) throw error;
@@ -622,8 +640,14 @@ const DeckDetails: React.FC = () => {
                                                     {card.mode === CardMode.QA && card.question}
                                                     {card.mode === CardMode.TrueFalse && card.statement}
                                                     {card.mode === CardMode.MultipleChoice && card.question}
-                                                    {card.mode === CardMode.PracticalExample && card.problem}
+                                                    {card.mode === CardMode.PracticalExample && (
+                                                        <>
+                                                            <div className="font-semibold mb-1">Problema: {card.problem}</div>
+                                                            <div>Pergunta: {card.question}</div>
+                                                        </>
+                                                    )}
                                                     {card.mode === CardMode.FillInTheBlank && card.question}
+                                                    {card.mode === CardMode.Dictionary && (card as any).term || card.question}
                                                 </p>
                                             </div>
 
@@ -637,6 +661,7 @@ const DeckDetails: React.FC = () => {
                                                     {card.mode === CardMode.MultipleChoice && card.options[card.correctAnswerIndex]}
                                                     {card.mode === CardMode.PracticalExample && card.solution}
                                                     {card.mode === CardMode.FillInTheBlank && card.answer}
+                                                    {card.mode === CardMode.Dictionary && ((card as any).definition || card.answer)}
                                                 </p>
                                             </div>
                                         </div>
@@ -1012,6 +1037,36 @@ const DeckDetails: React.FC = () => {
                                                 rows={2}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                                 placeholder="Digite a resposta..."
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Dictionary Mode Fields */}
+                                {editFormData.mode === CardMode.Dictionary && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Termo *
+                                            </label>
+                                            <textarea
+                                                value={editFormData.term || ''}
+                                                onChange={(e) => handleEditChange('term', e.target.value)}
+                                                rows={2}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                                placeholder="Digite o termo..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Definição *
+                                            </label>
+                                            <textarea
+                                                value={editFormData.definition || ''}
+                                                onChange={(e) => handleEditChange('definition', e.target.value)}
+                                                rows={3}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                                placeholder="Digite a definição..."
                                             />
                                         </div>
                                     </>

@@ -22,6 +22,7 @@ export enum CardMode {
   MultipleChoice = 'multiple_choice',
   PracticalExample = 'practical_example',
   FillInTheBlank = 'fill_in_the_blank',
+  Dictionary = 'dictionary',
 }
 
 export enum FeedbackStatus {
@@ -110,7 +111,27 @@ export interface FillInTheBlankCard {
   sources?: WebSource[];
 }
 
-export type FlashcardData = QACard | TrueFalseCard | MultipleChoiceCard | PracticalExampleCard | FillInTheBlankCard;
+export interface DictionaryCard {
+  mode: CardMode.Dictionary;
+  id: string;
+  term: string;
+  definition: string;
+  feedback: FeedbackStatus;
+  deckId: string;
+  next_review?: string;
+  interval?: number;
+  repetition?: number;
+  ease_factor?: number;
+  sources?: WebSource[];
+}
+
+export type FlashcardData =
+  | QACard
+  | TrueFalseCard
+  | MultipleChoiceCard
+  | PracticalExampleCard
+  | FillInTheBlankCard
+  | DictionaryCard;
 
 // File upload types
 export interface FileParseResult {

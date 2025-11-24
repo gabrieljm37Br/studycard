@@ -488,14 +488,30 @@ const Help: React.FC = () => {
                                         por avaliar seu próprio desempenho:
                                     </p>
 
-                                   <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-3">
-                                       <div className="font-semibold text-indigo-700 dark:text-indigo-300 text-sm flex items-center gap-2 mb-2">
-                                           <span>❓</span> Pergunta e Resposta (Q&A)
-                                       </div>
-                                       <p className="text-sm text-gray-700 dark:text-gray-300">
-                                           Após ver a resposta, você decide se acertou, errou ou chegou perto.
-                                       </p>
-                                   </div>
+                                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-3">
+                                        <div className="font-semibold text-indigo-700 dark:text-indigo-300 text-sm flex items-center gap-2 mb-2">
+                                            <span>❓</span> Pergunta e Resposta (Q&A)
+                                        </div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            Após ver a resposta, você decide se acertou, errou ou chegou perto.
+                                        </p>
+                                    </div>
+                                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800 mb-3">
+                                        <div className="font-semibold text-green-700 dark:text-green-300 text-sm flex items-center gap-2 mb-2">
+                                            <span>📖</span> Dicionário
+                                        </div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            Para termos e definições. Compare sua resposta com o conceito e marque Incorreto/Quase/Correto.
+                                        </p>
+                                    </div>
+                                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800 mb-3">
+                                        <div className="font-semibold text-yellow-700 dark:text-yellow-300 text-sm flex items-center gap-2 mb-2">
+                                            <span>💡</span> Exemplo Prático
+                                        </div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            Casos práticos também são autoavaliados: leia problema/pergunta/solução e marque seu desempenho.
+                                        </p>
+                                    </div>
                                     <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800 mb-3">
                                         <div className="font-semibold text-green-700 dark:text-green-300 text-sm flex items-center gap-2 mb-2">
                                             <span>💻</span> Exemplo Prático

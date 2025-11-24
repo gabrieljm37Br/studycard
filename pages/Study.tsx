@@ -88,6 +88,23 @@ const Study: React.FC = () => {
         }
     }, [deckId, simulationId]);
 
+    const normalizeCard = (raw: any): FlashcardData => {
+        if (raw.mode === CardMode.Dictionary) {
+            return {
+                ...raw,
+                term: raw.term || raw.question || '',
+                definition: raw.definition || raw.answer || '',
+            } as any;
+        }
+        if (raw.mode === CardMode.PracticalExample) {
+            return {
+                ...raw,
+                question: raw.question || raw.problem || '',
+            } as any;
+        }
+        return raw as FlashcardData;
+    };
+
     const loadFlashcards = async () => {
         try {
             setLoading(true);
@@ -105,7 +122,7 @@ const Study: React.FC = () => {
                 // The requirement said "random sequence... for the simulation", which implies the sequence is fixed at creation.
                 // So we should probably respect the order they come back, or if we stored an order index.
                 // For now, let's just use them as they come.
-                const cards = items?.map((item: any) => item.flashcard) || [];
+                const cards = items?.map((item: any) => normalizeCard(item.flashcard)) || [];
                 setFlashcards(cards);
 
             } else if (deckId) {
@@ -147,8 +164,9 @@ const Study: React.FC = () => {
 
                 if (error) throw error;
 
+                const normalized = (data || []).map(normalizeCard);
                 // Shuffle flashcards
-                const shuffled = (data || []).sort(() => Math.random() - 0.5);
+                const shuffled = normalized.sort(() => Math.random() - 0.5);
                 setFlashcards(shuffled as any);
             }
         } catch (error) {
@@ -241,8 +259,8 @@ const Study: React.FC = () => {
         const card = flashcards[currentIndex];
         let evaluation: 'correct' | 'incorrect' = 'incorrect';
 
-        // For Q&A and PracticalExample modes, use self-evaluation instead of automatic
-        if (card.mode === CardMode.QA || card.mode === CardMode.PracticalExample) {
+        // For Q&A, Exemplo Prático e Dicionário, use self-evaluation
+        if (card.mode === CardMode.QA || card.mode === CardMode.PracticalExample || card.mode === CardMode.Dictionary) {
             setShowResult(true);
             setResult(null); // No automatic result for Q&A
             return;
@@ -712,6 +730,15 @@ const Study: React.FC = () => {
                 {/* Flashcard */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
                     <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 leading-relaxed">
+                        {currentCard.mode === CardMode.Dictionary && (
+                            <div className="flex flex-col gap-1">
+                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wide">
+                                    <span className="text-sm">📖</span>
+                                    <span>Dicionário</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-100">{currentCard.term}</div>
+                            </div>
+                        )}
                         {currentCard.mode === CardMode.QA && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
                         {currentCard.mode === CardMode.TrueFalse && <span dangerouslySetInnerHTML={renderHTML(currentCard.statement)} />}
                         {currentCard.mode === CardMode.MultipleChoice && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
@@ -825,7 +852,7 @@ const Study: React.FC = () => {
                 {
                     !showResult && (
                         <div className="animate-fade-in">
-                            {(currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.FillInTheBlank) && (
+                            {(currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.FillInTheBlank || currentCard.mode === CardMode.Dictionary) && (
                                 <textarea
                                     value={userAnswer}
                                     onChange={(e) => setUserAnswer(e.target.value)}
@@ -884,7 +911,7 @@ const Study: React.FC = () => {
                             <button
                                 onClick={evaluateAnswer}
                                 disabled={
-                                    (currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.FillInTheBlank) && !userAnswer.trim() ||
+                                    (currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.FillInTheBlank || currentCard.mode === CardMode.Dictionary) && !userAnswer.trim() ||
                                     (currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && selectedOption === null
                                 }
                                 className={`w-full py-4 bg-indigo-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform active:scale-[0.99]`}
@@ -900,7 +927,7 @@ const Study: React.FC = () => {
                     showResult && (
                         <div className="animate-slide-up">
                             {/* Q&A Self-Evaluation */}
-                            {currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample ? (
+                            {currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.Dictionary ? (
                                 <div>
                                     <div className="p-6 rounded-xl border-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 mb-6">
                                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-400">
@@ -909,7 +936,16 @@ const Study: React.FC = () => {
 
                                         <div className="space-y-4">
                                             <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
-                                                <p className="text-lg text-gray-800 dark:text-gray-200 font-medium leading-relaxed" dangerouslySetInnerHTML={renderHTML(currentCard.answer)} />
+                                                <p
+                                                    className="text-lg text-gray-800 dark:text-gray-200 font-medium leading-relaxed"
+                                                    dangerouslySetInnerHTML={renderHTML(
+                                                        currentCard.mode === CardMode.QA
+                                                            ? currentCard.answer
+                                                            : currentCard.mode === CardMode.Dictionary
+                                                                ? currentCard.definition
+                                                                : currentCard.solution
+                                                    )}
+                                                />
                                             </div>
 
                                             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">

@@ -90,6 +90,33 @@ Gere uma lista JSON com múltiplos flashcards.`,
           }
         }
       };
+    case CardMode.Dictionary:
+      return {
+        prompt: `Gere entre 10 e 30 flashcards de Dicionário (termo e definição) com base no texto a seguir.
+Cada item deve conter:
+1. "term": termo ou conjunto de termos conceituais.
+2. "definition": o conceito/definição clara e concisa.
+
+IMPORTANTE: Gere NO MÍNIMO 10 e NO MÁXIMO 30 itens. Extraia os conceitos mais relevantes do texto.
+
+Texto:
+"""
+{text}
+"""
+
+Responda com uma lista JSON contendo objetos com "term" e "definition".`,
+        schema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              term: { type: Type.STRING, description: "O termo ou conjunto de termos." },
+              definition: { type: Type.STRING, description: "A definição clara do termo." }
+            },
+            required: ["term", "definition"]
+          }
+        }
+      };
     case CardMode.QA:
     default:
       return {
@@ -193,6 +220,17 @@ ${promptTemplate.replace('{text}', `informações sobre ${topic} que você encon
           sources: sources,
           question: (card as any).sentence,
           answer: (card as any).correctAnswer,
+        };
+      }
+      if (mode === CardMode.Dictionary) {
+        return {
+          ...(card as any),
+          id: crypto.randomUUID(),
+          mode: mode,
+          feedback: FeedbackStatus.Unseen,
+          sources: sources,
+          term: (card as any).term,
+          definition: (card as any).definition,
         };
       }
       return {
@@ -407,6 +445,10 @@ MODALIDADES DISPONÍVEIS:
    - Texto com espaços em branco: ____, (   ), [   ]
    - Exemplo: "A ____ é o processo de evaporação | água"
 
+6. **dictionary** (Dicionário)
+   - Termo/conceito e sua definição
+   - Exemplo: "Polimorfismo | Capacidade de um objeto assumir muitas formas"
+
 REGISTRO A ANALISAR:
 """
 ${record}
@@ -457,6 +499,13 @@ Para fill_in_the_blank:
   "mode": "fill_in_the_blank",
   "sentence": "frase com ____",
   "correctAnswer": "palavra que preenche a lacuna"
+}
+
+Para dictionary:
+{
+  "mode": "dictionary",
+  "term": "termo conceitual",
+  "definition": "definição clara do termo"
 }`;
 
     const response = await ai.models.generateContent({
@@ -529,6 +578,14 @@ Para fill_in_the_blank:
           mode: CardMode.FillInTheBlank,
           question: parsed.sentence || '',
           answer: parsed.correctAnswer || '',
+        } as any;
+
+      case CardMode.Dictionary:
+        return {
+          ...baseCard,
+          mode: CardMode.Dictionary,
+          term: parsed.term || '',
+          definition: parsed.definition || '',
         } as any;
 
       default:

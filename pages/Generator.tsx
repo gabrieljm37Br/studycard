@@ -45,7 +45,10 @@ const Generator: React.FC = () => {
         solution: '',
         // Fill in the Blank
         sentence: '',
-        correctAnswer: ''
+        correctAnswer: '',
+        // Dictionary
+        term: '',
+        definition: ''
     });
 
     useEffect(() => {
@@ -165,6 +168,14 @@ const Generator: React.FC = () => {
                     newCard.question = manualFormData.sentence.trim();
                     newCard.answer = manualFormData.correctAnswer.trim();
                     break;
+
+                case CardMode.Dictionary:
+                    if (!manualFormData.term.trim() || !manualFormData.definition.trim()) {
+                        throw new Error('Por favor, preencha o termo e a definição.');
+                    }
+                    newCard.term = manualFormData.term.trim();
+                    newCard.definition = manualFormData.definition.trim();
+                    break;
             }
 
             setManualCards(prev => [...prev, newCard]);
@@ -191,7 +202,9 @@ const Generator: React.FC = () => {
             problem: '',
             solution: '',
             sentence: '',
-            correctAnswer: ''
+            correctAnswer: '',
+            term: '',
+            definition: ''
         });
     };
 
@@ -303,8 +316,19 @@ const Generator: React.FC = () => {
                 deck_id: targetDeckId,
                 mode: card.mode,
                 feedback: card.feedback,
-                question: card.mode === CardMode.QA || card.mode === CardMode.MultipleChoice || card.mode === CardMode.FillInTheBlank ? (card as any).question : null,
-                answer: card.mode === CardMode.QA || card.mode === CardMode.FillInTheBlank ? (card as any).answer : null,
+                question: card.mode === CardMode.QA || card.mode === CardMode.MultipleChoice || card.mode === CardMode.FillInTheBlank ? (card as any).question : (card.mode === CardMode.Dictionary ? (card as any).term : null),
+                question: card.mode === CardMode.QA || card.mode === CardMode.MultipleChoice || card.mode === CardMode.FillInTheBlank
+                    ? (card as any).question
+                    : card.mode === CardMode.Dictionary
+                        ? (card as any).term
+                        : card.mode === CardMode.PracticalExample
+                            ? (card as any).question
+                            : null,
+                answer: card.mode === CardMode.QA || card.mode === CardMode.FillInTheBlank
+                    ? (card as any).answer
+                    : card.mode === CardMode.Dictionary
+                        ? (card as any).definition
+                        : null,
                 statement: card.mode === CardMode.TrueFalse ? (card as any).statement : null,
                 is_true: card.mode === CardMode.TrueFalse ? (card as any).isTrue : null,
                 explanation: card.mode === CardMode.TrueFalse || card.mode === CardMode.MultipleChoice ? (card as any).explanation : null,
@@ -334,9 +358,10 @@ const Generator: React.FC = () => {
                         const modeNames: Record<string, string> = {
                             qa: 'Q&A',
                             true_false: 'Verdadeiro/Falso',
-                            multiple_choice: 'M\u00faltipla Escolha',
-                            practical_example: 'Exemplo Pr\u00e1tico',
-                            fill_in_the_blank: 'Lacunas'
+                            multiple_choice: 'Múltipla Escolha',
+                            practical_example: 'Exemplo Prático',
+                            fill_in_the_blank: 'Lacunas',
+                            dictionary: 'Dicionário'
                         };
                         return `${count} ${modeNames[mode as keyof typeof modeNames] || mode}`;
                     })
@@ -732,11 +757,11 @@ const Generator: React.FC = () => {
                                 )}
 
                                 {/* Fill in the Blank Form */}
-                                {mode === CardMode.FillInTheBlank && (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Frase com Lacuna</label>
-                                            <textarea
+                {mode === CardMode.FillInTheBlank && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Frase com Lacuna</label>
+                            <textarea
                                                 value={manualFormData.sentence}
                                                 onChange={(e) => setManualFormData({ ...manualFormData, sentence: e.target.value })}
                                                 placeholder="Digite a frase usando ____ para indicar a lacuna..."
@@ -753,10 +778,36 @@ const Generator: React.FC = () => {
                                                 onChange={(e) => setManualFormData({ ...manualFormData, correctAnswer: e.target.value })}
                                                 placeholder="Palavra ou expressão que preenche a lacuna..."
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Dictionary Form */}
+                {mode === CardMode.Dictionary && (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Termo</label>
+                            <input
+                                type="text"
+                                value={manualFormData.term}
+                                onChange={(e) => setManualFormData({ ...manualFormData, term: e.target.value })}
+                                placeholder="Digite o termo ou conjunto de termos..."
+                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Definição</label>
+                            <textarea
+                                value={manualFormData.definition}
+                                onChange={(e) => setManualFormData({ ...manualFormData, definition: e.target.value })}
+                                placeholder="Digite a definição do termo..."
+                                rows={3}
+                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                            />
+                        </div>
+                    </div>
+                )}
 
                                 {/* Add Flashcard Button */}
                                 <button
@@ -812,6 +863,12 @@ const Generator: React.FC = () => {
                                                                 <p className="text-gray-600 dark:text-gray-400 mt-1">Resposta: {card.answer}</p>
                                                             </div>
                                                         )}
+                                                        {card.mode === CardMode.Dictionary && (
+                                                            <div>
+                                                                <p className="font-medium text-gray-700 dark:text-gray-300">Termo: {card.term}</p>
+                                                                <p className="text-gray-600 dark:text-gray-400 mt-1">Definição: {card.definition}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <button
                                                         type="button"
@@ -841,7 +898,8 @@ const Generator: React.FC = () => {
                                         { value: CardMode.TrueFalse, label: 'Verdadeiro ou Falso', icon: '✅' },
                                         { value: CardMode.MultipleChoice, label: 'Múltipla Escolha', icon: '🔢' },
                                         { value: CardMode.PracticalExample, label: 'Exemplo Prático', icon: '💡' },
-                                        { value: CardMode.FillInTheBlank, label: 'Lacunas', icon: '📝' }
+                                        { value: CardMode.FillInTheBlank, label: 'Lacunas', icon: '📝' },
+                                        { value: CardMode.Dictionary, label: 'Dicionário', icon: '📖' }
                                     ].map(({ value, label, icon }) => (
                                         <button
                                             key={value}
