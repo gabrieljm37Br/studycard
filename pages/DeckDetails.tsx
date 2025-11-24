@@ -49,6 +49,7 @@ const DeckDetails: React.FC = () => {
             loadFlashcards();
             loadSubdecks();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deckId, user]);
 
     const loadDeckDetails = async () => {
@@ -1028,7 +1029,9 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Pergunta *
                                             </label>
+                                            <TextFormatToolbar field="question" textareaId="edit-fib-question" />
                                             <textarea
+                                                id="edit-fib-question"
                                                 value={editFormData.question || ''}
                                                 onChange={(e) => handleEditChange('question', e.target.value)}
                                                 rows={3}
@@ -1040,7 +1043,9 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Resposta *
                                             </label>
+                                            <TextFormatToolbar field="answer" textareaId="edit-fib-answer" />
                                             <textarea
+                                                id="edit-fib-answer"
                                                 value={editFormData.answer || ''}
                                                 onChange={(e) => handleEditChange('answer', e.target.value)}
                                                 rows={2}
@@ -1058,7 +1063,9 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Termo *
                                             </label>
+                                            <TextFormatToolbar field="term" textareaId="edit-dict-term" />
                                             <textarea
+                                                id="edit-dict-term"
                                                 value={editFormData.term || ''}
                                                 onChange={(e) => handleEditChange('term', e.target.value)}
                                                 rows={2}
@@ -1070,7 +1077,9 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Definição *
                                             </label>
+                                            <TextFormatToolbar field="definition" textareaId="edit-dict-definition" />
                                             <textarea
+                                                id="edit-dict-definition"
                                                 value={editFormData.definition || ''}
                                                 onChange={(e) => handleEditChange('definition', e.target.value)}
                                                 rows={3}

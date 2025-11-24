@@ -80,12 +80,14 @@ const Study: React.FC = () => {
         if (flashcards.length > 0 && currentIndex >= 0) {
             loadNote();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentIndex, flashcards]);
 
     useEffect(() => {
         if (deckId || simulationId) {
             loadFlashcards();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deckId, simulationId]);
 
     const normalizeCard = (raw: any): FlashcardData => {
@@ -1023,13 +1025,13 @@ const Study: React.FC = () => {
                                                 ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation) ||
                                                 (currentCard.mode === CardMode.PracticalExample && currentCard.solution)
                                             ) && (
-                                                <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
-                                                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                        Explicação
-                                                    </p>
-                                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={renderHTML((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation ? currentCard.explanation : "Veja a solução acima.")} />
-                                                </div>
-                                            )}
+                                                    <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
+                                                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                                            Explicação
+                                                        </p>
+                                                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={renderHTML((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation ? currentCard.explanation : "Veja a solução acima.")} />
+                                                    </div>
+                                                )}
 
                                             <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700/50">
                                                 <span>XP Ganho:</span>
