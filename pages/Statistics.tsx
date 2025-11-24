@@ -73,8 +73,20 @@ const Statistics: React.FC = () => {
         setForecast(fc);
         setWeakDecks(wd);
       } catch (err: any) {
-        console.error(err);
-        setError('Não foi possível carregar estatísticas.');
+        console.error('Erro ao carregar estatísticas:', err);
+
+        // Mensagens de erro mais específicas
+        let errorMessage = 'Não foi possível carregar estatísticas.';
+
+        if (err.message?.includes('function') || err.code === '42883') {
+          errorMessage = 'Funções de estatísticas não configuradas no banco de dados. Execute o script SQL fornecido no Supabase.';
+        } else if (err.message?.includes('permission') || err.code === '42501') {
+          errorMessage = 'Sem permissão para acessar estatísticas. Verifique as políticas RLS no Supabase.';
+        } else if (err.message) {
+          errorMessage = `Erro: ${err.message}`;
+        }
+
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

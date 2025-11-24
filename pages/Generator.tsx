@@ -5,6 +5,7 @@ import { supabase } from '../services/supabaseClient';
 import { generateFlashcards, generateFlashcardsWithSearch, parseTextFile, parseCsvFile, interpretAndClassifyFlashcards } from '../services/geminiService';
 import { CardMode } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
+import CSVImportModal from '../components/CSVImportModal';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 
@@ -26,6 +27,7 @@ const Generator: React.FC = () => {
     const [selectedDeckId, setSelectedDeckId] = useState<string | null>(deckId);
     const [isCreatingNewDeck, setIsCreatingNewDeck] = useState(false);
     const [newDeckName, setNewDeckName] = useState('');
+    const [showCSVImport, setShowCSVImport] = useState(false);
 
     // Manual flashcard creation state
     const [manualCards, setManualCards] = useState<any[]>([]);
@@ -396,12 +398,20 @@ const Generator: React.FC = () => {
             {/* Header */}
             <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-6 flex justify-between items-center shadow-md">
                 <h1 className="text-xl md:text-2xl font-bold">Gerador de Flashcards</h1>
-                <button
-                    onClick={() => navigate('/dashboard')}
-                    className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
-                >
-                    <span>←</span> <span className="hidden sm:inline">Voltar</span>
-                </button>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setShowCSVImport(true)}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
+                    >
+                        <span>📥</span> <span className="hidden sm:inline">Importar CSV</span>
+                    </button>
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
+                    >
+                        <span>←</span> <span className="hidden sm:inline">Voltar</span>
+                    </button>
+                </div>
             </header>
 
             {/* Main Content */}
@@ -756,11 +766,11 @@ const Generator: React.FC = () => {
                                 )}
 
                                 {/* Fill in the Blank Form */}
-                {mode === CardMode.FillInTheBlank && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Frase com Lacuna</label>
-                            <textarea
+                                {mode === CardMode.FillInTheBlank && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Frase com Lacuna</label>
+                                            <textarea
                                                 value={manualFormData.sentence}
                                                 onChange={(e) => setManualFormData({ ...manualFormData, sentence: e.target.value })}
                                                 placeholder="Digite a frase usando ____ para indicar a lacuna..."
@@ -777,36 +787,36 @@ const Generator: React.FC = () => {
                                                 onChange={(e) => setManualFormData({ ...manualFormData, correctAnswer: e.target.value })}
                                                 placeholder="Palavra ou expressão que preenche a lacuna..."
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
-                            />
-                        </div>
-                    </div>
-                )}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
-                {/* Dictionary Form */}
-                {mode === CardMode.Dictionary && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Termo</label>
-                            <input
-                                type="text"
-                                value={manualFormData.term}
-                                onChange={(e) => setManualFormData({ ...manualFormData, term: e.target.value })}
-                                placeholder="Digite o termo ou conjunto de termos..."
-                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
-                            />
-                        </div>
-                        <div>
-                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Definição</label>
-                            <textarea
-                                value={manualFormData.definition}
-                                onChange={(e) => setManualFormData({ ...manualFormData, definition: e.target.value })}
-                                placeholder="Digite a definição do termo..."
-                                rows={3}
-                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
-                            />
-                        </div>
-                    </div>
-                )}
+                                {/* Dictionary Form */}
+                                {mode === CardMode.Dictionary && (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Termo</label>
+                                            <input
+                                                type="text"
+                                                value={manualFormData.term}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, term: e.target.value })}
+                                                placeholder="Digite o termo ou conjunto de termos..."
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Definição</label>
+                                            <textarea
+                                                value={manualFormData.definition}
+                                                onChange={(e) => setManualFormData({ ...manualFormData, definition: e.target.value })}
+                                                placeholder="Digite a definição do termo..."
+                                                rows={3}
+                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white resize-y"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Add Flashcard Button */}
                                 <button
@@ -949,6 +959,18 @@ const Generator: React.FC = () => {
                     </form>
                 </div>
             </div>
+
+            {/* CSV Import Modal */}
+            <CSVImportModal
+                isOpen={showCSVImport}
+                onClose={() => setShowCSVImport(false)}
+                onImportComplete={(count) => {
+                    setShowCSVImport(false);
+                    navigate('/dashboard', {
+                        state: { message: `${count} flashcards importados com sucesso do CSV!` }
+                    });
+                }}
+            />
         </div>
     );
 };

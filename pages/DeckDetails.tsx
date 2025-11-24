@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { CardMode } from '../types';
 import type { FlashcardData } from '../types';
+import CSVImportModal from '../components/CSVImportModal';
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();
@@ -35,6 +36,9 @@ const DeckDetails: React.FC = () => {
     const [cardToEdit, setCardToEdit] = useState<FlashcardData | null>(null);
     const [editFormData, setEditFormData] = useState<any>({});
     const [isSaving, setIsSaving] = useState(false);
+
+    // CSV Import State
+    const [showCSVImport, setShowCSVImport] = useState(false);
 
     useEffect(() => {
         // Get current user
@@ -539,6 +543,12 @@ const DeckDetails: React.FC = () => {
                             <span className="text-lg">🎯</span> <span className="hidden sm:inline">Modo Estudo</span>
                         </button>
                     )}
+                    <button
+                        onClick={() => setShowCSVImport(true)}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm font-semibold transition-colors flex items-center gap-2"
+                    >
+                        <span>📥</span> <span className="hidden sm:inline">Importar CSV</span>
+                    </button>
                     <button
                         onClick={() => navigate('/generator', { state: { deckId } })}
                         className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm font-semibold transition-colors flex items-center gap-2"
@@ -1118,6 +1128,18 @@ const DeckDetails: React.FC = () => {
                     </div>
                 )
             }
+
+            {/* CSV Import Modal */}
+            <CSVImportModal
+                isOpen={showCSVImport}
+                onClose={() => setShowCSVImport(false)}
+                onImportComplete={(count) => {
+                    setShowCSVImport(false);
+                    loadFlashcards(); // Reload flashcards to show imported ones
+                    alert(`${count} flashcards importados com sucesso!`);
+                }}
+                preselectedDeckId={deckId}
+            />
         </div>
     );
 };
