@@ -26,9 +26,9 @@ const SimulatedMode: React.FC = () => {
       case CardMode.TrueFalse:
         return 'Verdadeiro ou Falso';
       case CardMode.MultipleChoice:
-        return 'M\u00faltipla Escolha';
+        return 'Múltipla Escolha';
       case CardMode.PracticalExample:
-        return 'Exemplo Pr\u00e1tico';
+        return 'Exemplo Prático';
       case CardMode.FillInTheBlank:
         return 'Lacunas';
       default:
@@ -94,12 +94,12 @@ const SimulatedMode: React.FC = () => {
 
       if (missingModes.length > 0) {
         const modeNames = missingModes.map(modeLabel).join(', ');
-        alert(`As modalidades selecionadas n\u00e3o possuem flashcards: ${modeNames}.`);
+        alert(`As modalidades selecionadas não possuem flashcards: ${modeNames}.`);
         return;
       }
 
       if (availableCards.length < questionCount) {
-        alert(`N\u00e3o h\u00e1 flashcards suficientes (necess\u00e1rio ${questionCount}, encontrado ${availableCards.length}).`);
+        alert(`Não há flashcards suficientes (necessário ${questionCount}, encontrado ${availableCards.length}).`);
         return;
       }
 
@@ -240,7 +240,7 @@ const SimulatedMode: React.FC = () => {
                       {String.fromCodePoint(0x1F4C5)} {new Date(sim.created_at).toLocaleDateString()}
                     </span>
                     <span className="flex items-center gap-1">
-                      {String.fromCodePoint(0x2753)} {sim.item_count} quest\u00f5es
+                      {String.fromCodePoint(0x2753)} {sim.item_count} questões
                     </span>
                   </div>
                 </div>
@@ -291,7 +291,7 @@ const SimulatedMode: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantidade de Quest\u00f5es</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantidade de Questões</label>
                     <input
                       type="number"
                       value={questionCount}
@@ -319,7 +319,7 @@ const SimulatedMode: React.FC = () => {
                               selectedCardModes.has(mode) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-400'
                             }`}
                           >
-                            {selectedCardModes.has(mode) && '\u2713'}
+                            {selectedCardModes.has(mode) && '✓'}
                           </div>
                           <span className="text-gray-800 dark:text-gray-200 text-sm">{modeLabel(mode)}</span>
                         </div>
@@ -332,7 +332,7 @@ const SimulatedMode: React.FC = () => {
                     </label>
                     <div className="border-2 border-gray-200 dark:border-gray-600 rounded-lg max-h-60 overflow-y-auto p-2 space-y-1">
                       {availableDecks.length === 0 ? (
-                        <p className="text-gray-500 p-4 text-center">Nenhum deck dispon\u00edvel.</p>
+                        <p className="text-gray-500 p-4 text-center">Nenhum deck disponível.</p>
                       ) : (
                         availableDecks.map(deck => (
                           <div
@@ -349,7 +349,7 @@ const SimulatedMode: React.FC = () => {
                                 selectedDeckIds.has(deck.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-400'
                               }`}
                             >
-                              {selectedDeckIds.has(deck.id) && '\u2713'}
+                              {selectedDeckIds.has(deck.id) && '✓'}
                             </div>
                             <span className="text-gray-800 dark:text-gray-200">{deck.name}</span>
                           </div>
