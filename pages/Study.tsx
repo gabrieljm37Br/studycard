@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
+import { applySm2 } from '../services/srsAlgorithm';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData, FlashcardNote } from '../types';
 import { renderHTML } from '../utils/textUtils';
@@ -141,7 +142,8 @@ const Study: React.FC = () => {
                     .from('flashcards')
                     .select('*')
                     .in('deck_id', deckIdsToQuery)
-                    .eq('user_id', user!.id);
+                    .eq('user_id', user!.id)
+                    .or('next_review.is.null,next_review.lte.now()');
 
                 if (error) throw error;
 
@@ -320,6 +322,42 @@ const Study: React.FC = () => {
         return matrix[str2.length][str1.length];
     };
 
+    const qualityFromSelfEval = {
+        incorrect: 0,
+        almost: 3,
+        correct: 5
+    } as const;
+
+    const qualityFromAuto = (isCorrect: boolean) => (isCorrect ? 5 : 0);
+
+    const applySrsAndUpdate = async (card: FlashcardData, quality: number, feedbackOverride?: FeedbackStatus) => {
+        const { interval, repetition, easeFactor, nextReview } = applySm2(card, quality);
+
+        await supabase
+            .from('flashcards')
+            .update({
+                interval,
+                repetition,
+                ease_factor: easeFactor,
+                next_review: nextReview,
+                feedback: feedbackOverride ?? (quality >= 3 ? FeedbackStatus.Correct : FeedbackStatus.Incorrect)
+            })
+            .eq('id', card.id);
+
+        // If failed, keep the card in the queue for this session
+        if (quality < 3) {
+            setFlashcards(prev => {
+                const copy = [...prev];
+                const idx = copy.findIndex(fc => fc.id === card.id);
+                if (idx >= 0) {
+                    const [failed] = copy.splice(idx, 1);
+                    copy.push(failed);
+                }
+                return copy;
+            });
+        }
+    };
+
     const saveStudySession = async (customXp?: number) => {
         const card = flashcards[currentIndex];
 
@@ -369,13 +407,6 @@ const Study: React.FC = () => {
                         .eq('id', user!.id);
                 }
             }
-
-            // Update flashcard feedback
-            await supabase
-                .from('flashcards')
-                .update({ feedback: result })
-                .eq('id', card.id);
-
         } catch (error) {
             console.error('Error saving study session:', error);
         }
@@ -453,6 +484,10 @@ const Study: React.FC = () => {
         };
 
         const xpEarned = xpMap[evaluation];
+        const card = flashcards[currentIndex];
+        const quality = qualityFromSelfEval[evaluation];
+
+        await applySrsAndUpdate(card, quality, evaluation === 'almost' ? FeedbackStatus.Almost : undefined);
 
         // Update session stats
         if (evaluation === 'correct' || evaluation === 'almost') {
@@ -463,6 +498,17 @@ const Study: React.FC = () => {
 
         // Save session with custom XP
         await saveStudySession(xpEarned);
+
+        // If failed (<3), keep studying within this session
+        if (quality < 3) {
+            const nextIndex = currentIndex < flashcards.length - 1 ? currentIndex + 1 : 0;
+            setCurrentIndex(nextIndex);
+            setUserAnswer('');
+            setSelectedOption(null);
+            setShowResult(false);
+            setResult(null);
+            return;
+        }
 
         // Move to next card
         if (currentIndex < flashcards.length - 1) {
@@ -486,7 +532,20 @@ const Study: React.FC = () => {
     };
 
     const handleNext = async () => {
+        const card = flashcards[currentIndex];
+        const quality = qualityFromAuto(result === 'correct');
+        await applySrsAndUpdate(card, quality);
         await saveStudySession();
+
+        if (quality < 3) {
+            const nextIndex = currentIndex < flashcards.length - 1 ? currentIndex + 1 : 0;
+            setCurrentIndex(nextIndex);
+            setUserAnswer('');
+            setSelectedOption(null);
+            setShowResult(false);
+            setResult(null);
+            return;
+        }
 
         if (currentIndex < flashcards.length - 1) {
             setCurrentIndex(currentIndex + 1);
@@ -534,9 +593,9 @@ const Study: React.FC = () => {
     if (flashcards.length === 0) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-100 dark:bg-gray-900 p-4">
-                <div className="text-6xl">📭</div>
+                <div className="text-6xl">✅</div>
                 <p className="text-xl text-gray-600 dark:text-gray-400 font-medium text-center">
-                    Nenhum flashcard encontrado neste deck.
+                    Tudo em dia! Nenhum flashcard para revisar agora.
                 </p>
                 <button
                     onClick={() => navigate('/dashboard')}

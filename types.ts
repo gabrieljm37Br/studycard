@@ -43,6 +43,10 @@ export interface QACard {
   answer: string;
   feedback: FeedbackStatus;
   deckId: string;
+  next_review?: string;
+  interval?: number;
+  repetition?: number;
+  ease_factor?: number;
   sources?: WebSource[];
 }
 
@@ -54,6 +58,10 @@ export interface TrueFalseCard {
   explanation: string;
   feedback: FeedbackStatus;
   deckId: string;
+  next_review?: string;
+  interval?: number;
+  repetition?: number;
+  ease_factor?: number;
   sources?: WebSource[];
 }
 
@@ -66,6 +74,10 @@ export interface MultipleChoiceCard {
   explanation: string;
   feedback: FeedbackStatus;
   deckId: string;
+  next_review?: string;
+  interval?: number;
+  repetition?: number;
+  ease_factor?: number;
   sources?: WebSource[];
 }
 
@@ -78,6 +90,10 @@ export interface PracticalExampleCard {
   sources: WebSource[];
   feedback: FeedbackStatus;
   deckId: string;
+  next_review?: string;
+  interval?: number;
+  repetition?: number;
+  ease_factor?: number;
 }
 
 export interface FillInTheBlankCard {
@@ -87,6 +103,10 @@ export interface FillInTheBlankCard {
   answer: string;   // The correct answer
   feedback: FeedbackStatus;
   deckId: string;
+  next_review?: string;
+  interval?: number;
+  repetition?: number;
+  ease_factor?: number;
   sources?: WebSource[];
 }
 
