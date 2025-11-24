@@ -53,6 +53,8 @@ const StudyCalendar: React.FC = () => {
   const [newItemTitle, setNewItemTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const monthMatrix = useMemo(() => getMonthMatrix(currentYear, currentMonth), [currentYear, currentMonth]);
 
@@ -64,6 +66,7 @@ const StudyCalendar: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
+    setCalendarError(null);
     try {
       const monthStartDate = new Date(currentYear, currentMonth, 1);
       const monthEndDate = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
@@ -112,7 +115,13 @@ const StudyCalendar: React.FC = () => {
         .gte('date', formatDateLocal(monthStartDate))
         .lte('date', formatDateLocal(monthEndDate));
 
-      if (customError && customError.code !== '42P01') throw customError; // ignore missing table gracefully
+      if (customError) {
+        if (customError.code === '42P01') {
+          setCalendarError('Crie a tabela study_calendar_items para salvar tarefas personalizadas.');
+        } else {
+          throw customError;
+        }
+      }
 
       const customItems: CalendarItem[] = (custom || []).map((c: any) => ({
         id: c.id,
@@ -142,6 +151,7 @@ const StudyCalendar: React.FC = () => {
   const addCustomItem = async () => {
     if (!newItemTitle.trim()) return;
     setSaving(true);
+    setCalendarError(null);
     try {
       const { data, error } = await supabase
         .from('study_calendar_items')
@@ -153,7 +163,13 @@ const StudyCalendar: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          setCalendarError('Crie a tabela study_calendar_items para salvar tarefas personalizadas.');
+          return;
+        }
+        throw error;
+      }
 
       const newItem: CalendarItem = {
         id: data.id,
@@ -165,7 +181,9 @@ const StudyCalendar: React.FC = () => {
       setNewItemTitle('');
     } catch (err) {
       console.error('Erro ao adicionar item:', err);
-      alert('Não foi possível salvar. Verifique se a tabela study_calendar_items existe.');
+      if (!calendarError) {
+        alert('Não foi possível salvar. Verifique se a tabela study_calendar_items existe.');
+      }
     } finally {
       setSaving(false);
     }
@@ -215,6 +233,18 @@ const StudyCalendar: React.FC = () => {
               <button onClick={goToNextMonth} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">→</button>
             </div>
           </div>
+          {calendarError && (
+            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border-b border-amber-200 dark:border-amber-800 text-sm">
+              {calendarError} Exemplo de criação:
+              <pre className="mt-2 whitespace-pre-wrap text-xs">{`create table study_calendar_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade,
+  title text not null,
+  date date not null,
+  created_at timestamptz default now()
+);`}</pre>
+            </div>
+          )}
 
           <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-700 text-center text-sm font-semibold text-gray-600 dark:text-gray-300">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
@@ -284,7 +314,29 @@ const StudyCalendar: React.FC = () => {
                     <span className="text-sm px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
                       {item.source === 'flashcard' ? 'Revisão' : 'Custom'}
                     </span>
-                    <span className="text-gray-800 dark:text-gray-200 text-sm">{item.title}</span>
+                    <span className="text-gray-800 dark:text-gray-200 text-sm flex-1">{item.title}</span>
+                    {item.source === 'custom' && (
+                      <button
+                        onClick={async () => {
+                          if (deletingId) return;
+                          setDeletingId(item.id);
+                          try {
+                            const { error } = await supabase.from('study_calendar_items').delete().eq('id', item.id).eq('user_id', user!.id);
+                            if (error) throw error;
+                            setCalendarItems(prev => prev.filter(ci => ci.id !== item.id));
+                          } catch (err) {
+                            console.error('Erro ao excluir item:', err);
+                            alert('Não foi possível excluir o item.');
+                          } finally {
+                            setDeletingId(null);
+                          }
+                        }}
+                        disabled={deletingId === item.id}
+                        className="px-3 py-1 text-sm rounded bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50"
+                      >
+                        {deletingId === item.id ? 'Excluindo...' : 'Excluir'}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
