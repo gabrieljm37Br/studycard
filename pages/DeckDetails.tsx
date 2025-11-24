@@ -100,7 +100,16 @@ const DeckDetails: React.FC = () => {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            setFlashcards(data || []);
+            const normalized = (data || []).map((card: any) =>
+                card.mode === CardMode.Dictionary
+                    ? {
+                        ...card,
+                        term: card.term || card.question || '',
+                        definition: card.definition || card.answer || '',
+                    }
+                    : card
+            );
+            setFlashcards(normalized as any);
         } catch (error) {
             console.error('Error loading flashcards:', error);
             alert('Erro ao carregar flashcards');
@@ -647,7 +656,7 @@ const DeckDetails: React.FC = () => {
                                                         </>
                                                     )}
                                                     {card.mode === CardMode.FillInTheBlank && card.question}
-                                                    {card.mode === CardMode.Dictionary && (card as any).term || card.question}
+                                                    {card.mode === CardMode.Dictionary ? ((card as any).term || card.question || '(sem termo)') : null}
                                                 </p>
                                             </div>
 
@@ -661,7 +670,7 @@ const DeckDetails: React.FC = () => {
                                                     {card.mode === CardMode.MultipleChoice && card.options[card.correctAnswerIndex]}
                                                     {card.mode === CardMode.PracticalExample && card.solution}
                                                     {card.mode === CardMode.FillInTheBlank && card.answer}
-                                                    {card.mode === CardMode.Dictionary && ((card as any).definition || card.answer)}
+                                                    {card.mode === CardMode.Dictionary ? ((card as any).definition || card.answer || '(sem definição)') : null}
                                                 </p>
                                             </div>
                                         </div>

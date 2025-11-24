@@ -316,7 +316,6 @@ const Generator: React.FC = () => {
                 deck_id: targetDeckId,
                 mode: card.mode,
                 feedback: card.feedback,
-                question: card.mode === CardMode.QA || card.mode === CardMode.MultipleChoice || card.mode === CardMode.FillInTheBlank ? (card as any).question : (card.mode === CardMode.Dictionary ? (card as any).term : null),
                 question: card.mode === CardMode.QA || card.mode === CardMode.MultipleChoice || card.mode === CardMode.FillInTheBlank
                     ? (card as any).question
                     : card.mode === CardMode.Dictionary

@@ -731,12 +731,12 @@ const Study: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
                     <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 leading-relaxed">
                         {currentCard.mode === CardMode.Dictionary && (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-2">
                                 <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wide">
                                     <span className="text-sm">📖</span>
                                     <span>Dicionário</span>
                                 </div>
-                                <div className="text-2xl font-bold text-gray-100">{currentCard.term}</div>
+                                <div className="text-2xl font-bold text-gray-100">{currentCard.term || '(sem termo)'}</div>
                             </div>
                         )}
                         {currentCard.mode === CardMode.QA && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
@@ -1015,10 +1015,14 @@ const Study: React.FC = () => {
                                                     {currentCard.mode === CardMode.MultipleChoice && <span dangerouslySetInnerHTML={renderHTML(currentCard.options[currentCard.correctAnswerIndex])} />}
                                                     {currentCard.mode === CardMode.PracticalExample && <span dangerouslySetInnerHTML={renderHTML(currentCard.solution)} />}
                                                     {currentCard.mode === CardMode.FillInTheBlank && <span dangerouslySetInnerHTML={renderHTML(currentCard.answer)} />}
+                                                    {currentCard.mode === CardMode.Dictionary && <span dangerouslySetInnerHTML={renderHTML(currentCard.definition)} />}
                                                 </p>
                                             </div>
 
-                                            {((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation || (currentCard.mode === CardMode.PracticalExample && currentCard.solution)) && (
+                                            {(
+                                                ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation) ||
+                                                (currentCard.mode === CardMode.PracticalExample && currentCard.solution)
+                                            ) && (
                                                 <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
                                                     <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                                                         Explicação
