@@ -181,26 +181,8 @@ const Statistics: React.FC = () => {
           </div>
         </div>
 
-        {/* Heatmap */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Atividade (últimos 365 dias)</h3>
-          <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(53, minmax(0, 1fr))' }}>
-            {Array.from({ length: 7 }).map((_, row) => (
-              <div key={row} className="flex flex-col gap-1">
-                {heatmapDays.filter((_, idx) => idx % 7 === row).map(day => (
-                  <div
-                    key={day.date}
-                    className={`w-3 h-3 rounded ${intensityClass(day.count)}`}
-                    title={`${day.date}: ${day.count} revisões`}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Weakest Decks & AI Insights */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Decks que precisam de atenção</h3>
             {weakDecks.length === 0 ? (
@@ -244,6 +226,34 @@ const Statistics: React.FC = () => {
                 </ResponsiveContainer>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Heatmap - Moved to bottom with horizontal layout */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Atividade (últimos 365 dias)</h3>
+          <div className="overflow-x-auto">
+            <div className="flex gap-1 min-w-max">
+              {Array.from({ length: 53 }).reverse().map((_, reversedCol) => {
+                const col = 52 - reversedCol;
+                return (
+                  <div key={col} className="flex flex-col gap-1">
+                    {Array.from({ length: 7 }).map((_, row) => {
+                      const dayIndex = col * 7 + row;
+                      const day = heatmapDays[dayIndex];
+                      if (!day) return null;
+                      return (
+                        <div
+                          key={day.date}
+                          className={`w-3 h-3 rounded ${intensityClass(day.count)}`}
+                          title={`${day.date}: ${day.count} revisões`}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
