@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "recharts": "^2.12.4",
     "@google/genai": "^1.29.1",
     "@supabase/supabase-js": "^2.84.0",
     "@tiptap/extension-underline": "^3.11.0",

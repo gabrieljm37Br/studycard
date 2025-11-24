@@ -488,12 +488,20 @@ const Help: React.FC = () => {
                                         por avaliar seu próprio desempenho:
                                     </p>
 
-                                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-3">
-                                        <div className="font-semibold text-indigo-700 dark:text-indigo-300 text-sm flex items-center gap-2 mb-2">
-                                            <span>❓</span> Pergunta e Resposta (Q&A)
+                                   <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800 mb-3">
+                                       <div className="font-semibold text-indigo-700 dark:text-indigo-300 text-sm flex items-center gap-2 mb-2">
+                                           <span>❓</span> Pergunta e Resposta (Q&A)
+                                       </div>
+                                       <p className="text-sm text-gray-700 dark:text-gray-300">
+                                           Após ver a resposta, você decide se acertou, errou ou chegou perto.
+                                       </p>
+                                   </div>
+                                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800 mb-3">
+                                        <div className="font-semibold text-green-700 dark:text-green-300 text-sm flex items-center gap-2 mb-2">
+                                            <span>💻</span> Exemplo Prático
                                         </div>
                                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                                            Após ver a resposta, você decide se acertou, errou ou chegou perto.
+                                            Avaliação manual: compare sua solução com a resposta e marque Incorreto/Quase/Correto.
                                         </p>
                                     </div>
 
@@ -657,11 +665,11 @@ const Help: React.FC = () => {
                             <span>⏳</span> Repetição Espaçada (SRS)
                         </h2>
 
-                        <div className="space-y-6">
-                            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">
-                                    Como funciona
-                                </h3>
+                            <div className="space-y-6">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">
+                                        Como funciona
+                                    </h3>
                                 <p className="text-gray-700 dark:text-gray-300 mb-4">
                                     O app usa o algoritmo SM-2 (SuperMemo-2) para agendar revisões. Cada resposta recalcula
                                     intervalo, repetição, fator de facilidade e a próxima data de revisão (<em>next_review</em>).
@@ -672,7 +680,7 @@ const Help: React.FC = () => {
                                         <h4 className="font-semibold text-indigo-700 dark:text-indigo-300 mb-2">Notas (Quality)</h4>
                                         <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                             <li>Q&A (autoavaliação): ❌ 0 | ⚠️ 3 | ✅ 5</li>
-                                            <li>Automático (VF/Múltipla): Erro 0 | Acerto 5</li>
+                                            <li>Automático (VF/Múltipla/Preencher): Erro 0 | Acerto 5</li>
                                             <li>Quality &lt; 3: intervalo volta a 1 dia e o card reaparece na sessão.</li>
                                         </ul>
                                     </div>

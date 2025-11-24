@@ -241,8 +241,8 @@ const Study: React.FC = () => {
         const card = flashcards[currentIndex];
         let evaluation: 'correct' | 'incorrect' = 'incorrect';
 
-        // For Q&A mode, just show the answer without automatic evaluation
-        if (card.mode === CardMode.QA) {
+        // For Q&A and PracticalExample modes, use self-evaluation instead of automatic
+        if (card.mode === CardMode.QA || card.mode === CardMode.PracticalExample) {
             setShowResult(true);
             setResult(null); // No automatic result for Q&A
             return;
@@ -255,16 +255,11 @@ const Study: React.FC = () => {
         } else if (card.mode === CardMode.MultipleChoice) {
             // Multiple Choice: check if selected option matches correct index
             evaluation = selectedOption === card.correctAnswerIndex ? 'correct' : 'incorrect';
-        } else if (card.mode === CardMode.PracticalExample || card.mode === CardMode.FillInTheBlank) {
-            // Practical and Fill-in-the-Blank: Use fuzzy matching
-            const correctAnswer = card.mode === CardMode.FillInTheBlank ? card.answer : card.solution;
+        } else if (card.mode === CardMode.FillInTheBlank) {
+            // Fill-in-the-Blank: Use fuzzy matching
+            const correctAnswer = card.answer;
             const similarity = calculateSimilarity(userAnswer.toLowerCase().trim(), correctAnswer.toLowerCase().trim());
-
-            if (similarity > 0.8) {
-                evaluation = 'correct';
-            } else {
-                evaluation = 'incorrect';
-            }
+            evaluation = similarity > 0.8 ? 'correct' : 'incorrect';
         }
 
         setResult(evaluation);
@@ -905,7 +900,7 @@ const Study: React.FC = () => {
                     showResult && (
                         <div className="animate-slide-up">
                             {/* Q&A Self-Evaluation */}
-                            {currentCard.mode === CardMode.QA ? (
+                            {currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample ? (
                                 <div>
                                     <div className="p-6 rounded-xl border-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 mb-6">
                                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-400">
