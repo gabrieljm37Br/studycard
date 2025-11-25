@@ -331,8 +331,8 @@ const DeckDetails: React.FC = () => {
                 break;
             case CardMode.MultipleChoice:
                 formData.question = card.question;
-                formData.options = [...card.options];
-                formData.correctAnswerIndex = card.correctAnswerIndex;
+                formData.options = card.options ? [...card.options] : ['', '', '', '']; // Fallback options
+                formData.correctAnswerIndex = card.correctAnswerIndex ?? 0;
                 formData.explanation = card.explanation || '';
                 break;
             case CardMode.PracticalExample:
@@ -345,8 +345,8 @@ const DeckDetails: React.FC = () => {
                 formData.answer = card.answer;
                 break;
             case CardMode.Dictionary:
-                formData.term = (card as any).term || card.question;
-                formData.definition = (card as any).definition || card.answer;
+                formData.term = (card as any).term || (card as any).question;
+                formData.definition = (card as any).definition || (card as any).answer;
                 break;
         }
 
@@ -667,7 +667,7 @@ const DeckDetails: React.FC = () => {
                                                         </>
                                                     )}
                                                     {card.mode === CardMode.FillInTheBlank && card.question}
-                                                    {card.mode === CardMode.Dictionary ? ((card as any).term || card.question || '(sem termo)') : null}
+                                                    {card.mode === CardMode.Dictionary ? ((card as any).term || (card as any).question || '(sem termo)') : null}
                                                 </p>
                                             </div>
 
@@ -678,10 +678,10 @@ const DeckDetails: React.FC = () => {
                                                 <p className="text-gray-600 dark:text-gray-400">
                                                     {card.mode === CardMode.QA && card.answer}
                                                     {card.mode === CardMode.TrueFalse && (card.isTrue ? 'Verdadeiro' : 'Falso')}
-                                                    {card.mode === CardMode.MultipleChoice && card.options[card.correctAnswerIndex]}
+                                                    {card.mode === CardMode.MultipleChoice && (card.options && card.correctAnswerIndex !== undefined ? card.options[card.correctAnswerIndex] : (card as any).answer)}
                                                     {card.mode === CardMode.PracticalExample && card.solution}
                                                     {card.mode === CardMode.FillInTheBlank && card.answer}
-                                                    {card.mode === CardMode.Dictionary ? ((card as any).definition || card.answer || '(sem definição)') : null}
+                                                    {card.mode === CardMode.Dictionary ? ((card as any).definition || (card as any).answer || '(sem definição)') : null}
                                                 </p>
                                             </div>
                                         </div>
