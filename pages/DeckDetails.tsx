@@ -105,15 +105,21 @@ const DeckDetails: React.FC = () => {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            const normalized = (data || []).map((card: any) =>
-                card.mode === CardMode.Dictionary
+            const normalized = (data || []).map((card: any) => {
+                const camelCard = {
+                    ...card,
+                    isTrue: card.isTrue ?? card.is_true,
+                    correctAnswerIndex: card.correctAnswerIndex ?? card.correct_answer_index,
+                };
+
+                return camelCard.mode === CardMode.Dictionary
                     ? {
-                        ...card,
-                        term: card.term || card.question || '',
-                        definition: card.definition || card.answer || '',
+                        ...camelCard,
+                        term: camelCard.term || camelCard.question || '',
+                        definition: camelCard.definition || camelCard.answer || '',
                     }
-                    : card
-            );
+                    : camelCard;
+            });
             setFlashcards(normalized as any);
         } catch (error) {
             console.error('Error loading flashcards:', error);

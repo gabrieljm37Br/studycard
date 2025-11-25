@@ -92,20 +92,28 @@ const Study: React.FC = () => {
     }, [deckId, simulationId]);
 
     const normalizeCard = (raw: any): FlashcardData => {
-        if (raw.mode === CardMode.Dictionary) {
+        // Normalize snake_case fields returned by Supabase
+        const card = {
+            ...raw,
+            isTrue: raw.isTrue ?? raw.is_true,
+            correctAnswerIndex: raw.correctAnswerIndex ?? raw.correct_answer_index,
+            deckId: raw.deckId ?? raw.deck_id,
+        };
+
+        if (card.mode === CardMode.Dictionary) {
             return {
-                ...raw,
-                term: raw.term || raw.question || '',
-                definition: raw.definition || raw.answer || '',
+                ...card,
+                term: (card as any).term || card.question || '',
+                definition: (card as any).definition || card.answer || '',
             } as any;
         }
-        if (raw.mode === CardMode.PracticalExample) {
+        if (card.mode === CardMode.PracticalExample) {
             return {
-                ...raw,
-                question: raw.question || raw.problem || '',
+                ...card,
+                question: card.question || (card as any).problem || '',
             } as any;
         }
-        return raw as FlashcardData;
+        return card as FlashcardData;
     };
 
     const loadFlashcards = async () => {
