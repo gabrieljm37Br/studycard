@@ -775,6 +775,147 @@ Explicação:    TypeScript é transpilado para JavaScript.`}
                                         <span><strong>Organize por assunto:</strong> Crie decks separados para diferentes temas ou matérias.</span>
                                     </li>
                                 </ul>
+
+                                {/* Dica Especial: Prompt de IA */}
+                                <div className="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-2 border-indigo-300 dark:border-indigo-700 rounded-xl p-5">
+                                    <div className="flex items-start gap-3 mb-3">
+                                        <span className="text-2xl">🤖</span>
+                                        <div>
+                                            <h4 className="font-bold text-indigo-800 dark:text-indigo-200 text-lg mb-1">
+                                                Dica Especial: Use IA para Converter seus Flashcards do Anki
+                                            </h4>
+                                            <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                                                Se você tem flashcards exportados do Anki em formato diferente, use este prompt com ChatGPT, Claude ou outra IA para convertê-los automaticamente:
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                                                📋 Prompt para IA
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    const prompt = `Preciso que você transforme os flashcards do Anki que vou fornecer em um formato específico de texto estruturado.
+
+FORMATO DE SAÍDA ESPERADO:
+Cada flashcard deve seguir este padrão, com blocos separados por uma linha em branco:
+
+Para flashcards de Pergunta e Resposta:
+Pergunta: [texto da pergunta]
+Resposta: [texto da resposta]
+Explicação: [explicação opcional]
+
+Para flashcards de Verdadeiro ou Falso:
+Certo ou Errado: [afirmação]
+Resposta: [Verdadeiro ou Falso]
+Explicação: [explicação]
+
+Para flashcards de Múltipla Escolha:
+Questão: [enunciado da questão]
+[alternativa A]
+[alternativa B]
+[alternativa C]
+[alternativa D]
+Resposta: [letra da alternativa correta]
+Explicação: [explicação]
+
+Para flashcards de Dicionário/Vocabulário:
+Dicionário: [termo]
+Significado: [definição]
+
+Para flashcards de Situação-Problema:
+Situação-Problema: [descrição do cenário]
+Questão: [pergunta sobre o cenário]
+Resposta: [resposta]
+Explicação: [explicação]
+
+Para flashcards de Hipótese/Caso de Estudo:
+Hipótese: [descrição da hipótese ou caso]
+Questão: [pergunta]
+Resposta: [resposta]
+Explicação: [explicação]
+
+REGRAS IMPORTANTES:
+1. Classifique cada flashcard no tipo mais adequado
+2. Mantenha o conteúdo original, apenas reorganize no formato
+3. Separe cada flashcard com uma linha em branco
+4. Use exatamente as palavras-chave especificadas (Pergunta:, Resposta:, etc.)
+5. Se não houver explicação no original, você pode omitir o campo "Explicação:"
+
+Aqui estão os flashcards do Anki para converter:
+[COLE SEUS FLASHCARDS AQUI]`;
+                                                    navigator.clipboard.writeText(prompt);
+                                                    alert('✅ Prompt copiado! Cole no ChatGPT ou Claude.');
+                                                }}
+                                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded transition-colors"
+                                            >
+                                                📋 Copiar Prompt
+                                            </button>
+                                        </div>
+                                        <pre className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-3 rounded text-xs overflow-x-auto leading-relaxed border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+                                            {`Preciso que você transforme os flashcards do Anki que vou 
+fornecer em um formato específico de texto estruturado.
+
+FORMATO DE SAÍDA ESPERADO:
+Cada flashcard deve seguir este padrão, com blocos 
+separados por uma linha em branco:
+
+Para flashcards de Pergunta e Resposta:
+Pergunta: [texto da pergunta]
+Resposta: [texto da resposta]
+Explicação: [explicação opcional]
+
+Para flashcards de Verdadeiro ou Falso:
+Certo ou Errado: [afirmação]
+Resposta: [Verdadeiro ou Falso]
+Explicação: [explicação]
+
+Para flashcards de Múltipla Escolha:
+Questão: [enunciado da questão]
+[alternativa A]
+[alternativa B]
+[alternativa C]
+[alternativa D]
+Resposta: [letra da alternativa correta]
+Explicação: [explicação]
+
+Para flashcards de Dicionário/Vocabulário:
+Dicionário: [termo]
+Significado: [definição]
+
+Para flashcards de Situação-Problema:
+Situação-Problema: [descrição do cenário]
+Questão: [pergunta sobre o cenário]
+Resposta: [resposta]
+Explicação: [explicação]
+
+Para flashcards de Hipótese/Caso de Estudo:
+Hipótese: [descrição da hipótese ou caso]
+Questão: [pergunta]
+Resposta: [resposta]
+Explicação: [explicação]
+
+REGRAS IMPORTANTES:
+1. Classifique cada flashcard no tipo mais adequado
+2. Mantenha o conteúdo original, apenas reorganize no formato
+3. Separe cada flashcard com uma linha em branco
+4. Use exatamente as palavras-chave especificadas
+5. Se não houver explicação no original, omita o campo
+
+Aqui estão os flashcards do Anki para converter:
+[COLE SEUS FLASHCARDS AQUI]`}
+                                        </pre>
+                                    </div>
+
+                                    <div className="mt-3 flex items-start gap-2 text-sm text-indigo-700 dark:text-indigo-300">
+                                        <span className="mt-0.5">ℹ️</span>
+                                        <p>
+                                            <strong>Como usar:</strong> Copie o prompt acima, cole no ChatGPT/Claude, depois cole seus flashcards do Anki onde está escrito "[COLE SEUS FLASHCARDS AQUI]". A IA converterá tudo automaticamente para o formato correto!
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Solução de Problemas */}
