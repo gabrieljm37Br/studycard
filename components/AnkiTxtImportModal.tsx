@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
-import { parseAnkiTxtFile, validateAnkiTxtContent, ParsedAnkiCard } from '../services/ankiTxtParser';
-import { FeedbackStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { CardMode, FeedbackStatus } from '../types';
+import { parseAnkiTxtFile, validateAnkiTxtContent, type ParsedAnkiCard } from '../services/ankiTxtParser';
 
 interface AnkiTxtImportModalProps {
     isOpen: boolean;
@@ -28,13 +28,13 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<'upload' | 'preview'>('upload');
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen && user) {
             loadDecks();
         }
     }, [isOpen, user]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (preselectedDeckId) {
             setSelectedDeckId(preselectedDeckId);
         }
@@ -44,45 +44,59 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
         if (!user) return;
 
         try {
-            const { data, error } = await supabase
+            const { data, error: decksError } = await supabase
                 .from('decks')
                 .select('id, name')
                 .eq('user_id', user.id)
                 .order('name', { ascending: true });
 
-            if (error) throw error;
+            if (decksError) throw decksError;
             setAvailableDecks(data || []);
         } catch (err) {
             console.error('Error loading decks:', err);
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            if (!selectedFile.name.endsWith('.txt')) {
-                setError('Por favor, selecione um arquivo TXT válido');
-                return;
-            }
-            setFile(selectedFile);
-            setError(null);
-            parseFile(selectedFile);
-        }
+    const resetState = () => {
+        setFile(null);
+        setParsedCards([]);
+        setSelectedDeckId(preselectedDeckId || '');
+        setNewDeckName('');
+        setIsCreatingNewDeck(false);
+        setError(null);
+        setStep('upload');
     };
 
-    const parseFile = async (file: File) => {
-        try {
-            const text = await file.text();
+    const handleClose = () => {
+        resetState();
+        onClose();
+    };
 
-            // Validate content
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) return;
+
+        if (!selectedFile.name.toLowerCase().endsWith('.txt')) {
+            setError('Por favor, selecione um arquivo .txt');
+            return;
+        }
+
+        setFile(selectedFile);
+        setError(null);
+        parseFile(selectedFile);
+    };
+
+    const parseFile = async (selectedFile: File) => {
+        try {
+            const text = await selectedFile.text();
             const validation = validateAnkiTxtContent(text);
+
             if (!validation.valid) {
                 setError(validation.error || 'Arquivo TXT inválido');
                 setParsedCards([]);
                 return;
             }
 
-            // Parse TXT
             const cards = parseAnkiTxtFile(text);
 
             if (cards.length === 0) {
@@ -100,12 +114,75 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
         }
     };
 
+    const mapCardToInsert = (card: ParsedAnkiCard, targetDeckId: string) => {
+        const base = {
+            user_id: user!.id,
+            deck_id: targetDeckId,
+            mode: card.type,
+            feedback: FeedbackStatus.Unseen,
+            interval: 0,
+            repetition: 0,
+            ease_factor: 2.5,
+        };
+
+        switch (card.type) {
+            case CardMode.QA:
+                return {
+                    ...base,
+                    question: card.front,
+                    answer: card.back,
+                };
+            case CardMode.FillInTheBlank:
+                return {
+                    ...base,
+                    question: card.front,
+                    answer: card.back,
+                };
+            case CardMode.TrueFalse:
+                return {
+                    ...base,
+                    statement: card.front,
+                    is_true: card.isTrue ?? null,
+                    explanation: card.explanation || card.back || null,
+                };
+            case CardMode.MultipleChoice:
+                return {
+                    ...base,
+                    question: card.front,
+                    options: card.options || [],
+                    correct_answer_index: card.correctAnswerIndex ?? 0,
+                    explanation: card.explanation || card.back || null,
+                };
+            case CardMode.PracticalExample:
+                return {
+                    ...base,
+                    problem: card.front,
+                    question: card.front,
+                    solution: card.back,
+                    explanation: card.explanation || null,
+                };
+            case CardMode.Dictionary:
+                return {
+                    ...base,
+                    question: card.front,
+                    answer: card.back,
+                    term: card.front,
+                    definition: card.back,
+                };
+            default:
+                return {
+                    ...base,
+                    question: card.front,
+                    answer: card.back,
+                };
+        }
+    };
+
     const handleImport = async () => {
         if (!user || parsedCards.length === 0) return;
 
         let targetDeckId = selectedDeckId;
 
-        // Create new deck if needed
         if (isCreatingNewDeck && newDeckName.trim()) {
             try {
                 const { data: newDeck, error: deckError } = await supabase
@@ -136,53 +213,14 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
         setError(null);
 
         try {
-            // Prepare flashcards for insertion
-            // Prepare flashcards for insertion
-            const flashcardsToInsert = parsedCards.map(card => {
-                const baseCard = {
-                    user_id: user.id,
-                    deck_id: targetDeckId,
-                    mode: card.type,
-                    feedback: FeedbackStatus.Unseen,
-                    interval: 0,
-                    repetition: 0,
-                    ease_factor: 2.5,
-                    explanation: card.explanation || null,
-                };
+            const flashcardsToInsert = parsedCards.map(card => mapCardToInsert(card, targetDeckId!));
 
-                if (card.type === 'true_false') {
-                    return {
-                        ...baseCard,
-                        statement: card.front,
-                        question: card.front, // Fallback
-                        is_true: card.isTrue,
-                        answer: card.back,
-                    };
-                } else if (card.type === 'multiple_choice') {
-                    return {
-                        ...baseCard,
-                        question: card.front,
-                        options: card.options,
-                        correct_answer_index: card.correctAnswerIndex,
-                        answer: card.back,
-                    };
-                } else {
-                    return {
-                        ...baseCard,
-                        question: card.front,
-                        answer: card.back,
-                    };
-                }
-            });
-
-            // Batch insert
             const { error: insertError } = await supabase
                 .from('flashcards')
                 .insert(flashcardsToInsert);
 
             if (insertError) throw insertError;
 
-            // Success!
             onImportComplete(parsedCards.length);
             handleClose();
         } catch (err) {
@@ -193,40 +231,48 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
         }
     };
 
-    const handleClose = () => {
-        setFile(null);
-        setParsedCards([]);
-        setSelectedDeckId(preselectedDeckId || '');
-        setNewDeckName('');
-        setIsCreatingNewDeck(false);
-        setError(null);
-        setStep('upload');
-        onClose();
+    const getCardTypeLabel = (type: CardMode): string => {
+        switch (type) {
+            case CardMode.QA:
+                return 'Pergunta e Resposta';
+            case CardMode.TrueFalse:
+                return 'Verdadeiro ou Falso';
+            case CardMode.MultipleChoice:
+                return 'Múltipla Escolha';
+            case CardMode.PracticalExample:
+                return 'Exemplo Prático';
+            case CardMode.FillInTheBlank:
+                return 'Lacunas';
+            case CardMode.Dictionary:
+                return 'Dicionário';
+            default:
+                return type;
+        }
     };
 
-    const getCardTypeLabel = (type: string): string => {
-        const labels: Record<string, string> = {
-            'q_and_a': 'Pergunta e Resposta',
-            'true_false': 'Verdadeiro ou Falso',
-            'multi_choice': 'Múltipla Escolha',
-            'practical_example': 'Exemplo Prático',
-        };
-        return labels[type] || type;
+    const renderCardBack = (card: ParsedAnkiCard) => {
+        if (card.type === CardMode.TrueFalse) {
+            return card.isTrue ? 'Verdadeiro' : 'Falso';
+        }
+
+        if (card.type === CardMode.MultipleChoice && card.options && card.options.length > 0) {
+            const index = card.correctAnswerIndex ?? 0;
+            return `Correta: ${card.options[index] || '(opção não encontrada)'}`;
+        }
+
+        return card.back;
     };
 
-    const getCardTypeStats = () => {
-        const stats: Record<string, number> = {};
-        parsedCards.forEach(card => {
-            stats[card.type] = (stats[card.type] || 0) + 1;
-        });
-        return stats;
-    };
+    const typeCounts = parsedCards.reduce<Record<string, number>>((acc, card) => {
+        acc[card.type] = (acc[card.type] || 0) + 1;
+        return acc;
+    }, {});
 
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-gray-700">
                 {/* Header */}
                 <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 z-10">
                     <div className="flex items-center justify-between">
@@ -235,7 +281,9 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                                 Importar TXT do Anki
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                {step === 'upload' ? 'Selecione um arquivo TXT' : `${parsedCards.length} flashcards encontrados`}
+                                {step === 'upload'
+                                    ? 'Selecione um arquivo .txt no formato do Anki'
+                                    : `${parsedCards.length} flashcards reconhecidos`}
                             </p>
                         </div>
                         <button
@@ -249,16 +297,15 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-6 space-y-6">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-200">
                             {error}
                         </div>
                     )}
 
                     {step === 'upload' && (
                         <div className="space-y-6">
-                            {/* File Upload */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     Arquivo TXT
@@ -270,22 +317,16 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                                     className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                    Formato esperado: Arquivo TXT exportado do Anki
+                                    Use o modelo: Pergunta/Resposta, Certo ou Errado, Múltipla Escolha, Exemplo Prático ou Dicionário.
                                 </p>
                             </div>
 
-                            {/* Info Box */}
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                                <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-                                    <span>ℹ️</span> Tipos de Cards Suportados
-                                </h3>
-                                <ul className="text-sm text-blue-700 dark:text-blue-100 space-y-1">
-                                    <li>• <strong>Pergunta:</strong> → Pergunta e Resposta</li>
-                                    <li>• <strong>Certo ou Errado:</strong> → Verdadeiro ou Falso</li>
-                                    <li>• <strong>Questão:</strong> → Múltipla Escolha</li>
-                                    <li>• <strong>Dicionário:</strong> → Pergunta e Resposta</li>
-                                    <li>• <strong>Situação-Problema:</strong> → Exemplo Prático</li>
-                                    <li>• <strong>Hipótese:</strong> → Exemplo Prático</li>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                                <h3 className="font-semibold text-purple-800 dark:text-purple-200 mb-2">Dicas rápidas</h3>
+                                <ul className="text-sm text-purple-700 dark:text-purple-100 space-y-1">
+                                    <li>• Cada card começa com palavras-chave como "Pergunta:", "Questão:" ou "Certo ou Errado:".</li>
+                                    <li>• Para múltipla escolha, mantenha as alternativas em linhas separadas (a) b) ...).</li>
+                                    <li>• Campos adicionais como Explicação são importados quando presentes.</li>
                                 </ul>
                             </div>
                         </div>
@@ -293,10 +334,22 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
 
                     {step === 'preview' && (
                         <div className="space-y-6">
-                            {/* Deck Selection */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {Object.entries(typeCounts).map(([type, count]) => (
+                                    <div
+                                        key={type}
+                                        className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                                    >
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">Tipo</div>
+                                        <div className="text-lg font-bold text-gray-800 dark:text-gray-100">{getCardTypeLabel(type as CardMode)}</div>
+                                        <div className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">{count}</div>
+                                    </div>
+                                ))}
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    Deck de Destino
+                                    Deck de destino
                                 </label>
 
                                 <div className="flex items-center gap-3 mb-3">
@@ -307,7 +360,7 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                     >
-                                        Deck Existente
+                                        Deck existente
                                     </button>
                                     <button
                                         onClick={() => setIsCreatingNewDeck(true)}
@@ -316,7 +369,7 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                     >
-                                        Criar Novo Deck
+                                        Criar novo deck
                                     </button>
                                 </div>
 
@@ -344,55 +397,48 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                                 )}
                             </div>
 
-                            {/* Stats */}
-                            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                                <h3 className="font-semibold text-gray-800 dark:text-gray-100 mb-3">Resumo da Importação</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {Object.entries(getCardTypeStats()).map(([type, count]) => (
-                                        <div key={type} className="text-center">
-                                            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                                                {count}
-                                            </div>
-                                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                                                {getCardTypeLabel(type)}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Preview Table */}
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">
-                                    Preview dos Flashcards
+                                    Preview dos flashcards
                                 </h3>
-                                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Tipo</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Frente</th>
-                                                <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">Verso</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {parsedCards.map((card, index) => (
-                                                <tr key={index} className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                                    <td className="px-4 py-3">
-                                                        <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
-                                                            {getCardTypeLabel(card.type)}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-gray-800 dark:text-gray-200 max-w-xs truncate">
-                                                        {card.front}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                                                        {card.back}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                    {parsedCards.map((card, index) => (
+                                        <div
+                                            key={`${card.front}-${index}`}
+                                            className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50/60 dark:bg-gray-800/60"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-xs font-semibold px-2 py-1 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-200">
+                                                    {getCardTypeLabel(card.type)}
+                                                </span>
+                                                {card.explanation && (
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Com explicação</span>
+                                                )}
+                                            </div>
+                                            <div className="text-sm text-gray-700 dark:text-gray-200">
+                                                <div className="font-semibold mb-1">Frente</div>
+                                                <div className="line-clamp-2 whitespace-pre-wrap">{card.front}</div>
+                                            </div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                                                <div className="font-semibold mb-1">
+                                                    {card.type === CardMode.TrueFalse ? 'Resposta esperada' : 'Verso'}
+                                                </div>
+                                                <div className="line-clamp-2 whitespace-pre-wrap">{renderCardBack(card)}</div>
+                                            </div>
+                                            {card.options && card.options.length > 0 && (
+                                                <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">
+                                                    <div className="font-semibold mb-1">Alternativas</div>
+                                                    <ul className="list-disc list-inside space-y-1">
+                                                        {card.options.map((opt, idx) => (
+                                                            <li key={idx} className={idx === card.correctAnswerIndex ? 'font-semibold text-green-700 dark:text-green-300' : ''}>
+                                                                {opt}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -432,9 +478,7 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                                         Importando...
                                     </>
                                 ) : (
-                                    <>
-                                        Importar {parsedCards.length} Flashcards
-                                    </>
+                                    <>Importar {parsedCards.length} flashcards</>
                                 )}
                             </button>
                         )}

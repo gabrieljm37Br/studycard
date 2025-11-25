@@ -29,7 +29,7 @@ const Generator: React.FC = () => {
     const [isCreatingNewDeck, setIsCreatingNewDeck] = useState(false);
     const [newDeckName, setNewDeckName] = useState('');
     const [showCSVImport, setShowCSVImport] = useState(false);
-    const [showAnkiTxtImport, setShowAnkiTxtImport] = useState(false);
+    const [showAnkiImport, setShowAnkiImport] = useState(false);
 
     // Manual flashcard creation state
     const [manualCards, setManualCards] = useState<any[]>([]);
@@ -402,16 +402,16 @@ const Generator: React.FC = () => {
                 <h1 className="text-xl md:text-2xl font-bold">Gerador de Flashcards</h1>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => setShowCSVImport(true)}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
-                    >
-                        <span>📥</span> <span className="hidden sm:inline">CSV</span>
-                    </button>
-                    <button
-                        onClick={() => setShowAnkiTxtImport(true)}
+                        onClick={() => setShowAnkiImport(true)}
                         className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
                     >
                         <span>📄</span> <span className="hidden sm:inline">TXT Anki</span>
+                    </button>
+                    <button
+                        onClick={() => setShowCSVImport(true)}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
+                    >
+                        <span>📥</span> <span className="hidden sm:inline">Importar CSV</span>
                     </button>
                     <button
                         onClick={() => navigate('/dashboard')}
@@ -978,18 +978,19 @@ const Generator: React.FC = () => {
                         state: { message: `${count} flashcards importados com sucesso do CSV!` }
                     });
                 }}
+                preselectedDeckId={selectedDeckId || undefined}
             />
 
-            {/* Anki TXT Import Modal */}
             <AnkiTxtImportModal
-                isOpen={showAnkiTxtImport}
-                onClose={() => setShowAnkiTxtImport(false)}
+                isOpen={showAnkiImport}
+                onClose={() => setShowAnkiImport(false)}
                 onImportComplete={(count) => {
-                    setShowAnkiTxtImport(false);
+                    setShowAnkiImport(false);
                     navigate('/dashboard', {
-                        state: { message: `${count} flashcards importados com sucesso do Anki TXT!` }
+                        state: { message: `${count} flashcards importados com sucesso do TXT do Anki!` }
                     });
                 }}
+                preselectedDeckId={selectedDeckId || undefined}
             />
         </div>
     );
