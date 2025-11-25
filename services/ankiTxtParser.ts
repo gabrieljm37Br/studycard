@@ -250,13 +250,15 @@ const startKeywordPatterns = [
 
 /**
  * Detects the card type based on the starting keyword
+ * Handles optional leading quotes/spaces before the keyword.
  */
 function detectCardType(blockText: string): { type: string; keyword: string } | null {
     const trimmed = blockText.trim();
+    const normalizedStart = trimmed.replace(/^[\uFEFF"'“”‘’\s]+/, '');
 
     for (const { type, pattern } of startKeywordPatterns) {
         const regex = new RegExp(`^${pattern}`, 'i');
-        if (regex.test(trimmed)) {
+        if (regex.test(normalizedStart)) {
             return { type, keyword: pattern };
         }
     }
@@ -273,7 +275,7 @@ function splitIntoBlocks(content: string): string[] {
     const pattern = startKeywordPatterns.map(k => k.pattern).join('|');
 
     // Split on start keywords but keep the delimiter
-    const regex = new RegExp(`(?=${pattern})`, 'gi');
+    const regex = new RegExp(`(?=[\\s"'“”‘’]*(${pattern}))`, 'gi');
     const blocks = content.split(regex);
 
     // Filter out empty blocks and trim
