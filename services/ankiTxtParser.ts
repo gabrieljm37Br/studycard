@@ -8,6 +8,9 @@ export interface ParsedAnkiCard {
     front: string;
     back: string;
     explanation?: string;
+    options?: string[];
+    correctAnswerIndex?: number;
+    isTrue?: boolean;
 }
 
 /**
@@ -73,11 +76,14 @@ function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
     const back = extractField(blockText, 'Resposta:', ['Explicação:']);
     const explanation = extractField(blockText, 'Explicação:');
 
+    const isTrue = /certo|verdadeiro|true|v|sim/i.test(back.trim());
+
     return {
         type: CardMode.TrueFalse,
         front,
         back,
-        explanation: explanation || undefined
+        explanation: explanation || undefined,
+        isTrue
     };
 }
 
@@ -99,11 +105,84 @@ function parseQuestaoCard(blockText: string): ParsedAnkiCard {
     const back = extractField(blockText, 'Resposta:', ['Explicação:']);
     const explanation = extractField(blockText, 'Explicação:');
 
+    let options: string[] = [];
+    let questionText = '';
+    let correctAnswerIndex = 0;
+
+    if (front) {
+        // Attempt to split question and options
+        // Strategy: Look for lines starting with a), b), etc.
+        const lines = front.split('\n');
+        const optionRegex = /^([a-z]\)|\d+\.)\s*(.+)/i;
+
+        const firstOptionIndex = lines.findIndex(line => optionRegex.test(line.trim()));
+
+        if (firstOptionIndex !== -1) {
+            // Extract options
+            options = lines
+                .slice(firstOptionIndex)
+                .filter(line => optionRegex.test(line.trim()))
+                .map(line => line.replace(/^([a-z]\)|\d+\.)\s*/i, '').trim());
+
+            // Extract question (everything before first option)
+            questionText = lines.slice(0, firstOptionIndex).join('\n').trim();
+        } else {
+            questionText = front;
+        }
+    }
+
+    // Parse correct answer index
+    const answerTrimmed = back.trim().toLowerCase();
+
+    // 1. Check for single letter answer like 'a', 'b)' or 'a.'
+    const letterMatch = answerTrimmed.match(/^([a-z])\)?\.?$/);
+    if (letterMatch) {
+        correctAnswerIndex = letterMatch[1].charCodeAt(0) - 97; // a=0, b=1
+    } else {
+        // 2. Check for format "a) Answer Text" or "a. Answer Text"
+        const letterStartMatch = answerTrimmed.match(/^([a-z])[\)\.]\s+/);
+        if (letterStartMatch) {
+            correctAnswerIndex = letterStartMatch[1].charCodeAt(0) - 97;
+        } else {
+            // 3. Check for number answer like '1', '2)' or '1.'
+            const numberMatch = answerTrimmed.match(/^(\d+)\)?\.?$/);
+            if (numberMatch) {
+                correctAnswerIndex = parseInt(numberMatch[1]) - 1;
+            } else {
+                // 4. Check for format "1. Answer Text"
+                const numberStartMatch = answerTrimmed.match(/^(\d+)[\)\.]\s+/);
+                if (numberStartMatch) {
+                    correctAnswerIndex = parseInt(numberStartMatch[1]) - 1;
+                } else {
+                    // 5. Fallback: Try to match answer text against options
+                    // We check if the option text is contained in the answer or vice versa
+                    const index = options.findIndex(opt => {
+                        const optClean = opt.toLowerCase();
+                        return optClean === answerTrimmed ||
+                            (answerTrimmed.length > 5 && optClean.includes(answerTrimmed)) ||
+                            (optClean.length > 5 && answerTrimmed.includes(optClean));
+                    });
+
+                    if (index !== -1) {
+                        correctAnswerIndex = index;
+                    }
+                }
+            }
+        }
+    }
+
+    // Validate index
+    if (options.length > 0 && (correctAnswerIndex < 0 || correctAnswerIndex >= options.length)) {
+        correctAnswerIndex = 0; // Fallback
+    }
+
     return {
         type: CardMode.MultipleChoice,
-        front,
+        front: questionText || front,
         back,
-        explanation: explanation || undefined
+        explanation: explanation || undefined,
+        options: options.length > 0 ? options : undefined,
+        correctAnswerIndex: options.length > 0 ? correctAnswerIndex : undefined
     };
 }
 

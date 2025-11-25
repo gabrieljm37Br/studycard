@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { applySm2 } from '../services/srsAlgorithm';
+import { updateLastStudied } from '../services/deckService';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData, FlashcardNote } from '../types';
 import { renderHTML } from '../utils/textUtils';
@@ -271,10 +272,13 @@ const Study: React.FC = () => {
         if (card.mode === CardMode.TrueFalse) {
             // True/False: selectedOption 0 = True, 1 = False
             const userSaysTrue = selectedOption === 0;
-            evaluation = userSaysTrue === card.isTrue ? 'correct' : 'incorrect';
+            // Handle potential string/boolean mismatch from DB
+            const cardIsTrue = String(card.isTrue).toLowerCase() === 'true';
+            evaluation = userSaysTrue === cardIsTrue ? 'correct' : 'incorrect';
         } else if (card.mode === CardMode.MultipleChoice) {
             // Multiple Choice: check if selected option matches correct index
-            evaluation = selectedOption === card.correctAnswerIndex ? 'correct' : 'incorrect';
+            // Handle potential string/number mismatch
+            evaluation = Number(selectedOption) === Number(card.correctAnswerIndex) ? 'correct' : 'incorrect';
         } else if (card.mode === CardMode.FillInTheBlank) {
             // Fill-in-the-Blank: Use fuzzy matching
             const correctAnswer = card.answer;
@@ -416,11 +420,17 @@ const Study: React.FC = () => {
                     const newXp = profile.xp + xpEarned;
                     const newLevel = Math.floor(newXp / 100) + 1;
 
+
                     await supabase
                         .from('profiles')
                         .update({ xp: newXp, level: newLevel })
                         .eq('id', user!.id);
                 }
+            }
+
+            // Update deck's last_studied_at timestamp for Topicogram
+            if (deckId) {
+                await updateLastStudied(deckId);
             }
         } catch (error) {
             console.error('Error saving study session:', error);
@@ -944,8 +954,8 @@ const Study: React.FC = () => {
                                                         currentCard.mode === CardMode.QA
                                                             ? currentCard.answer
                                                             : currentCard.mode === CardMode.Dictionary
-                                                                ? currentCard.definition
-                                                                : currentCard.solution
+                                                                ? (currentCard as any).definition || ''
+                                                                : (currentCard as any).solution || ''
                                                     )}
                                                 />
                                             </div>
@@ -1015,15 +1025,12 @@ const Study: React.FC = () => {
                                                 <p className="text-lg text-gray-800 dark:text-gray-200 font-medium">
                                                     {currentCard.mode === CardMode.TrueFalse && (currentCard.isTrue ? 'Verdadeiro' : 'Falso')}
                                                     {currentCard.mode === CardMode.MultipleChoice && <span dangerouslySetInnerHTML={renderHTML(currentCard.options[currentCard.correctAnswerIndex])} />}
-                                                    {currentCard.mode === CardMode.PracticalExample && <span dangerouslySetInnerHTML={renderHTML(currentCard.solution)} />}
                                                     {currentCard.mode === CardMode.FillInTheBlank && <span dangerouslySetInnerHTML={renderHTML(currentCard.answer)} />}
-                                                    {currentCard.mode === CardMode.Dictionary && <span dangerouslySetInnerHTML={renderHTML(currentCard.definition)} />}
                                                 </p>
                                             </div>
 
                                             {(
-                                                ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation) ||
-                                                (currentCard.mode === CardMode.PracticalExample && currentCard.solution)
+                                                ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation)
                                             ) && (
                                                     <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
                                                         <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">

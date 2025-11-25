@@ -422,6 +422,14 @@ const Dashboard: React.FC = () => {
                     >
                         📊 Estatísticas
                     </button>
+                    <button
+                        onClick={() => navigate('/topicogram')}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
+                        title="Linha do Tempo de Estudos"
+                        aria-label="Abrir Topicograma"
+                    >
+                        ⏳ Topicograma
+                    </button>
 
                     {/* Dark Mode Toggle */}
                     <button

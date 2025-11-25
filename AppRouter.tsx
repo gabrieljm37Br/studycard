@@ -12,6 +12,7 @@ import SimulatedMode from './pages/SimulatedMode';
 import SimulationDetails from './pages/SimulationDetails';
 import StudyCalendar from './pages/StudyCalendar';
 import Statistics from './pages/Statistics';
+import Topicogram from './pages/Topicogram';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -110,6 +111,14 @@ const AppRouter: React.FC = () => {
                             element={
                                 <ProtectedRoute>
                                     <SimulationDetails />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/topicogram"
+                            element={
+                                <ProtectedRoute>
+                                    <Topicogram />
                                 </ProtectedRoute>
                             }
                         />

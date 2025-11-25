@@ -137,18 +137,43 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
 
         try {
             // Prepare flashcards for insertion
-            const flashcardsToInsert = parsedCards.map(card => ({
-                user_id: user.id,
-                deck_id: targetDeckId,
-                mode: card.type,
-                question: card.front,
-                answer: card.back,
-                explanation: card.explanation || null,
-                feedback: FeedbackStatus.Unseen,
-                interval: 0,
-                repetition: 0,
-                ease_factor: 2.5,
-            }));
+            // Prepare flashcards for insertion
+            const flashcardsToInsert = parsedCards.map(card => {
+                const baseCard = {
+                    user_id: user.id,
+                    deck_id: targetDeckId,
+                    mode: card.type,
+                    feedback: FeedbackStatus.Unseen,
+                    interval: 0,
+                    repetition: 0,
+                    ease_factor: 2.5,
+                    explanation: card.explanation || null,
+                };
+
+                if (card.type === 'true_false') {
+                    return {
+                        ...baseCard,
+                        statement: card.front,
+                        question: card.front, // Fallback
+                        is_true: card.isTrue,
+                        answer: card.back,
+                    };
+                } else if (card.type === 'multiple_choice') {
+                    return {
+                        ...baseCard,
+                        question: card.front,
+                        options: card.options,
+                        correct_answer_index: card.correctAnswerIndex,
+                        answer: card.back,
+                    };
+                } else {
+                    return {
+                        ...baseCard,
+                        question: card.front,
+                        answer: card.back,
+                    };
+                }
+            });
 
             // Batch insert
             const { error: insertError } = await supabase

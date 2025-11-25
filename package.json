@@ -9,16 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "recharts": "^2.12.4",
     "@google/genai": "^1.29.1",
     "@supabase/supabase-js": "^2.84.0",
     "@tiptap/extension-underline": "^3.11.0",
     "@tiptap/react": "^3.11.0",
     "@tiptap/starter-kit": "^3.11.0",
+    "date-fns": "^4.1.0",
     "pdfjs-dist": "4.4.168",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.6"
+    "react-router-dom": "^7.9.6",
+    "recharts": "^2.12.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
