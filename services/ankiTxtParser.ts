@@ -31,19 +31,29 @@ function normalizeWhitespace(text: string, preserveLineBreaks: boolean = false):
     return text.replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Extracts field value after a keyword (e.g., "Resposta:", "Explicação:")
- */
-function extractField(text: string, keyword: string, endKeywords: string[] = []): string {
-    // Create regex to match from keyword to either end of string or next keyword
-    const keywordEscaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Keyword patterns that tolerate common accent/spacing variations
+const keywordPatterns = {
+    pergunta: '(?:Pergunta:)',
+    resposta: '(?:Resposta:)',
+    explicacao: '(?:Explicacao:|Explicação:)',
+    questao: '(?:Questao:|Questão:)',
+    dicionario: '(?:Dicionario:|Dicionário:)',
+    significado: '(?:Significado:)',
+    certoErrado: '(?:Certo ou Errado:)',
+    situacao: '(?:Situac[aã]o[- ]?Problema:|Situação[- ]?Problema:)',
+    hipotese: '(?:Hipotese:|Hipótese:)'
+};
 
+/**
+ * Extracts field value after a keyword pattern (supports diacritics/case)
+ */
+function extractFieldByPattern(text: string, keywordPattern: string, endPatterns: string[] = []): string {
     let pattern: string;
-    if (endKeywords.length > 0) {
-        const endPattern = endKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-        pattern = `${keywordEscaped}\\s*([\\s\\S]*?)(?=${endPattern}|$)`;
+    if (endPatterns.length > 0) {
+        const endPattern = endPatterns.join('|');
+        pattern = `${keywordPattern}\\s*([\\s\\S]*?)(?=${endPattern}|$)`;
     } else {
-        pattern = `${keywordEscaped}\\s*([\\s\\S]*)`;
+        pattern = `${keywordPattern}\\s*([\\s\\S]*)`;
     }
 
     const regex = new RegExp(pattern, 'i');
@@ -56,9 +66,9 @@ function extractField(text: string, keyword: string, endKeywords: string[] = [])
  * Parses a "Pergunta:" type card (Q&A format)
  */
 function parsePerguntaCard(blockText: string): ParsedAnkiCard {
-    const front = extractField(blockText, 'Pergunta:', ['Resposta:', 'Explicação:']);
-    const back = extractField(blockText, 'Resposta:', ['Explicação:']);
-    const explanation = extractField(blockText, 'Explicação:');
+    const front = extractFieldByPattern(blockText, keywordPatterns.pergunta, [keywordPatterns.resposta, keywordPatterns.explicacao]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
 
     return {
         type: CardMode.QA,
@@ -72,9 +82,9 @@ function parsePerguntaCard(blockText: string): ParsedAnkiCard {
  * Parses a "Certo ou Errado:" type card (True/False format)
  */
 function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
-    const front = extractField(blockText, 'Certo ou Errado:', ['Resposta:', 'Explicação:']);
-    const back = extractField(blockText, 'Resposta:', ['Explicação:']);
-    const explanation = extractField(blockText, 'Explicação:');
+    const front = extractFieldByPattern(blockText, keywordPatterns.certoErrado, [keywordPatterns.resposta, keywordPatterns.explicacao]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
 
     const isTrue = /certo|verdadeiro|true|v|sim/i.test(back.trim());
 
@@ -88,12 +98,12 @@ function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
 }
 
 /**
- * Parses a "Questão:" type card (Multiple Choice format)
+ * Parses a "Questao:" type card (Multiple Choice format)
  * Preserves formatting of alternatives
  */
 function parseQuestaoCard(blockText: string): ParsedAnkiCard {
-    // Extract question and alternatives (everything between "Questão:" and "Resposta:")
-    const questionPattern = /Questão:\s*([\s\S]*?)(?=Resposta:|$)/i;
+    // Extract question and alternatives (everything between "Questao:" and "Resposta:")
+    const questionPattern = new RegExp(`${keywordPatterns.questao}\\s*([\\s\\S]*?)(?=${keywordPatterns.resposta}|$)`, 'i');
     const questionMatch = blockText.match(questionPattern);
 
     let front = '';
@@ -102,8 +112,8 @@ function parseQuestaoCard(blockText: string): ParsedAnkiCard {
         front = normalizeWhitespace(questionMatch[1], true);
     }
 
-    const back = extractField(blockText, 'Resposta:', ['Explicação:']);
-    const explanation = extractField(blockText, 'Explicação:');
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
 
     let options: string[] = [];
     let questionText = '';
@@ -187,12 +197,12 @@ function parseQuestaoCard(blockText: string): ParsedAnkiCard {
 }
 
 /**
- * Parses a "Dicionário:" type card (Dictionary format -> Q&A)
+ * Parses a "Dicionario:" type card (Dictionary format -> Q&A)
  */
 function parseDicionarioCard(blockText: string): ParsedAnkiCard {
-    const front = extractField(blockText, 'Dicionário:', ['Significado:', 'Explicação:']);
-    const back = extractField(blockText, 'Significado:', ['Explicação:']);
-    const explanation = extractField(blockText, 'Explicação:');
+    const front = extractFieldByPattern(blockText, keywordPatterns.dicionario, [keywordPatterns.significado, keywordPatterns.explicacao]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.significado, [keywordPatterns.explicacao]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
 
     return {
         type: CardMode.QA,
@@ -203,14 +213,14 @@ function parseDicionarioCard(blockText: string): ParsedAnkiCard {
 }
 
 /**
- * Parses a "Situação-Problema:" or "Hipótese:" type card (Practical Example format)
+ * Parses a "Situacao-Problema:" or "Hipotese:" type card (Practical Example format)
  */
 function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnkiCard {
     // Extract the situation/hypothesis
-    const situation = extractField(blockText, startKeyword, ['Questão:', 'Resposta:', 'Explicação:']);
+    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao]);
 
     // Extract the question (if exists)
-    const question = extractField(blockText, 'Questão:', ['Resposta:', 'Explicação:']);
+    const question = extractFieldByPattern(blockText, keywordPatterns.questao, [keywordPatterns.resposta, keywordPatterns.explicacao]);
 
     // Combine situation and question for the front
     const front = question
@@ -218,8 +228,8 @@ function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnki
         : situation;
 
     // Extract answer and explanation
-    const back = extractField(blockText, 'Resposta:', ['Explicação:']);
-    const explanation = extractField(blockText, 'Explicação:');
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
 
     return {
         type: CardMode.PracticalExample,
@@ -229,30 +239,26 @@ function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnki
     };
 }
 
+const startKeywordPatterns = [
+    { type: 'certo_errado', pattern: keywordPatterns.certoErrado },
+    { type: 'pergunta', pattern: keywordPatterns.pergunta },
+    { type: 'questao', pattern: keywordPatterns.questao },
+    { type: 'dicionario', pattern: keywordPatterns.dicionario },
+    { type: 'situacao', pattern: keywordPatterns.situacao },
+    { type: 'hipotese', pattern: keywordPatterns.hipotese },
+];
+
 /**
  * Detects the card type based on the starting keyword
  */
 function detectCardType(blockText: string): { type: string; keyword: string } | null {
     const trimmed = blockText.trim();
 
-    // Order matters: check more specific patterns first
-    if (/^Certo ou Errado:/i.test(trimmed)) {
-        return { type: 'certo_errado', keyword: 'Certo ou Errado:' };
-    }
-    if (/^Pergunta:/i.test(trimmed)) {
-        return { type: 'pergunta', keyword: 'Pergunta:' };
-    }
-    if (/^Questão:/i.test(trimmed)) {
-        return { type: 'questao', keyword: 'Questão:' };
-    }
-    if (/^Dicionário:/i.test(trimmed)) {
-        return { type: 'dicionario', keyword: 'Dicionário:' };
-    }
-    if (/^Situação-Problema:/i.test(trimmed)) {
-        return { type: 'situacao', keyword: 'Situação-Problema:' };
-    }
-    if (/^Hipótese:/i.test(trimmed)) {
-        return { type: 'hipotese', keyword: 'Hipótese:' };
+    for (const { type, pattern } of startKeywordPatterns) {
+        const regex = new RegExp(`^${pattern}`, 'i');
+        if (regex.test(trimmed)) {
+            return { type, keyword: pattern };
+        }
     }
 
     return null;
@@ -263,23 +269,11 @@ function detectCardType(blockText: string): { type: string; keyword: string } | 
  * Each block starts with a recognized keyword
  */
 function splitIntoBlocks(content: string): string[] {
-    // Keywords that indicate the start of a new card
-    const startKeywords = [
-        'Pergunta:',
-        'Certo ou Errado:',
-        'Questão:',
-        'Dicionário:',
-        'Situação-Problema:',
-        'Hipótese:'
-    ];
-
-    // Create a regex pattern that matches any of the start keywords
-    const pattern = startKeywords
-        .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('|');
+    // Create a regex pattern that matches any of the start keywords (diacritics tolerant)
+    const pattern = startKeywordPatterns.map(k => k.pattern).join('|');
 
     // Split on start keywords but keep the delimiter
-    const regex = new RegExp(`(?=${pattern})`, 'i');
+    const regex = new RegExp(`(?=${pattern})`, 'gi');
     const blocks = content.split(regex);
 
     // Filter out empty blocks and trim
@@ -322,10 +316,10 @@ export function parseAnkiTxtFile(content: string): ParsedAnkiCard[] {
                 card = parseDicionarioCard(block);
                 break;
             case 'situacao':
-                card = parsePracticalCard(block, 'Situação-Problema:');
+                card = parsePracticalCard(block, keywordPatterns.situacao);
                 break;
             case 'hipotese':
-                card = parsePracticalCard(block, 'Hipótese:');
+                card = parsePracticalCard(block, keywordPatterns.hipotese);
                 break;
         }
 
@@ -343,7 +337,7 @@ export function parseAnkiTxtFile(content: string): ParsedAnkiCard[] {
  */
 export function validateAnkiTxtContent(content: string): { valid: boolean; error?: string } {
     if (!content || content.trim().length === 0) {
-        return { valid: false, error: 'O arquivo TXT está vazio' };
+        return { valid: false, error: 'O arquivo TXT esta vazio' };
     }
 
     const blocks = splitIntoBlocks(content);
@@ -351,7 +345,7 @@ export function validateAnkiTxtContent(content: string): { valid: boolean; error
     if (blocks.length === 0) {
         return {
             valid: false,
-            error: 'Nenhum flashcard válido encontrado. Certifique-se de que o arquivo contém cards com palavras-chave reconhecidas (Pergunta:, Certo ou Errado:, etc.)'
+            error: 'Nenhum flashcard valido encontrado. Certifique-se de que o arquivo contem cards com palavras-chave reconhecidas (Pergunta:, Certo ou Errado:, etc.)'
         };
     }
 
