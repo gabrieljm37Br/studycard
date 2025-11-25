@@ -6,6 +6,7 @@ import { generateFlashcards, generateFlashcardsWithSearch, parseTextFile, parseC
 import { CardMode } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
 import CSVImportModal from '../components/CSVImportModal';
+import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 
@@ -28,6 +29,7 @@ const Generator: React.FC = () => {
     const [isCreatingNewDeck, setIsCreatingNewDeck] = useState(false);
     const [newDeckName, setNewDeckName] = useState('');
     const [showCSVImport, setShowCSVImport] = useState(false);
+    const [showAnkiTxtImport, setShowAnkiTxtImport] = useState(false);
 
     // Manual flashcard creation state
     const [manualCards, setManualCards] = useState<any[]>([]);
@@ -403,7 +405,13 @@ const Generator: React.FC = () => {
                         onClick={() => setShowCSVImport(true)}
                         className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
                     >
-                        <span>📥</span> <span className="hidden sm:inline">Importar CSV</span>
+                        <span>📥</span> <span className="hidden sm:inline">CSV</span>
+                    </button>
+                    <button
+                        onClick={() => setShowAnkiTxtImport(true)}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
+                    >
+                        <span>📄</span> <span className="hidden sm:inline">TXT Anki</span>
                     </button>
                     <button
                         onClick={() => navigate('/dashboard')}
@@ -968,6 +976,18 @@ const Generator: React.FC = () => {
                     setShowCSVImport(false);
                     navigate('/dashboard', {
                         state: { message: `${count} flashcards importados com sucesso do CSV!` }
+                    });
+                }}
+            />
+
+            {/* Anki TXT Import Modal */}
+            <AnkiTxtImportModal
+                isOpen={showAnkiTxtImport}
+                onClose={() => setShowAnkiTxtImport(false)}
+                onImportComplete={(count) => {
+                    setShowAnkiTxtImport(false);
+                    navigate('/dashboard', {
+                        state: { message: `${count} flashcards importados com sucesso do Anki TXT!` }
                     });
                 }}
             />
