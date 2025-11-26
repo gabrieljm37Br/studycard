@@ -164,10 +164,9 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
             case CardMode.Dictionary:
                 return {
                     ...base,
+                    // Persist as dictionary, but only use supported columns to avoid DB errors
                     question: card.front,
                     answer: card.back,
-                    term: card.front,
-                    definition: card.back,
                 };
             default:
                 return {
