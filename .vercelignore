@@ -1,0 +1,26 @@
+# Arquivos de desenvolvimento
+.env.local
+.env*.local
+node_modules
+
+# Documentação
+*.md
+!README.md
+
+# Schemas SQL
+*.sql
+
+# Arquivos de configuração local
+.vscode
+.idea
+
+# Arquivos temporários
+*.log
+*.tmp
+
+# Metadados
+metadata.json
+
+# Git
+.git
+.gitignore
