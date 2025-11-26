@@ -126,20 +126,28 @@ const Statistics: React.FC = () => {
   }, [overview]);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Estatísticas e Desempenho</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Acompanhe retenção, carga de revisão e decks que precisam de atenção.</p>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
+        <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="text-center md:text-left space-y-1">
+              <p className="text-xs uppercase tracking-widest text-white/80">Estudos</p>
+              <h1 className="text-3xl font-bold leading-tight">Estatísticas e Desempenho</h1>
+              <p className="text-white/80 text-sm">Acompanhe retenção, carga de revisão e decks que precisam de atenção.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full md:w-auto">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95"
+              >
+                Voltar
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-          >
-            Voltar
-          </button>
         </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 py-8 md:px-6">
 
         {error && <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200 border border-red-200 dark:border-red-800">{error}</div>}
 
