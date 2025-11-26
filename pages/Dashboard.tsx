@@ -526,10 +526,10 @@ const Dashboard: React.FC = () => {
                             onClick={() => navigate('/topicogram')}
                             className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
                             title="Linha do Tempo de Estudos"
-                            aria-label="Abrir Topicograma"
+                            aria-label="Abrir Linha do Tempo"
                         >
-                            <span>{'⏳'}</span>
-                            <span>Topicograma</span>
+                            <span>{"\u23f3"}</span>
+                            <span>Linha do Tempo</span>
                         </button>
                     </div>
 
