@@ -27,7 +27,7 @@ const Topicogram: React.FC = () => {
             setDecks(data);
         } catch (err) {
             console.error('Error loading topicogram:', err);
-            setError('Erro ao carregar o Topicograma. Tente novamente.');
+            setError('Erro ao carregar a Linha do Tempo. Tente novamente.');
         } finally {
             setLoading(false);
         }
@@ -53,7 +53,7 @@ const Topicogram: React.FC = () => {
             <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                    <p className="font-medium text-gray-600 dark:text-gray-400">Carregando Topicograma...</p>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">Carregando Linha do Tempo...</p>
                 </div>
             </div>
         );
@@ -71,7 +71,7 @@ const Topicogram: React.FC = () => {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs uppercase tracking-widest text-white/80">Linha do Tempo</p>
-                                <h1 className="text-3xl font-bold leading-tight">Topicograma</h1>
+                                <h1 className="text-3xl font-bold leading-tight">Linha do Tempo</h1>
                                 <p className="text-white/80 text-sm">Sua jornada de estudos em ordem cronológica.</p>
                             </div>
                         </div>
@@ -107,10 +107,10 @@ const Topicogram: React.FC = () => {
                                 </div>
                             </div>
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-                                Seu Topicograma está vazio
+                                Sua Linha do Tempo está vazia
                             </h2>
                             <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-                                O <strong>Topicograma</strong> é sua linha do tempo de estudos! Ele mostra os decks que você estudou recentemente,
+                                A <strong>Linha do Tempo</strong> mostra os decks que você estudou recentemente,
                                 organizados do mais recente para o mais antigo. É uma forma visual de acompanhar seu progresso e manter
                                 a consistência nos estudos.
                             </p>
@@ -217,7 +217,7 @@ const Topicogram: React.FC = () => {
                         {/* Footer hint */}
                         <div className="mt-12 text-center">
                             <p className="text-sm text-gray-500 dark:text-gray-500 italic">
-                                💡 Dica: Continue estudando para manter seu Topicograma atualizado!
+                                💡 Dica: Continue estudando para manter sua Linha do Tempo atualizada!
                             </p>
                         </div>
                     </div>
