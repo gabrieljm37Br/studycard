@@ -390,95 +390,111 @@ const Dashboard: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-6 flex flex-col md:flex-row justify-between items-center shadow-md gap-4">
-                <h1 className="text-2xl font-bold">Flashcards AI</h1>
-                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                    <button
-                        onClick={() => navigate('/generator', { state: { deckId: currentParentId } })}
-                        className="w-full md:w-auto px-5 py-2.5 bg-white/95 hover:bg-white text-indigo-600 border-none rounded-lg cursor-pointer text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:shadow-lg active:scale-95"
-                    >
-                        ✨ Gerar Flashcards
-                    </button>
+            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
+                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="space-y-1 text-center lg:text-left">
+                            <p className="text-xs uppercase tracking-widest text-white/70">Dashboard</p>
+                            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Flashcards AI</h1>
+                        </div>
 
-                    <button
-                        onClick={() => navigate('/simulations')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
-                    >
-                        📝 Modo Simulado
-                    </button>
-                    <button
-                        onClick={() => navigate('/calendar')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
-                        title="Calendário de Estudos"
-                        aria-label="Abrir calendário de estudos"
-                    >
-                        📅 Calendário
-                    </button>
-                    <button
-                        onClick={() => navigate('/statistics')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
-                        title="Estatísticas e Desempenho"
-                        aria-label="Abrir estatísticas e desempenho"
-                    >
-                        📊 Estatísticas
-                    </button>
-                    <button
-                        onClick={() => navigate('/topicogram')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white font-semibold transition-all hover:scale-105 active:scale-95"
-                        title="Linha do Tempo de Estudos"
-                        aria-label="Abrir Topicograma"
-                    >
-                        ⏳ Topicograma
-                    </button>
+                        <div className="flex items-center justify-center lg:justify-end gap-3">
+                            {/* Dark Mode Toggle */}
+                            <button
+                                onClick={toggleTheme}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
+                                title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+                                aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+                            >
+                                {theme === 'dark' ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.95l.707-.707a1 1 0 10-1.414-1.414l-.707.707a1 1 0 001.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                                    </svg>
+                                )}
+                            </button>
 
-                    {/* Dark Mode Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        className="p-2.5 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                        title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-                        aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-                    >
-                        {theme === 'dark' ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.95l.707-.707a1 1 0 10-1.414-1.414l-.707.707a1 1 0 001.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
-                            </svg>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                            </svg>
-                        )}
-                    </button>
+                            {/* Help Button */}
+                            <button
+                                onClick={() => navigate('/help')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
+                                title="Central de Ajuda"
+                                aria-label="Abrir central de ajuda"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                                </svg>
+                            </button>
 
-                    {/* Help Button */}
-                    <button
-                        onClick={() => navigate('/help')}
-                        className="p-2.5 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                        title="Central de Ajuda"
-                        aria-label="Abrir central de ajuda"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                    </button>
+                            <button
+                                onClick={handleSignOut}
+                                className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors"
+                            >
+                                Sair
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
+                        <button
+                            onClick={() => navigate('/generator', { state: { deckId: currentParentId } })}
+                            className="col-span-full px-5 py-3 bg-white text-indigo-700 hover:shadow-lg rounded-xl cursor-pointer text-base font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
+                        >
+                            <span>{'✨'}</span>
+                            <span>Gerar Flashcards</span>
+                        </button>
+
+                        <button
+                            onClick={() => navigate('/simulations')}
+                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
+                        >
+                            <span>{'📝'}</span>
+                            <span>Modo Simulado</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/calendar')}
+                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
+                            title="Calendário de Estudos"
+                            aria-label="Abrir calendário de estudos"
+                        >
+                            <span>{'📅'}</span>
+                            <span>Calendário</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/statistics')}
+                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
+                            title="Estatísticas e Desempenho"
+                            aria-label="Abrir estatísticas e desempenho"
+                        >
+                            <span>{'📊'}</span>
+                            <span>Estatísticas</span>
+                        </button>
+                        <button
+                            onClick={() => navigate('/topicogram')}
+                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
+                            title="Linha do Tempo de Estudos"
+                            aria-label="Abrir Topicograma"
+                        >
+                            <span>{'⏳'}</span>
+                            <span>Topicograma</span>
+                        </button>
+                    </div>
 
                     {profile && (
-                        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                            <div className="text-center">
-                                <div className="text-lg font-bold">🔥 {profile.streak_current || 0}</div>
-                                <div className="text-[10px] opacity-80 uppercase tracking-wider">Dias</div>
+                        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
+                            <div className="flex items-center gap-3 text-left sm:text-center">
+                                <div className="text-xl font-bold leading-tight">{'🔥'} {profile.streak_current || 0}</div>
+                                <div className="text-[11px] uppercase tracking-wider text-white/80">Dias</div>
                             </div>
-                            <div className="text-right">
-                                <div className="text-sm font-medium opacity-90">{profile.full_name || profile.email}</div>
-                                <div className="text-xs opacity-80">Level {profile.level} • {profile.xp} XP</div>
+                            <div className="text-left sm:text-right">
+                                <div className="text-sm font-semibold opacity-95">{profile.full_name || profile.email}</div>
+                                <div className="text-xs opacity-80">Level {profile.level} {'•'} {profile.xp} XP</div>
                             </div>
                         </div>
                     )}
-                    <button
-                        onClick={handleSignOut}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors"
-                    >
-                        Sair
-                    </button>
                 </div>
             </header>
 
