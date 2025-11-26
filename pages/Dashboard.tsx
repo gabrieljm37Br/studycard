@@ -29,6 +29,8 @@ const Dashboard: React.FC = () => {
     const location = useLocation();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [decks, setDecks] = useState<Deck[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [badges, setBadges] = useState<Badge[]>([]);
     const [loading, setLoading] = useState(true);
     const [newDeckName, setNewDeckName] = useState('');
@@ -388,6 +390,11 @@ const Dashboard: React.FC = () => {
         navigate('/login');
     };
 
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+    const filteredDecks = normalizedSearchTerm
+        ? decks.filter(deck => deck.name.toLowerCase().includes(normalizedSearchTerm))
+        : decks;
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
@@ -399,6 +406,18 @@ const Dashboard: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-center lg:justify-end gap-3">
+                            {/* Search Decks */}
+                            <button
+                                onClick={() => setIsSearchOpen(prev => !prev)}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
+                                title="Pesquisar decks"
+                                aria-label="Pesquisar decks"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M12.9 14.32a6 6 0 111.414-1.414l3.387 3.387a1 1 0 01-1.414 1.414L12.9 14.32zM14 9a5 5 0 11-10 0 5 5 0 0110 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+
                             {/* Dark Mode Toggle */}
                             <button
                                 onClick={toggleTheme}
@@ -437,6 +456,37 @@ const Dashboard: React.FC = () => {
                             </button>
                         </div>
                     </div>
+
+                    {isSearchOpen && (
+                        <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
+                            <div className="flex items-center gap-2 w-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M12.9 14.32a6 6 0 111.414-1.414l3.387 3.387a1 1 0 01-1.414 1.414L12.9 14.32zM14 9a5 5 0 11-10 0 5 5 0 0110 0z" clipRule="evenodd" />
+                                </svg>
+                                <input
+                                    type="search"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Pesquisar decks criados..."
+                                    className="flex-1 bg-white/15 text-white placeholder-white/60 border border-white/25 rounded-xl px-4 py-2 focus:bg-white/20 focus:outline-none"
+                                />
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="flex-1 sm:flex-none px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white text-sm font-semibold transition-colors"
+                                >
+                                    Limpar
+                                </button>
+                                <button
+                                    onClick={() => setIsSearchOpen(false)}
+                                    className="flex-1 sm:flex-none px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-xl text-sm font-semibold transition-all active:scale-95"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
                         <button
@@ -586,13 +636,15 @@ const Dashboard: React.FC = () => {
                 {/* Decks Grid */}
                 {loading ? (
                     <div className="text-center p-10 text-gray-400 animate-pulse">Carregando...</div>
-                ) : decks.length === 0 ? (
+                ) : filteredDecks.length === 0 ? (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-10 text-center text-gray-400 shadow-sm border border-gray-100 dark:border-gray-700">
-                        Nenhum deck encontrado. Crie seu primeiro deck acima!
+                        {normalizedSearchTerm
+                            ? `Nenhum deck encontrado para "${searchTerm}".`
+                            : 'Nenhum deck encontrado. Crie seu primeiro deck acima!'}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {decks.map((deck) => (
+                        {filteredDecks.map((deck) => (
                             <div
                                 key={deck.id}
                                 className="bg-white dark:bg-gray-800 rounded-xl p-6 pt-16 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all relative group border border-gray-100 dark:border-gray-700 min-h-[220px] flex flex-col justify-between"
