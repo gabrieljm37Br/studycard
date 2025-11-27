@@ -14,6 +14,7 @@ import StudyCalendar from './pages/StudyCalendar';
 import Statistics from './pages/Statistics';
 import Topicogram from './pages/Topicogram';
 import { hasSupabaseEnv, supabaseEnvError } from './services/supabaseClient';
+import Home from './pages/Home';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -143,7 +144,15 @@ const AppRouter: React.FC = () => {
                                 </ProtectedRoute>
                             }
                         />
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route
+                            path="/home"
+                            element={
+                                <ProtectedRoute>
+                                    <Home />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route path="/" element={<Navigate to="/home" replace />} />
                     </Routes>
                 </BrowserRouter>
             </AuthProvider>
