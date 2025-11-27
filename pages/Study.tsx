@@ -1392,7 +1392,7 @@ const Study: React.FC = () => {
                                     <div className="mt-4 flex justify-end">
                                         <button
                                             onClick={openEditModal}
-                                            className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors"
+                                            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 cursor-pointer text-sm font-semibold transition-colors"
                                         >
                                             Editar Flashcard
                                         </button>
@@ -1455,7 +1455,7 @@ const Study: React.FC = () => {
                                     <div className="mt-4 flex justify-end">
                                         <button
                                             onClick={openEditModal}
-                                            className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors"
+                                            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 cursor-pointer text-sm font-semibold transition-colors"
                                         >
                                             Editar Flashcard
                                         </button>
@@ -1465,7 +1465,7 @@ const Study: React.FC = () => {
                         </div>
                     )
                 }
-            </div >
+            </div>
 
             {showEditModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1500,7 +1500,7 @@ const Study: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div >
+        </div>
 
     );
 };
