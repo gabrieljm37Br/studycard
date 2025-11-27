@@ -5,9 +5,36 @@ import { supabase } from '../services/supabaseClient';
 import { applySm2 } from '../services/srsAlgorithm';
 import { updateLastStudied } from '../services/deckService';
 import { CardMode, FeedbackStatus } from '../types';
-import type { FlashcardData, FlashcardNote } from '../types';
+import type { FlashcardData } from '../types';
 import { renderHTML } from '../utils/textUtils';
 import { Home } from 'lucide-react';
+
+type EditFormData = {
+    mode: CardMode;
+    question?: string;
+    answer?: string;
+    statement?: string;
+    isTrue?: boolean;
+    explanation?: string;
+    options?: string[];
+    correctAnswerIndex?: number;
+    problem?: string;
+    solution?: string;
+    term?: string;
+    definition?: string;
+};
+
+type UpdatePayload = {
+    question?: string;
+    answer?: string;
+    statement?: string;
+    is_true?: boolean;
+    explanation?: string | null;
+    options?: string[];
+    correct_answer_index?: number;
+    problem?: string;
+    solution?: string;
+};
 
 const Study: React.FC = () => {
     const { user } = useAuth();
@@ -42,6 +69,9 @@ const Study: React.FC = () => {
     const [noteId, setNoteId] = useState<string | null>(null);
     const [isSavingNote, setIsSavingNote] = useState(false);
     const [hasNote, setHasNote] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editData, setEditData] = useState<EditFormData | null>(null);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
 
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
@@ -606,6 +636,278 @@ const Study: React.FC = () => {
         }
     };
 
+    const openEditModal = () => {
+        if (!currentCard) return;
+        const data: EditFormData = { mode: currentCard.mode };
+
+        switch (currentCard.mode) {
+            case CardMode.QA:
+                data.question = currentCard.question || '';
+                data.answer = currentCard.answer || '';
+                break;
+            case CardMode.TrueFalse:
+                data.statement = currentCard.statement || '';
+                data.isTrue = currentCard.isTrue ?? false;
+                data.explanation = currentCard.explanation || '';
+                break;
+            case CardMode.MultipleChoice:
+                data.question = currentCard.question || '';
+                data.options = currentCard.options ? [...currentCard.options] : ['', '', '', ''];
+                data.correctAnswerIndex = Number(currentCard.correctAnswerIndex ?? 0);
+                data.explanation = currentCard.explanation || '';
+                break;
+            case CardMode.PracticalExample:
+                data.problem = (currentCard as any).problem || '';
+                data.question = currentCard.question || '';
+                data.solution = (currentCard as any).solution || '';
+                break;
+            case CardMode.FillInTheBlank:
+                data.question = currentCard.question || '';
+                data.answer = currentCard.answer || '';
+                break;
+            case CardMode.Dictionary:
+                data.term = (currentCard as any).term || currentCard.question || '';
+                data.definition = (currentCard as any).definition || currentCard.answer || '';
+                break;
+        }
+        setEditData(data);
+        setShowEditModal(true);
+    };
+
+    const handleEditChange = (field: string, value: any) => {
+        setEditData((prev) => (prev ? { ...prev, [field]: value } : prev));
+    };
+
+    const saveEdit = async () => {
+        if (!currentCard || !editData) return;
+
+        const payload: UpdatePayload = {};
+        try {
+            setIsSavingEdit(true);
+            switch (currentCard.mode) {
+                case CardMode.QA:
+                    if (!editData.question?.trim() || !editData.answer?.trim()) throw new Error('Preencha pergunta e resposta.');
+                    payload.question = editData.question.trim();
+                    payload.answer = editData.answer.trim();
+                    break;
+                case CardMode.TrueFalse:
+                    if (!editData.statement?.trim()) throw new Error('Preencha a afirmação.');
+                    payload.statement = editData.statement.trim();
+                    payload.is_true = !!editData.isTrue;
+                    payload.explanation = editData.explanation?.trim() || null;
+                    break;
+                case CardMode.MultipleChoice:
+                    if (!editData.question?.trim()) throw new Error('Preencha a pergunta.');
+                    if (!editData.options || editData.options.some((o: string) => !o?.trim())) throw new Error('Todas as opções são obrigatórias.');
+                    payload.question = editData.question.trim();
+                    payload.options = editData.options.map((o: string) => o.trim());
+                    payload.correct_answer_index = Number(editData.correctAnswerIndex ?? 0);
+                    payload.explanation = editData.explanation?.trim() || null;
+                    break;
+                case CardMode.PracticalExample:
+                    if (!editData.problem?.trim() || !editData.question?.trim() || !editData.solution?.trim()) throw new Error('Preencha problema, pergunta e solução.');
+                    payload.problem = editData.problem.trim();
+                    payload.question = editData.question.trim();
+                    payload.solution = editData.solution.trim();
+                    break;
+                case CardMode.FillInTheBlank:
+                    if (!editData.question?.trim() || !editData.answer?.trim()) throw new Error('Preencha pergunta e resposta.');
+                    payload.question = editData.question.trim();
+                    payload.answer = editData.answer.trim();
+                    break;
+                case CardMode.Dictionary:
+                    if (!editData.term?.trim() || !editData.definition?.trim()) throw new Error('Preencha termo e definição.');
+                    payload.question = editData.term.trim();
+                    payload.answer = editData.definition.trim();
+                    break;
+            }
+
+            await supabase.from('flashcards').update(payload).eq('id', currentCard.id);
+
+            setFlashcards(prev => {
+                const updated = [...prev];
+                const updatedCard: (FlashcardData & { term?: string; definition?: string; problem?: string; solution?: string }) = {
+                    ...updated[currentIndex],
+                    ...payload,
+                    isTrue: payload.is_true ?? updated[currentIndex].isTrue,
+                    correctAnswerIndex: payload.correct_answer_index ?? updated[currentIndex].correctAnswerIndex,
+                    options: payload.options ?? updated[currentIndex].options,
+                };
+                if (currentCard.mode === CardMode.Dictionary) {
+                    updatedCard.term = payload.question ?? updatedCard.term;
+                    updatedCard.definition = payload.answer ?? updatedCard.definition;
+                }
+                if (currentCard.mode === CardMode.PracticalExample) {
+                    updatedCard.solution = payload.solution ?? updatedCard.solution;
+                    updatedCard.problem = payload.problem ?? updatedCard.problem;
+                }
+                updated[currentIndex] = updatedCard;
+                return updated;
+            });
+
+            setShowEditModal(false);
+        } catch (err: any) {
+            alert(err.message || 'Erro ao atualizar flashcard.');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
+    const renderEditFields = () => {
+        if (!editData) return null;
+        switch (editData.mode) {
+            case CardMode.QA:
+                return (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Pergunta"
+                            value={editData.question || ''}
+                            onChange={(e) => handleEditChange('question', e.target.value)}
+                        />
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Resposta"
+                            value={editData.answer || ''}
+                            onChange={(e) => handleEditChange('answer', e.target.value)}
+                        />
+                    </div>
+                );
+            case CardMode.TrueFalse:
+                return (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Afirmação"
+                            value={editData.statement || ''}
+                            onChange={(e) => handleEditChange('statement', e.target.value)}
+                        />
+                        <div className="flex gap-3 items-center">
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="radio"
+                                    checked={!!editData.isTrue}
+                                    onChange={() => handleEditChange('isTrue', true)}
+                                />
+                                Verdadeiro
+                            </label>
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="radio"
+                                    checked={!editData.isTrue}
+                                    onChange={() => handleEditChange('isTrue', false)}
+                                />
+                                Falso
+                            </label>
+                        </div>
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Explicação (opcional)"
+                            value={editData.explanation || ''}
+                            onChange={(e) => handleEditChange('explanation', e.target.value)}
+                        />
+                    </div>
+                );
+            case CardMode.MultipleChoice:
+                return (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Pergunta"
+                            value={editData.question || ''}
+                            onChange={(e) => handleEditChange('question', e.target.value)}
+                        />
+                        <div className="space-y-2">
+                            {(editData.options || []).map((opt: string, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <input
+                                        type="radio"
+                                        name="correct-option"
+                                        checked={Number(editData.correctAnswerIndex) === idx}
+                                        onChange={() => handleEditChange('correctAnswerIndex', idx)}
+                                    />
+                                    <input
+                                        className="flex-1 border rounded-lg p-2"
+                                        value={opt}
+                                        onChange={(e) => {
+                                            const newOpts = [...(editData.options || [])];
+                                            newOpts[idx] = e.target.value;
+                                            handleEditChange('options', newOpts);
+                                        }}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Explicação (opcional)"
+                            value={editData.explanation || ''}
+                            onChange={(e) => handleEditChange('explanation', e.target.value)}
+                        />
+                    </div>
+                );
+            case CardMode.PracticalExample:
+                return (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Problema"
+                            value={editData.problem || ''}
+                            onChange={(e) => handleEditChange('problem', e.target.value)}
+                        />
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Pergunta"
+                            value={editData.question || ''}
+                            onChange={(e) => handleEditChange('question', e.target.value)}
+                        />
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Solução"
+                            value={editData.solution || ''}
+                            onChange={(e) => handleEditChange('solution', e.target.value)}
+                        />
+                    </div>
+                );
+            case CardMode.FillInTheBlank:
+                return (
+                    <div className="space-y-3">
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Pergunta"
+                            value={editData.question || ''}
+                            onChange={(e) => handleEditChange('question', e.target.value)}
+                        />
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Resposta"
+                            value={editData.answer || ''}
+                            onChange={(e) => handleEditChange('answer', e.target.value)}
+                        />
+                    </div>
+                );
+            case CardMode.Dictionary:
+                return (
+                    <div className="space-y-3">
+                        <input
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Termo"
+                            value={editData.term || ''}
+                            onChange={(e) => handleEditChange('term', e.target.value)}
+                        />
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="Definição"
+                            value={editData.definition || ''}
+                            onChange={(e) => handleEditChange('definition', e.target.value)}
+                        />
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
     const shuffleCards = () => {
         const shuffled = [...flashcards].sort(() => Math.random() - 0.5);
         setFlashcards(shuffled);
@@ -1087,6 +1389,14 @@ const Study: React.FC = () => {
                                             <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">0 XP</span>
                                         </button>
                                     </div>
+                                    <div className="mt-4 flex justify-end">
+                                        <button
+                                            onClick={openEditModal}
+                                            className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors"
+                                        >
+                                            Editar Flashcard
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
                                 /* Automatic Evaluation for other modes */
@@ -1142,12 +1452,54 @@ const Study: React.FC = () => {
                                             'Finalizar Sessão'
                                         )}
                                     </button>
+                                    <div className="mt-4 flex justify-end">
+                                        <button
+                                            onClick={openEditModal}
+                                            className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors"
+                                        >
+                                            Editar Flashcard
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     )
                 }
             </div >
+
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative border border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => setShowEditModal(false)}
+                            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                            aria-label="Fechar edição"
+                        >
+                            X
+                        </button>
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Editar flashcard</h3>
+                        <div className="space-y-4">
+                            {renderEditFields()}
+                        </div>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                disabled={isSavingEdit}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={saveEdit}
+                                className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors disabled:opacity-70"
+                                disabled={isSavingEdit}
+                            >
+                                {isSavingEdit ? 'Salvando...' : 'Salvar alterações'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
 
     );
