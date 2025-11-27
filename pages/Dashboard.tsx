@@ -406,6 +406,17 @@ const Dashboard: React.FC = () => {
                         </div>
 
                         <div className="flex items-center justify-center lg:justify-end gap-3">
+                            <button
+                                onClick={() => navigate('/home')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Voltar para Home"
+                                aria-label="Voltar para Home"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7A1 1 0 003 10h1v6a1 1 0 001 1h4v-4h2v4h4a1 1 0 001-1v-6h1a1 1 0 00.707-1.707l-7-7z" />
+                                </svg>
+                                <span className="hidden md:inline text-sm font-semibold">Home</span>
+                            </button>
                             {/* Search Decks */}
                             <button
                                 onClick={() => setIsSearchOpen(prev => !prev)}
@@ -487,64 +498,6 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
                     )}
-
-                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
-                        <button
-                            onClick={() => navigate('/generator', { state: { deckId: currentParentId } })}
-                            className="col-span-full px-5 py-3 bg-white text-indigo-700 hover:shadow-lg rounded-xl cursor-pointer text-base font-semibold flex items-center justify-center gap-2 transition-all active:scale-95"
-                        >
-                            <span>{'✨'}</span>
-                            <span>Gerar Flashcards</span>
-                        </button>
-
-                        <button
-                            onClick={() => navigate('/simulations')}
-                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
-                        >
-                            <span>{'📝'}</span>
-                            <span>Modo Simulado</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/calendar')}
-                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
-                            title="Calendário de Estudos"
-                            aria-label="Abrir calendário de estudos"
-                        >
-                            <span>{'📅'}</span>
-                            <span>Calendário</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/statistics')}
-                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
-                            title="Estatísticas e Desempenho"
-                            aria-label="Abrir estatísticas e desempenho"
-                        >
-                            <span>{'📊'}</span>
-                            <span>Estatísticas</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/topicogram')}
-                            className="flex items-center gap-2 px-4 py-3 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white font-semibold transition-all justify-center active:scale-95"
-                            title="Linha do Tempo de Estudos"
-                            aria-label="Abrir Linha do Tempo"
-                        >
-                            <span>{"\u23f3"}</span>
-                            <span>Linha do Tempo</span>
-                        </button>
-                    </div>
-
-                    {profile && (
-                        <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
-                            <div className="flex items-center gap-3 text-left sm:text-center">
-                                <div className="text-xl font-bold leading-tight">{'🔥'} {profile.streak_current || 0}</div>
-                                <div className="text-[11px] uppercase tracking-wider text-white/80">Dias</div>
-                            </div>
-                            <div className="text-left sm:text-right">
-                                <div className="text-sm font-semibold opacity-95">{profile.full_name || profile.email}</div>
-                                <div className="text-xs opacity-80">Level {profile.level} {'•'} {profile.xp} XP</div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </header>
 
@@ -564,24 +517,6 @@ const Dashboard: React.FC = () => {
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8 md:px-6">
-
-                {/* Badges Section */}
-                {badges.length > 0 && (
-                    <div className="mb-8">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Minhas Conquistas</h2>
-                        <div className="flex gap-3 flex-wrap">
-                            {badges.map(badge => (
-                                <div key={badge.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm flex items-center gap-3 min-w-[200px] border border-gray-100 dark:border-gray-700">
-                                    <div className="text-2xl">{badge.icon}</div>
-                                    <div>
-                                        <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">{badge.name}</div>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400">{badge.description}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
 
                 {/* Breadcrumb */}
                 {/* Breadcrumb and Actions */}
