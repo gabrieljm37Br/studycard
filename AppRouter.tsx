@@ -13,6 +13,7 @@ import SimulationDetails from './pages/SimulationDetails';
 import StudyCalendar from './pages/StudyCalendar';
 import Statistics from './pages/Statistics';
 import Topicogram from './pages/Topicogram';
+import { hasSupabaseEnv, supabaseEnvError } from './services/supabaseClient';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -36,6 +37,26 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const AppRouter: React.FC = () => {
+    if (!hasSupabaseEnv) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+                <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Configuração necessária</h1>
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">{supabaseEnvError}</p>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 text-sm font-mono text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                        VITE_SUPABASE_URL=https://ixpkbgmrqftmokdyydsl.supabase.co
+                        <br />
+                        VITE_SUPABASE_ANON_KEY=SEU_PUBLIC_ANON_KEY
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                        Crie o arquivo <code>.env.local</code> na raiz do projeto, copie os valores acima (ou os do seu projeto)
+                        e reinicie com <code>npm run dev</code>.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <ThemeProvider>
             <AuthProvider>

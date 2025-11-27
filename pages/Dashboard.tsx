@@ -402,7 +402,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                         <div className="space-y-1 text-center lg:text-left">
                             <p className="text-xs uppercase tracking-widest text-white/70">Dashboard</p>
-                            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Flashcards AI</h1>
+                            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Meus Decks</h1>
                         </div>
 
                         <div className="flex items-center justify-center lg:justify-end gap-3">
