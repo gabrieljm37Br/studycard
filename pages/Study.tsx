@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -24,6 +24,11 @@ const Study: React.FC = () => {
     const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
     const [loading, setLoading] = useState(true);
     const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
+    const [pomodoroPos, setPomodoroPos] = useState<{ top: number; left: number } | null>(null);
+    const [isDraggingPomodoro, setIsDraggingPomodoro] = useState(false);
+    const pomodoroRef = useRef<HTMLDivElement | null>(null);
+    const pomodoroDragOffset = useRef({ x: 0, y: 0 });
+    const [defaultPomodoroBottom, setDefaultPomodoroBottom] = useState(112);
 
     // Pomodoro Timer State
     const [timeLeft, setTimeLeft] = useState(25 * 60);
@@ -611,6 +616,60 @@ const Study: React.FC = () => {
         setResult(null);
     };
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setDefaultPomodoroBottom(window.innerWidth < 768 ? 112 : 24);
+        }
+    }, []);
+
+    const startPomodoroDrag = (clientX: number, clientY: number) => {
+        if (!pomodoroRef.current) return;
+        const rect = pomodoroRef.current.getBoundingClientRect();
+        pomodoroDragOffset.current = { x: clientX - rect.left, y: clientY - rect.top };
+        setPomodoroPos({ top: rect.top, left: rect.left });
+        setIsDraggingPomodoro(true);
+    };
+
+    const handlePomodoroMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        startPomodoroDrag(e.clientX, e.clientY);
+    };
+
+    const handlePomodoroTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        const touch = e.touches[0];
+        startPomodoroDrag(touch.clientX, touch.clientY);
+    };
+
+    useEffect(() => {
+        if (!isDraggingPomodoro) return;
+
+        const handleMove = (event: MouseEvent | TouchEvent) => {
+            const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+            const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
+            if ('touches' in event) {
+                event.preventDefault();
+            }
+            setPomodoroPos({
+                top: clientY - pomodoroDragOffset.current.y,
+                left: clientX - pomodoroDragOffset.current.x
+            });
+        };
+
+        const handleUp = () => setIsDraggingPomodoro(false);
+
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('touchend', handleUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('touchmove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+            window.removeEventListener('touchend', handleUp);
+        };
+    }, [isDraggingPomodoro]);
+
 
 
     if (loading) {
@@ -643,6 +702,9 @@ const Study: React.FC = () => {
     }
 
     const currentCard = flashcards[currentIndex];
+    const pomodoroStyle = pomodoroPos
+        ? { top: pomodoroPos.top, left: pomodoroPos.left, right: 'auto', bottom: 'auto' }
+        : { right: 24, bottom: defaultPomodoroBottom };
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -671,7 +733,17 @@ const Study: React.FC = () => {
             </header>
 
             {/* Pomodoro Timer Floating Component */}
-            <div className="fixed right-4 bottom-28 md:right-6 md:bottom-6 z-50 flex flex-col items-end gap-2">
+            <div
+                ref={pomodoroRef}
+                style={pomodoroStyle}
+                className="fixed z-50 flex flex-col items-end gap-2 relative"
+            >
+                <div
+                    className="absolute -top-2 right-2 w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-full border border-white/70 shadow cursor-move"
+                    onMouseDown={handlePomodoroMouseDown}
+                    onTouchStart={handlePomodoroTouchStart}
+                    title="Arraste para reposicionar"
+                />
                 {showTimerSettings && (
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 mb-2 animate-fade-in">
                         <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-3">Definir Tempo</h4>
