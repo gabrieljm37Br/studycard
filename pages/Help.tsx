@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
+import { Home } from 'lucide-react';
 
 interface Section {
     id: string;
@@ -72,13 +73,11 @@ const Help: React.FC = () => {
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => navigate('/home')}
                             className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                            title="Voltar ao Dashboard"
+                            title="Ir para Home"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
+                            <Home className="h-6 w-6" />
                         </button>
                         <h1 className="text-2xl font-bold">📖 Central de Ajuda</h1>
                     </div>

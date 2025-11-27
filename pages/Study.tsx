@@ -7,6 +7,7 @@ import { updateLastStudied } from '../services/deckService';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData, FlashcardNote } from '../types';
 import { renderHTML } from '../utils/textUtils';
+import { Home } from 'lucide-react';
 
 const Study: React.FC = () => {
     const { user } = useAuth();
@@ -631,10 +632,11 @@ const Study: React.FC = () => {
                     Tudo em dia! Nenhum flashcard para revisar agora.
                 </p>
                 <button
-                    onClick={() => navigate('/dashboard')}
-                    className="px-6 py-3 bg-indigo-600 text-white border-none rounded-lg cursor-pointer font-semibold hover:bg-indigo-700 transition-colors shadow-md"
+                    onClick={() => navigate('/home')}
+                    className="px-6 py-3 bg-indigo-600 text-white border-none rounded-lg cursor-pointer font-semibold hover:bg-indigo-700 transition-colors shadow-md flex items-center gap-2"
                 >
-                    Voltar ao Dashboard
+                    <Home className="w-5 h-5" />
+                    <span>Voltar para Home</span>
                 </button>
             </div>
         );
@@ -659,10 +661,11 @@ const Study: React.FC = () => {
                         🔀 Embaralhar
                     </button>
                     <button
-                        onClick={() => navigate('/dashboard')}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors"
+                        onClick={() => navigate('/home')}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
                     >
-                        ← Voltar
+                        <Home className="w-4 h-4" />
+                        <span>Voltar</span>
                     </button>
                 </div>
             </header>

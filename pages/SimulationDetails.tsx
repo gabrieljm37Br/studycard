@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import type { Simulation, SimulationItem } from '../types';
 import { CardMode } from '../types';
+import { Home } from 'lucide-react';
 
 const SimulationDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -93,10 +94,11 @@ const SimulationDetails: React.FC = () => {
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <button
-                                    onClick={() => navigate('/simulations')}
-                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                                    onClick={() => navigate('/home')}
+                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors inline-flex items-center gap-2"
                                 >
-                                    ← Voltar
+                                    <Home className="w-4 h-4" />
+                                    <span>Voltar</span>
                                 </button>
                                 <span className="text-gray-300 dark:text-gray-600">|</span>
                                 <span className="text-sm text-gray-500 dark:text-gray-400">

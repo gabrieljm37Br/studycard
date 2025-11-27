@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getTopicogramDecks, TopicogramDeck } from '../services/deckService';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Clock, BookOpen, Play, TrendingUp } from 'lucide-react';
+import { Clock, BookOpen, Home, Play, TrendingUp } from 'lucide-react';
 
 const Topicogram: React.FC = () => {
     const { user } = useAuth();
@@ -77,10 +77,10 @@ const Topicogram: React.FC = () => {
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                             <button
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => navigate('/home')}
                                 className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
-                                <span>{'\u21a9'}</span>
+                                <Home className="w-4 h-4" />
                                 <span>Voltar</span>
                             </button>
                         </div>

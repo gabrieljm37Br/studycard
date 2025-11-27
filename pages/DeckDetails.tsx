@@ -5,6 +5,7 @@ import { CardMode } from '../types';
 import type { FlashcardData } from '../types';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
+import { Home } from 'lucide-react';
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();
@@ -499,9 +500,9 @@ const DeckDetails: React.FC = () => {
         </div>
     );
 
-    const handleBackToDeck = () => {
-        // Navigate to dashboard with the current deck's parent context
-        navigate('/dashboard', { state: { deckId: parentId } });
+    const handleBackHome = () => {
+        // Voltar sempre para a página inicial
+        navigate('/home');
     };
 
     return (
@@ -509,11 +510,11 @@ const DeckDetails: React.FC = () => {
             <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-6 flex justify-between items-center shadow-md sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={handleBackToDeck}
+                        onClick={handleBackHome}
                         className="text-white/80 hover:text-white transition-colors text-2xl p-1 rounded-full hover:bg-white/10"
-                        title="Voltar para o deck"
+                        title="Ir para a Home"
                     >
-                        ←
+                        <Home className="w-6 h-6" />
                     </button>
 
                     {isEditingName ? (
@@ -535,8 +536,8 @@ const DeckDetails: React.FC = () => {
                     ) : (
                         <h1
                             className="text-xl md:text-2xl font-bold truncate max-w-[200px] md:max-w-md cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={handleBackToDeck}
-                            title="Clique para voltar ao deck"
+                            onClick={handleBackHome}
+                            title="Clique para ir para a Home"
                         >
                             {deckName || 'Carregando...'}
                         </h1>

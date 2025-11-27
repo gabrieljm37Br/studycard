@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import type { Deck, Simulation } from '../types';
 import { CardMode } from '../types';
+import { Home } from 'lucide-react';
 
 const SimulatedMode: React.FC = () => {
   const { user } = useAuth();
@@ -198,10 +199,11 @@ const SimulatedMode: React.FC = () => {
               </div>
               <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full md:w-auto">
                 <button
-                  onClick={() => navigate('/dashboard')}
-                  className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95"
+                  onClick={() => navigate('/home')}
+                  className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  Voltar
+                  <Home className="w-4 h-4" />
+                  <span>Voltar</span>
                 </button>
                 <button
                   onClick={() => setShowCreateModal(true)}

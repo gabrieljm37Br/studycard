@@ -7,6 +7,7 @@ import { CardMode } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
+import { Home } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 
@@ -423,10 +424,10 @@ const Generator: React.FC = () => {
                                 <span>Importar CSV</span>
                             </button>
                             <button
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => navigate('/home')}
                                 className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
-                                <span>{'\u21a9'}</span>
+                                <Home className="w-4 h-4" />
                                 <span>Voltar</span>
                             </button>
                         </div>
