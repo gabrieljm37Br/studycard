@@ -671,7 +671,7 @@ const Study: React.FC = () => {
             </header>
 
             {/* Pomodoro Timer Floating Component */}
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+            <div className="fixed right-4 bottom-28 md:right-6 md:bottom-6 z-50 flex flex-col items-end gap-2">
                 {showTimerSettings && (
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 mb-2 animate-fade-in">
                         <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-3">Definir Tempo</h4>
