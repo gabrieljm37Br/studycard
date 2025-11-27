@@ -666,8 +666,8 @@ const Study: React.FC = () => {
                 data.answer = currentCard.answer || '';
                 break;
             case CardMode.Dictionary:
-                data.term = (currentCard as any).term || currentCard.question || '';
-                data.definition = (currentCard as any).definition || currentCard.answer || '';
+                data.term = (currentCard as any).term || (currentCard as any).question || '';
+                data.definition = (currentCard as any).definition || (currentCard as any).answer || '';
                 break;
         }
         setEditData(data);
@@ -726,21 +726,31 @@ const Study: React.FC = () => {
 
             setFlashcards(prev => {
                 const updated = [...prev];
-                const updatedCard: (FlashcardData & { term?: string; definition?: string; problem?: string; solution?: string }) = {
+                const updatedCard: any = {
                     ...updated[currentIndex],
-                    ...payload,
-                    isTrue: payload.is_true ?? updated[currentIndex].isTrue,
-                    correctAnswerIndex: payload.correct_answer_index ?? updated[currentIndex].correctAnswerIndex,
-                    options: payload.options ?? updated[currentIndex].options,
+                    ...(payload as any),
                 };
+
+                // Update specific properties based on payload
+                if (payload.is_true !== undefined) {
+                    updatedCard.isTrue = payload.is_true;
+                }
+                if (payload.correct_answer_index !== undefined) {
+                    updatedCard.correctAnswerIndex = payload.correct_answer_index;
+                }
+
+                // Handle Dictionary mode
                 if (currentCard.mode === CardMode.Dictionary) {
-                    updatedCard.term = payload.question ?? updatedCard.term;
-                    updatedCard.definition = payload.answer ?? updatedCard.definition;
+                    if (payload.question !== undefined) updatedCard.term = payload.question;
+                    if (payload.answer !== undefined) updatedCard.definition = payload.answer;
                 }
+
+                // Handle PracticalExample mode
                 if (currentCard.mode === CardMode.PracticalExample) {
-                    updatedCard.solution = payload.solution ?? updatedCard.solution;
-                    updatedCard.problem = payload.problem ?? updatedCard.problem;
+                    if (payload.solution !== undefined) updatedCard.solution = payload.solution;
+                    if (payload.problem !== undefined) updatedCard.problem = payload.problem;
                 }
+
                 updated[currentIndex] = updatedCard;
                 return updated;
             });
