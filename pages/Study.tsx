@@ -1063,7 +1063,7 @@ const Study: React.FC = () => {
             <div
                 ref={pomodoroRef}
                 style={pomodoroStyle}
-                className="fixed z-50 flex flex-col items-end gap-2 relative"
+                className="fixed z-50 flex flex-col items-end gap-2"
             >
                 <div
                     className="absolute -top-2 right-2 w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-full border border-white/70 shadow cursor-move"
