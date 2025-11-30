@@ -163,7 +163,7 @@ const Topicogram: React.FC = () => {
                 ) : (
                     /* Timeline */
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
                             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                                 <Clock className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                                 Linha do Tempo de Estudos
@@ -175,22 +175,22 @@ const Topicogram: React.FC = () => {
 
                         <div className="relative">
                             {/* Timeline connector line */}
-                            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-200 via-purple-200 to-transparent dark:from-indigo-800 dark:via-purple-800"></div>
+                            <div className="absolute left-5 sm:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-indigo-200 via-purple-200 to-transparent dark:from-indigo-800 dark:via-purple-800"></div>
 
                             {/* Timeline items */}
                             <div className="space-y-6">
                                 {decks.map((deck, index) => (
                                     <div
                                         key={deck.id}
-                                        className="relative pl-20 group"
+                                        className="relative pl-14 sm:pl-20 group"
                                         style={{ animationDelay: `${index * 50}ms` }}
                                     >
                                         {/* Timeline dot */}
-                                        <div className="absolute left-6 top-6 w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full border-4 border-white dark:border-gray-900 shadow-lg group-hover:scale-125 transition-transform z-10"></div>
+                                        <div className="absolute left-2.5 sm:left-6 top-4 sm:top-6 w-4 sm:w-5 h-4 sm:h-5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full border-[3px] sm:border-4 border-white dark:border-gray-900 shadow-lg group-hover:scale-125 transition-transform z-10"></div>
 
                                         {/* Card */}
-                                        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 group-hover:translate-x-2">
-                                            <div className="flex items-start justify-between gap-4">
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl p-5 sm:p-6 shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 group-hover:translate-x-2 w-full">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-3 mb-2">
                                                         <BookOpen className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -198,7 +198,7 @@ const Topicogram: React.FC = () => {
                                                             {deck.name}
                                                         </h3>
                                                     </div>
-                                                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                                                         <div className="flex items-center gap-1.5">
                                                             <Clock className="w-4 h-4" />
                                                             <span className="font-medium">
@@ -217,7 +217,7 @@ const Topicogram: React.FC = () => {
                                                 </div>
                                                 <button
                                                     onClick={() => handleStudy(deck.id)}
-                                                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-none rounded-lg cursor-pointer font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105"
+                                                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-none rounded-lg cursor-pointer font-semibold transition-all shadow-md hover:shadow-lg transform hover:scale-105 w-full sm:w-auto mt-2 sm:mt-0"
                                                 >
                                                     <Play className="w-4 h-4" />
                                                     Estudar
