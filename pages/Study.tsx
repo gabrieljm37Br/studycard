@@ -53,6 +53,7 @@ const Study: React.FC = () => {
     const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
     const [pomodoroPos, setPomodoroPos] = useState<{ top: number; left: number } | null>(null);
     const [isDraggingPomodoro, setIsDraggingPomodoro] = useState(false);
+    const [isPomodoroVisible, setIsPomodoroVisible] = useState(false);
     const pomodoroRef = useRef<HTMLDivElement | null>(null);
     const pomodoroDragOffset = useRef({ x: 0, y: 0 });
     const [defaultPomodoroBottom, setDefaultPomodoroBottom] = useState(112);
@@ -1021,56 +1022,85 @@ const Study: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             {/* Header */}
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-6 flex justify-between items-center shadow-md">
-                <h1 className="text-xl md:text-2xl font-bold">Modo Estudo</h1>
-                <div className="flex gap-4 items-center">
-                    <div className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
-                        {currentIndex + 1} / {flashcards.length}
+            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
+                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="space-y-1 text-center md:text-left">
+                            <p className="text-xs uppercase tracking-widest text-white/70">Estudos</p>
+                            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Modo Estudo</h1>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
+                            <div className="px-4 py-2 bg-white/15 border border-white/25 rounded-lg text-white font-semibold text-sm text-center min-w-[72px]">
+                                <div className="text-xs uppercase tracking-wide">Progresso</div>
+                                <div className="text-base font-bold">{currentIndex + 1} / {flashcards.length}</div>
+                            </div>
+                            <button
+                                onClick={shuffleCards}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Embaralhar cards"
+                            >
+                                <span aria-hidden>🔀</span>
+                                <span className="hidden sm:inline">Embaralhar</span>
+                            </button>
+                            <button
+                                onClick={() => navigate('/help')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Central de Ajuda"
+                                aria-label="Abrir central de ajuda"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={() => setIsPomodoroVisible((prev) => !prev)}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                aria-pressed={isPomodoroVisible}
+                                title="Mostrar/ocultar Pomodoro"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 2a1 1 0 011 1v1h2.5a1 1 0 110 2H6.5a1 1 0 110-2H9V3a1 1 0 011-1z" />
+                                    <path fillRule="evenodd" d="M5 8a5 5 0 1110 0 5 5 0 01-10 0zm5-3a1 1 0 00-1 1v2.586l1.707 1.707a1 1 0 101.414-1.414L11 8.586V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <span className="hidden sm:inline">{isPomodoroVisible ? 'Ocultar Pomodoro' : 'Pomodoro'}</span>
+                            </button>
+                            <button
+                                onClick={() => navigate('/home')}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                            >
+                                <Home className="w-4 h-4" />
+                                <span className="hidden sm:inline">Voltar</span>
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={shuffleCards}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
-                        title="Embaralhar cards"
-                    >
-                        🔀 Embaralhar
-                    </button>
-                    <button
-                        onClick={() => navigate('/help')}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
-                        title="Central de Ajuda"
-                        aria-label="Abrir central de ajuda"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                                fillRule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                        <span className="hidden sm:inline">Ajuda</span>
-                    </button>
-                    <button
-                        onClick={() => navigate('/home')}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm transition-colors flex items-center gap-2"
-                    >
-                        <Home className="w-4 h-4" />
-                        <span>Voltar</span>
-                    </button>
                 </div>
             </header>
 
             {/* Pomodoro Timer Floating Component */}
-            <div
-                ref={pomodoroRef}
-                style={pomodoroStyle}
-                className="fixed z-50 flex flex-col items-end gap-2"
-            >
+            {isPomodoroVisible && (
+                <div
+                    ref={pomodoroRef}
+                    style={pomodoroStyle}
+                    className="fixed z-50 flex flex-col items-end gap-2"
+                >
                 <div
                     className="absolute -top-2 right-2 w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-full border border-white/70 shadow cursor-move"
                     onMouseDown={handlePomodoroMouseDown}
                     onTouchStart={handlePomodoroTouchStart}
                     title="Arraste para reposicionar"
                 />
+                <button
+                    onClick={() => setIsPomodoroVisible(false)}
+                    className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-white text-gray-600 shadow border border-gray-200 hover:bg-gray-100 text-xs font-bold"
+                    title="Fechar Pomodoro"
+                    aria-label="Fechar Pomodoro"
+                >
+                    x
+                </button>
                 {showTimerSettings && (
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 mb-2 animate-fade-in">
                         <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-3">Definir Tempo</h4>
@@ -1134,6 +1164,7 @@ const Study: React.FC = () => {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
