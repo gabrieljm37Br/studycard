@@ -1015,6 +1015,7 @@ const Study: React.FC = () => {
     }
 
     const currentCard = flashcards[currentIndex];
+    const progressPercent = Math.min(100, Math.round(((currentIndex + 1) / flashcards.length) * 100));
     const pomodoroStyle = pomodoroPos
         ? { top: pomodoroPos.top, left: pomodoroPos.left, right: 'auto', bottom: 'auto' }
         : { right: 24, bottom: defaultPomodoroBottom };
@@ -1030,10 +1031,6 @@ const Study: React.FC = () => {
                             <h1 className="text-3xl md:text-4xl font-bold leading-tight">Modo Estudo</h1>
                         </div>
                         <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
-                            <div className="px-4 py-2 bg-white/15 border border-white/25 rounded-lg text-white font-semibold text-sm text-center min-w-[72px]">
-                                <div className="text-xs uppercase tracking-wide">Progresso</div>
-                                <div className="text-base font-bold">{currentIndex + 1} / {flashcards.length}</div>
-                            </div>
                             <button
                                 onClick={shuffleCards}
                                 className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
@@ -1168,6 +1165,26 @@ const Study: React.FC = () => {
 
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
+                {/* Progress */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Progresso</p>
+                            <div className="text-3xl font-bold text-gray-900 dark:text-white">{currentIndex + 1} / {flashcards.length}</div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Flashcards vistos</p>
+                        </div>
+                        <div className="w-full sm:w-1/2">
+                            <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300"
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                            <p className="mt-2 text-right text-xs font-semibold text-indigo-600 dark:text-indigo-300">{progressPercent}%</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Stats */}
                 <div className="flex gap-4 mb-8">
                     <div className="flex-1 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 p-4 rounded-xl text-center shadow-sm transition-all hover:scale-105">
