@@ -444,6 +444,15 @@ const DeckDetails: React.FC = () => {
                 delete updatePayload.term;
                 delete updatePayload.definition;
             }
+            // Align payload keys with DB column names
+            if (editFormData.mode === CardMode.TrueFalse && updatePayload.isTrue !== undefined) {
+                updatePayload.is_true = updatePayload.isTrue;
+                delete updatePayload.isTrue;
+            }
+            if (editFormData.mode === CardMode.MultipleChoice && updatePayload.correctAnswerIndex !== undefined) {
+                updatePayload.correct_answer_index = updatePayload.correctAnswerIndex;
+                delete updatePayload.correctAnswerIndex;
+            }
 
             // Process tags from string to array
             if (editFormData.tags !== undefined) {
