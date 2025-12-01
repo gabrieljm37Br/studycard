@@ -1166,21 +1166,21 @@ const Study: React.FC = () => {
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
                 {/* Progress */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Progresso</p>
-                            <div className="text-3xl font-bold text-gray-900 dark:text-white">{currentIndex + 1} / {flashcards.length}</div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Flashcards vistos</p>
+                            <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">Progresso</p>
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{currentIndex + 1} / {flashcards.length}</div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Flashcards vistos</p>
                         </div>
                         <div className="w-full sm:w-1/2">
-                            <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                                 <div
                                     className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300"
                                     style={{ width: `${progressPercent}%` }}
                                 />
                             </div>
-                            <p className="mt-2 text-right text-xs font-semibold text-indigo-600 dark:text-indigo-300">{progressPercent}%</p>
+                            <p className="mt-1.5 text-right text-[11px] font-semibold text-indigo-600 dark:text-indigo-300">{progressPercent}%</p>
                         </div>
                     </div>
                 </div>
