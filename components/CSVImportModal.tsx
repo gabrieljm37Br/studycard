@@ -147,6 +147,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
                 interval: 0,
                 repetition: 0,
                 ease_factor: 2.5,
+                tags: card.tags || [],
             }));
 
             // Batch insert
@@ -237,7 +238,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
                                     className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                    Formato esperado: 2 colunas (Frente, Verso) sem cabeçalho
+                                    Formato esperado: 2 colunas (Frente, Verso) ou 3 colunas (Frente, Verso, Tags) sem cabeçalho
                                 </p>
                             </div>
 
@@ -266,8 +267,8 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
                                     <button
                                         onClick={() => setIsCreatingNewDeck(false)}
                                         className={`px-4 py-2 rounded-lg font-semibold transition-colors ${!isCreatingNewDeck
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                     >
                                         Deck Existente
@@ -275,8 +276,8 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
                                     <button
                                         onClick={() => setIsCreatingNewDeck(true)}
                                         className={`px-4 py-2 rounded-lg font-semibold transition-colors ${isCreatingNewDeck
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                                             }`}
                                     >
                                         Criar Novo Deck
@@ -326,8 +327,8 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
                                                 <tr key={index} className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                                     <td className="px-4 py-3">
                                                         <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${card.type === CardMode.FillInTheBlank
-                                                                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                                                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                                                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                                             }`}>
                                                             {getCardTypeLabel(card.type)}
                                                         </span>

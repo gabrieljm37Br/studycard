@@ -8,6 +8,7 @@ export interface ParsedAnkiCard {
     options?: string[];
     correctAnswerIndex?: number;
     isTrue?: boolean;
+    tags?: string[];
 }
 
 function normalizeWhitespace(text: string, preserveLineBreaks: boolean = false): string {
@@ -31,7 +32,8 @@ const keywordPatterns = {
     significado: '(?:Significado:)',
     certoErrado: '(?:Certo ou Errado:)',
     situacao: '(?:Situacao[- ]?Problema:|Situacao[- ]?Problema:|Situação[- ]?Problema:)',
-    hipotese: '(?:Hipotese:|Hipotese:|Hipótese:)'
+    hipotese: '(?:Hipotese:|Hipotese:|Hipótese:)',
+    tags: '(?:Tags:|Etiquetas:)'
 };
 
 const startKeywordPatterns = [
@@ -55,18 +57,22 @@ function extractFieldByPattern(text: string, keywordPattern: string, endPatterns
 }
 
 function parsePerguntaCard(blockText: string): ParsedAnkiCard {
-    const front = extractFieldByPattern(blockText, keywordPatterns.pergunta, [keywordPatterns.resposta, keywordPatterns.explicacao]);
-    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
-    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
-    return { type: CardMode.QA, front, back, explanation: explanation || undefined };
+    const front = extractFieldByPattern(blockText, keywordPatterns.pergunta, [keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao, keywordPatterns.tags]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
+    const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
+    const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
+    return { type: CardMode.QA, front, back, explanation: explanation || undefined, tags };
 }
 
 function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
-    const front = extractFieldByPattern(blockText, keywordPatterns.certoErrado, [keywordPatterns.resposta, keywordPatterns.explicacao]);
-    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
-    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
+    const front = extractFieldByPattern(blockText, keywordPatterns.certoErrado, [keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao, keywordPatterns.tags]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
+    const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
+    const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
     const isTrue = /certo|verdadeiro|true|v|sim/i.test(back.trim());
-    return { type: CardMode.TrueFalse, front, back, explanation: explanation || undefined, isTrue };
+    return { type: CardMode.TrueFalse, front, back, explanation: explanation || undefined, isTrue, tags };
 }
 
 function parseQuestaoCard(blockText: string): ParsedAnkiCard {
@@ -136,30 +142,39 @@ function parseQuestaoCard(blockText: string): ParsedAnkiCard {
         correctAnswerIndex = 0;
     }
 
+    // Extract tags
+    const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
+    const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
+
     return {
         type: CardMode.MultipleChoice,
         front: questionText || front,
         back,
         explanation: explanation || undefined,
         options: options.length > 0 ? options : undefined,
-        correctAnswerIndex: options.length > 0 ? correctAnswerIndex : undefined
+        correctAnswerIndex: options.length > 0 ? correctAnswerIndex : undefined,
+        tags
     };
 }
 
 function parseDicionarioCard(blockText: string): ParsedAnkiCard {
-    const front = extractFieldByPattern(blockText, keywordPatterns.dicionario, [keywordPatterns.significado, keywordPatterns.explicacao]);
-    const back = extractFieldByPattern(blockText, keywordPatterns.significado, [keywordPatterns.explicacao]);
-    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
-    return { type: CardMode.Dictionary, front, back, explanation: explanation || undefined };
+    const front = extractFieldByPattern(blockText, keywordPatterns.dicionario, [keywordPatterns.significado, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.significado, [keywordPatterns.explicacao, keywordPatterns.tags]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
+    const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
+    const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
+    return { type: CardMode.Dictionary, front, back, explanation: explanation || undefined, tags };
 }
 
 function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnkiCard {
-    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao]);
-    const question = extractFieldByPattern(blockText, keywordPatterns.questao, [keywordPatterns.resposta, keywordPatterns.explicacao]);
+    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const question = extractFieldByPattern(blockText, keywordPatterns.questao, [keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
     const front = question ? `${situation}\n\n${question}` : situation;
-    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao]);
-    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao);
-    return { type: CardMode.PracticalExample, front: normalizeWhitespace(front, true), back, explanation: explanation || undefined };
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao, keywordPatterns.tags]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
+    const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
+    const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
+    return { type: CardMode.PracticalExample, front: normalizeWhitespace(front, true), back, explanation: explanation || undefined, tags };
 }
 
 function detectCardType(blockText: string): { type: string; keyword: string } | null {

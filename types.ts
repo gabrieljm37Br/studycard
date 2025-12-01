@@ -49,6 +49,7 @@ export interface QACard {
   repetition?: number;
   ease_factor?: number;
   sources?: WebSource[];
+  tags?: string[];
 }
 
 export interface TrueFalseCard {
@@ -64,6 +65,7 @@ export interface TrueFalseCard {
   repetition?: number;
   ease_factor?: number;
   sources?: WebSource[];
+  tags?: string[];
 }
 
 export interface MultipleChoiceCard {
@@ -80,6 +82,7 @@ export interface MultipleChoiceCard {
   repetition?: number;
   ease_factor?: number;
   sources?: WebSource[];
+  tags?: string[];
 }
 
 export interface PracticalExampleCard {
@@ -95,6 +98,7 @@ export interface PracticalExampleCard {
   interval?: number;
   repetition?: number;
   ease_factor?: number;
+  tags?: string[];
 }
 
 export interface FillInTheBlankCard {
@@ -109,6 +113,7 @@ export interface FillInTheBlankCard {
   repetition?: number;
   ease_factor?: number;
   sources?: WebSource[];
+  tags?: string[];
 }
 
 export interface DictionaryCard {
@@ -123,6 +128,7 @@ export interface DictionaryCard {
   repetition?: number;
   ease_factor?: number;
   sources?: WebSource[];
+  tags?: string[];
 }
 
 export type FlashcardData =

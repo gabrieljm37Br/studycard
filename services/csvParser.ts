@@ -7,6 +7,7 @@ export interface ParsedCard {
     front: string;
     back: string;
     type: CardMode;
+    tags?: string[];
 }
 
 /**
@@ -80,6 +81,7 @@ export function parseNotebookLMCSV(csvContent: string): ParsedCard[] {
         if (fields.length >= 2) {
             const front = fields[0];
             const back = fields[1];
+            const tagsField = fields[2]; // Optional third column for tags
 
             // Skip if either field is empty
             if (!front || !back) {
@@ -88,10 +90,20 @@ export function parseNotebookLMCSV(csvContent: string): ParsedCard[] {
 
             const type = detectCardType(front);
 
+            // Process tags if present
+            let tags: string[] | undefined;
+            if (tagsField && tagsField.trim()) {
+                tags = tagsField
+                    .split(/[,;]/) // Split by comma or semicolon
+                    .map(tag => tag.trim())
+                    .filter(tag => tag.length > 0);
+            }
+
             parsedCards.push({
                 front,
                 back,
                 type,
+                tags,
             });
         }
     }

@@ -386,6 +386,9 @@ const DeckDetails: React.FC = () => {
                 break;
         }
 
+        // Add tags (common for all card types)
+        formData.tags = (card as any).tags ? (card as any).tags.join(', ') : '';
+
         setEditFormData(formData);
         setShowEditModal(true);
     };
@@ -440,6 +443,13 @@ const DeckDetails: React.FC = () => {
                 updatePayload.answer = editFormData.definition;
                 delete updatePayload.term;
                 delete updatePayload.definition;
+            }
+
+            // Process tags from string to array
+            if (editFormData.tags !== undefined) {
+                updatePayload.tags = editFormData.tags.trim()
+                    ? editFormData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0)
+                    : [];
             }
 
             const { error } = await supabase
@@ -1186,6 +1196,23 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                     </>
                                 )}
+
+                                {/* Tags Input - Common for all card types */}
+                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        Tags (opcional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.tags || ''}
+                                        onChange={(e) => handleEditChange('tags', e.target.value)}
+                                        placeholder="Ex: matemática, álgebra (separadas por vírgula)"
+                                        className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                    />
+                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        💡 Adicione tags separadas por vírgula para organizar seus flashcards
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-700 mt-6">

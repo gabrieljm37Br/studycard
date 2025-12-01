@@ -123,6 +123,7 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
             interval: 0,
             repetition: 0,
             ease_factor: 2.5,
+            tags: card.tags || [],
         };
 
         switch (card.type) {

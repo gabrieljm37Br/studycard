@@ -31,6 +31,7 @@ const Generator: React.FC = () => {
     const [newDeckName, setNewDeckName] = useState('');
     const [showCSVImport, setShowCSVImport] = useState(false);
     const [showAnkiImport, setShowAnkiImport] = useState(false);
+    const [tags, setTags] = useState<string>('');
 
     // Manual flashcard creation state
     const [manualCards, setManualCards] = useState<any[]>([]);
@@ -53,7 +54,9 @@ const Generator: React.FC = () => {
         correctAnswer: '',
         // Dictionary
         term: '',
-        definition: ''
+        definition: '',
+        // Tags
+        tags: ''
     });
 
     useEffect(() => {
@@ -178,9 +181,17 @@ const Generator: React.FC = () => {
                     if (!manualFormData.term.trim() || !manualFormData.definition.trim()) {
                         throw new Error('Por favor, preencha o termo e a definição.');
                     }
-                    newCard.term = manualFormData.term.trim();
+                    newCard.term = manualFormData.question.trim();
                     newCard.definition = manualFormData.definition.trim();
                     break;
+            }
+
+            // Process tags (common for all card types)
+            if (manualFormData.tags.trim()) {
+                newCard.tags = manualFormData.tags
+                    .split(',')
+                    .map((tag: string) => tag.trim())
+                    .filter((tag: string) => tag.length > 0);
             }
 
             setManualCards(prev => [...prev, newCard]);
@@ -209,7 +220,8 @@ const Generator: React.FC = () => {
             sentence: '',
             correctAnswer: '',
             term: '',
-            definition: ''
+            definition: '',
+            tags: ''
         });
     };
 
@@ -316,6 +328,11 @@ const Generator: React.FC = () => {
             }
 
             // Save to Supabase
+            // Process tags from input
+            const tagsArray = tags.trim()
+                ? tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+                : [];
+
             const cardsToInsert = generatedCards.map(card => ({
                 user_id: user!.id,
                 deck_id: targetDeckId,
@@ -340,7 +357,8 @@ const Generator: React.FC = () => {
                 correct_answer_index: card.mode === CardMode.MultipleChoice ? (card as any).correctAnswerIndex : null,
                 problem: card.mode === CardMode.PracticalExample ? (card as any).problem : null,
                 solution: card.mode === CardMode.PracticalExample ? (card as any).solution : null,
-                sources: (card as any).sources || []
+                sources: (card as any).sources || [],
+                tags: (card as any).tags || tagsArray
             }));
 
             const { error: insertError } = await supabase
@@ -854,6 +872,18 @@ const Generator: React.FC = () => {
                                     </div>
                                 )}
 
+                                {/* Tags Input for Manual Cards */}
+                                <div className="mt-4">
+                                    <label className="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Tags (opcional)</label>
+                                    <input
+                                        type="text"
+                                        value={manualFormData.tags}
+                                        onChange={(e) => setManualFormData({ ...manualFormData, tags: e.target.value })}
+                                        placeholder="Ex: matemática, álgebra (separadas por vírgula)"
+                                        className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl bg-transparent text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 dark:text-white"
+                                    />
+                                </div>
+
                                 {/* Add Flashcard Button */}
                                 <button
                                     type="button"
@@ -960,6 +990,25 @@ const Generator: React.FC = () => {
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Tags Input - Common for all input types */}
+                        {inputType !== 'manual' && (
+                            <div className="mb-8">
+                                <label className="block mb-3 font-semibold text-gray-700 dark:text-gray-300">
+                                    Tags (opcional)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={tags}
+                                    onChange={(e) => setTags(e.target.value)}
+                                    placeholder="Ex: matemática, álgebra, equações (separadas por vírgula)"
+                                    className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-transparent dark:text-white"
+                                />
+                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                    💡 Adicione tags separadas por vírgula para organizar seus flashcards
+                                </p>
                             </div>
                         )}
 
