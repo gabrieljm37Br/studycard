@@ -42,6 +42,7 @@ const Study: React.FC = () => {
     const location = useLocation();
     const deckId = (location.state as any)?.deckId;
     const simulationId = (location.state as any)?.simulationId;
+    const [deckName, setDeckName] = useState('');
 
     const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -127,6 +128,32 @@ const Study: React.FC = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [deckId, simulationId]);
+
+    useEffect(() => {
+        const loadDeckName = async () => {
+            if (!deckId || !user) {
+                setDeckName('');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('decks')
+                    .select('name')
+                    .eq('id', deckId)
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                if (error) throw error;
+                setDeckName(data?.name || '');
+            } catch (error) {
+                console.error('Error loading deck name:', error);
+                setDeckName('');
+            }
+        };
+
+        loadDeckName();
+    }, [deckId, user]);
 
     const normalizeCard = (raw: any): FlashcardData => {
         // Normalize snake_case fields returned by Supabase
@@ -1165,6 +1192,16 @@ const Study: React.FC = () => {
 
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
+                {deckId && deckName && (
+                    <button
+                        onClick={() => navigate(`/deck/${deckId}`)}
+                        className="mb-4 inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200 font-semibold text-sm transition-colors"
+                    >
+                        <span aria-hidden>←</span>
+                        <span>Voltar para "{deckName}"</span>
+                    </button>
+                )}
+
                 {/* Progress */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
