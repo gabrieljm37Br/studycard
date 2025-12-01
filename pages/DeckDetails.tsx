@@ -14,6 +14,7 @@ const DeckDetails: React.FC = () => {
     const [deckName, setDeckName] = useState('');
     const [loading, setLoading] = useState(true);
     const [subdecks, setSubdecks] = useState<{ id: string; name: string }[]>([]);
+    const [breadcrumb, setBreadcrumb] = useState<{ id: string | null; name: string }[]>([]);
 
     // Move Card State
     const [showMoveCardModal, setShowMoveCardModal] = useState(false);
@@ -71,9 +72,35 @@ const DeckDetails: React.FC = () => {
             setDeckName(data.name);
             setTempDeckName(data.name);
             setParentId(data.parent_id);
+            await buildBreadcrumbTrail(deckId, data.name, data.parent_id);
         } catch (error) {
             console.error('Error loading deck details:', error);
         }
+    };
+
+    const buildBreadcrumbTrail = async (id: string, name: string, parent: string | null) => {
+        if (!user) return;
+
+        const trail: { id: string | null; name: string }[] = [{ id: null, name: 'Meus Decks' }];
+        const lineage: { id: string; name: string; parent_id: string | null }[] = [];
+
+        let currentParent = parent;
+        while (currentParent) {
+            const { data, error } = await supabase
+                .from('decks')
+                .select('id, name, parent_id')
+                .eq('id', currentParent)
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (error || !data) break;
+            lineage.push(data);
+            currentParent = data.parent_id;
+        }
+
+        lineage.reverse().forEach(d => trail.push({ id: d.id, name: d.name }));
+        trail.push({ id, name });
+        setBreadcrumb(trail);
     };
 
     const handleUpdateDeckName = async () => {
@@ -555,7 +582,7 @@ const DeckDetails: React.FC = () => {
                                     onClick={() => navigate('/study', { state: { deckId } })}
                                     className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                                 >
-                                    <span className="text-lg">�YZ�</span>
+                                    <span aria-hidden>📚</span>
                                     <span className="hidden md:inline text-sm font-semibold">Modo Estudo</span>
                                 </button>
                             )}
@@ -589,6 +616,36 @@ const DeckDetails: React.FC = () => {
 
 
             <div className="max-w-4xl mx-auto px-4 py-8">
+                <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
+                    {breadcrumb.map((item, idx) => {
+                        const isLast = idx === breadcrumb.length - 1;
+                        const handleClick = () => {
+                            if (isLast) return;
+                            if (item.id) {
+                                navigate(`/deck/${item.id}`);
+                            } else {
+                                navigate('/dashboard');
+                            }
+                        };
+
+                        return (
+                            <React.Fragment key={`${item.id ?? 'root'}-${idx}`}>
+                                {idx > 0 && <span className="text-xs text-gray-400 dark:text-gray-500">/</span>}
+                                <button
+                                    onClick={handleClick}
+                                    disabled={isLast}
+                                    className={`inline-flex items-center gap-1 transition-colors ${isLast
+                                        ? 'text-gray-500 dark:text-gray-400 cursor-default'
+                                        : 'hover:text-indigo-700 dark:hover:text-indigo-200'}`}
+                                >
+                                    {idx === 0 && <span aria-hidden>←</span>}
+                                    <span>{item.name}</span>
+                                </button>
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400">
                         <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
