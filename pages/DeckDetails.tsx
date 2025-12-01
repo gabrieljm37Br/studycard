@@ -457,7 +457,11 @@ const DeckDetails: React.FC = () => {
                 .update(updatePayload)
                 .eq('id', cardToEdit.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase update error:', error);
+                console.error('Update payload:', updatePayload);
+                throw error;
+            }
 
             // Reload flashcards to show updated data
             await loadFlashcards();
@@ -466,7 +470,7 @@ const DeckDetails: React.FC = () => {
             setEditFormData({});
         } catch (error) {
             console.error('Error updating flashcard:', error);
-            alert('Erro ao atualizar flashcard');
+            alert('Erro ao atualizar flashcard. Verifique se a coluna tags foi adicionada ao banco de dados.');
         } finally {
             setIsSaving(false);
         }
