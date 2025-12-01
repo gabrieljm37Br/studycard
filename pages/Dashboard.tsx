@@ -617,9 +617,10 @@ const Dashboard: React.FC = () => {
                                             e.stopPropagation();
                                             navigate(`/deck/${deck.id}`);
                                         }}
-                                        className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                        className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        ⚙️ Gerenciar
+                                        <span aria-hidden>📑</span>
+                                        <span>Flashcards</span>
                                     </button>
                                 </div>
 
