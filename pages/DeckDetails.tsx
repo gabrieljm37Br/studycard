@@ -507,85 +507,86 @@ const DeckDetails: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-6 flex justify-between items-center shadow-md sticky top-0 z-10">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={handleBackHome}
-                        className="text-white/80 hover:text-white transition-colors text-2xl p-1 rounded-full hover:bg-white/10"
-                        title="Ir para a Home"
-                    >
-                        <Home className="w-6 h-6" />
-                    </button>
+            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md sticky top-0 z-10">
+                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="space-y-1 text-center lg:text-left">
+                            <p className="text-xs uppercase tracking-widest text-white/70">Deck</p>
+                            {isEditingName ? (
+                                <input
+                                    type="text"
+                                    value={tempDeckName}
+                                    onChange={(e) => setTempDeckName(e.target.value)}
+                                    onBlur={handleUpdateDeckName}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleUpdateDeckName();
+                                        if (e.key === 'Escape') {
+                                            setIsEditingName(false);
+                                            setTempDeckName(deckName);
+                                        }
+                                    }}
+                                    className="text-3xl md:text-4xl font-bold bg-white/20 text-white border border-white/30 rounded px-2 py-1 outline-none w-full max-w-md"
+                                    autoFocus
+                                />
+                            ) : (
+                                <h1
+                                    className="text-3xl md:text-4xl font-bold leading-tight truncate max-w-full lg:max-w-md cursor-pointer hover:opacity-85 transition-opacity"
+                                    onClick={handleBackHome}
+                                    title="Clique para ir para a Home"
+                                >
+                                    {deckName || 'Carregando...'}
+                                </h1>
+                            )}
+                        </div>
 
-                    {isEditingName ? (
-                        <input
-                            type="text"
-                            value={tempDeckName}
-                            onChange={(e) => setTempDeckName(e.target.value)}
-                            onBlur={handleUpdateDeckName}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleUpdateDeckName();
-                                if (e.key === 'Escape') {
-                                    setIsEditingName(false);
-                                    setTempDeckName(deckName);
-                                }
-                            }}
-                            className="text-xl md:text-2xl font-bold bg-white/20 text-white border border-white/30 rounded px-2 py-1 outline-none w-full max-w-[300px]"
-                            autoFocus
-                        />
-                    ) : (
-                        <h1
-                            className="text-xl md:text-2xl font-bold truncate max-w-[200px] md:max-w-md cursor-pointer hover:opacity-80 transition-opacity"
-                            onClick={handleBackHome}
-                            title="Clique para ir para a Home"
-                        >
-                            {deckName || 'Carregando...'}
-                        </h1>
-                    )}
-                </div>
-                <div className="flex items-center gap-3">
-                    {flashcards.length > 0 && (
-                        <button
-                            onClick={() => navigate('/study', { state: { deckId } })}
-                            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 rounded-md text-white cursor-pointer text-sm font-semibold transition-all shadow-md flex items-center gap-2"
-                        >
-                            <span className="text-lg">🎯</span> <span className="hidden sm:inline">Modo Estudo</span>
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setShowAnkiImport(true)}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm font-semibold transition-colors flex items-center gap-2"
-                    >
-                        <span>📄</span> <span className="hidden sm:inline">Importar TXT</span>
-                    </button>
-                    <button
-                        onClick={() => setShowCSVImport(true)}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm font-semibold transition-colors flex items-center gap-2"
-                    >
-                        <span>📥</span> <span className="hidden sm:inline">Importar CSV</span>
-                    </button>
-                    <button
-                        onClick={() => navigate('/generator', { state: { deckId } })}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-md text-white cursor-pointer text-sm font-semibold transition-colors flex items-center gap-2"
-                    >
-                        <span className="text-lg">+</span> <span className="hidden sm:inline">Adicionar Flashcard</span>
-                    </button>
-                    <button
-                        onClick={() => navigate('/help')}
-                        className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-md text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                        title="Central de Ajuda"
-                        aria-label="Abrir central de ajuda"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                                fillRule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                    </button>
+                        <div className="flex items-center justify-center lg:justify-end gap-2 md:gap-3 flex-wrap">
+                            <button
+                                onClick={handleBackHome}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Voltar para Home"
+                                aria-label="Voltar para Home"
+                            >
+                                <Home className="w-5 h-5" />
+                                <span className="hidden md:inline text-sm font-semibold">Home</span>
+                            </button>
+
+                            {flashcards.length > 0 && (
+                                <button
+                                    onClick={() => navigate('/study', { state: { deckId } })}
+                                    className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                >
+                                    <span className="text-lg">�YZ�</span>
+                                    <span className="hidden md:inline text-sm font-semibold">Modo Estudo</span>
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => navigate('/generator', { state: { deckId } })}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                            >
+                                <span className="text-lg">+</span>
+                                <span className="hidden md:inline text-sm font-semibold">Adicionar</span>
+                            </button>
+                            <button
+                                onClick={() => navigate('/help')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
+                                title="Central de Ajuda"
+                                aria-label="Abrir central de ajuda"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </header>
+
+
 
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {loading ? (
@@ -594,7 +595,7 @@ const DeckDetails: React.FC = () => {
                         <p>Carregando flashcards...</p>
                     </div>
                 ) : flashcards.length === 0 ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-10 text-center shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 sm:p-8 text-center shadow-sm border border-gray-100 dark:border-gray-700">
                         <div className="text-5xl mb-4">📭</div>
                         <p className="text-gray-500 dark:text-gray-400 text-lg">
                             Nenhum flashcard encontrado neste deck.
