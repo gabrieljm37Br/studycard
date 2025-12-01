@@ -40,7 +40,8 @@ const Study: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const deckId = (location.state as any)?.deckId;
+    const searchParams = new URLSearchParams(location.search);
+    const deckId = (location.state as any)?.deckId ?? searchParams.get('deck'); // fallback for ?deck=
     const simulationId = (location.state as any)?.simulationId;
     const [deckName, setDeckName] = useState('');
 

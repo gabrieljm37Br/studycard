@@ -45,7 +45,8 @@ const Topicogram: React.FC = () => {
     };
 
     const handleStudy = (deckId: string) => {
-        navigate(`/study?deck=${deckId}`);
+        // Use navigation state to keep consistency with other entry points to Study mode
+        navigate('/study', { state: { deckId } });
     };
 
     if (loading) {
