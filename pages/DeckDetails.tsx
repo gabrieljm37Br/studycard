@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { CardMode } from '../types';
@@ -43,6 +43,11 @@ const DeckDetails: React.FC = () => {
     // CSV Import State
     const [showCSVImport, setShowCSVImport] = useState(false);
     const [showAnkiImport, setShowAnkiImport] = useState(false);
+
+    // Filters
+    const [modeFilter, setModeFilter] = useState<CardMode | 'all'>('all');
+    const [tagFilter, setTagFilter] = useState<string[]>([]);
+    const [showAllTags, setShowAllTags] = useState(false);
 
     useEffect(() => {
         // Get current user
@@ -177,6 +182,40 @@ const DeckDetails: React.FC = () => {
         }
     };
 
+    const availableTags = useMemo(() => {
+        const tags = new Set<string>();
+        flashcards.forEach(card => {
+            const cardTags = (card as any).tags as string[] | undefined;
+            cardTags?.forEach(tag => tags.add(tag));
+        });
+        return Array.from(tags).sort((a, b) => a.localeCompare(b));
+    }, [flashcards]);
+
+    const filteredFlashcards = useMemo(() => {
+        const activeTags = tagFilter.map(tag => tag.toLowerCase());
+        return flashcards.filter(card => {
+            const modeMatches = modeFilter === 'all' || card.mode === modeFilter;
+            if (!modeMatches) return false;
+
+            if (activeTags.length === 0) return true;
+            const cardTags = ((card as any).tags as string[] | undefined) ?? [];
+            const normalized = cardTags.map(tag => tag.toLowerCase());
+            // Mostrar cards que tenham todas as tags ou qualquer uma das selecionadas
+            const hasAll = activeTags.every(tag => normalized.includes(tag));
+            const hasAny = activeTags.some(tag => normalized.includes(tag));
+            return hasAll || hasAny;
+        });
+    }, [flashcards, modeFilter, tagFilter]);
+
+    const allVisibleSelected = filteredFlashcards.length > 0 && filteredFlashcards.every(card => selectedCards.has(card.id));
+
+    useEffect(() => {
+        setSelectedCards(prev => {
+            const visibleIds = new Set(filteredFlashcards.map(card => card.id));
+            return new Set([...prev].filter(id => visibleIds.has(id)));
+        });
+    }, [filteredFlashcards]);
+
     const handleDeleteCard = async (cardId: string) => {
         if (!confirm('Tem certeza que deseja excluir este flashcard?')) return;
 
@@ -194,7 +233,7 @@ const DeckDetails: React.FC = () => {
                 throw error;
             }
 
-            console.log('Flashcard excluído com sucesso:', data);
+            console.log('Flashcard excluÃ­do com sucesso:', data);
             await loadFlashcards(); // Reload list
         } catch (error: any) {
             console.error('Error deleting flashcard:', error);
@@ -220,7 +259,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks disponíveis.');
+            alert('Erro ao carregar decks disponÃ­veis.');
         }
     };
 
@@ -248,6 +287,16 @@ const DeckDetails: React.FC = () => {
     };
 
     // Bulk Selection Handlers
+    const handleTagToggle = (tag: string) => {
+        setTagFilter(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+    };
+
+    const handleClearFilters = () => {
+        setModeFilter('all');
+        setTagFilter([]);
+        setSelectedCards(new Set());
+    };
+
     const toggleCardSelection = (cardId: string) => {
         const newSelected = new Set(selectedCards);
         if (newSelected.has(cardId)) {
@@ -259,11 +308,15 @@ const DeckDetails: React.FC = () => {
     };
 
     const toggleSelectAll = () => {
-        if (selectedCards.size === flashcards.length) {
-            setSelectedCards(new Set());
+        if (filteredFlashcards.length === 0) return;
+
+        const newSelected = new Set(selectedCards);
+        if (allVisibleSelected) {
+            filteredFlashcards.forEach(card => newSelected.delete(card.id));
         } else {
-            setSelectedCards(new Set(flashcards.map(card => card.id)));
+            filteredFlashcards.forEach(card => newSelected.add(card.id));
         }
+        setSelectedCards(newSelected);
     };
 
     const handleBulkDelete = async () => {
@@ -309,7 +362,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks disponíveis.');
+            alert('Erro ao carregar decks disponÃ­veis.');
         }
     };
 
@@ -340,10 +393,10 @@ const DeckDetails: React.FC = () => {
         switch (mode) {
             case CardMode.QA: return 'Pergunta & Resposta';
             case CardMode.TrueFalse: return 'Verdadeiro ou Falso';
-            case CardMode.MultipleChoice: return 'Múltipla Escolha';
-            case CardMode.PracticalExample: return 'Exemplo Prático';
+            case CardMode.MultipleChoice: return 'Multipla Escolha';
+            case CardMode.PracticalExample: return 'Exemplo Pratico';
             case CardMode.FillInTheBlank: return 'Lacunas';
-            case CardMode.Dictionary: return 'Dicionário';
+            case CardMode.Dictionary: return 'Dicionario';
             default: return mode;
         }
     };
@@ -406,32 +459,32 @@ const DeckDetails: React.FC = () => {
             // Validate required fields
             if (editFormData.mode === CardMode.QA) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta são obrigatórias');
+                    alert('Pergunta e resposta sÃ£o obrigatÃ³rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.TrueFalse) {
                 if (!editFormData.statement?.trim()) {
-                    alert('Afirmação é obrigatória');
+                    alert('AfirmaÃ§Ã£o Ã© obrigatÃ³ria');
                     return;
                 }
             } else if (editFormData.mode === CardMode.MultipleChoice) {
                 if (!editFormData.question?.trim() || editFormData.options.some((opt: string) => !opt?.trim())) {
-                    alert('Pergunta e todas as opções são obrigatórias');
+                    alert('Pergunta e todas as opÃ§Ãµes sÃ£o obrigatÃ³rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.PracticalExample) {
                 if (!editFormData.problem?.trim() || !editFormData.question?.trim() || !editFormData.solution?.trim()) {
-                    alert('Problema, pergunta e solução são obrigatórios');
+                    alert('Problema, pergunta e soluÃ§Ã£o sÃ£o obrigatÃ³rios');
                     return;
                 }
             } else if (editFormData.mode === CardMode.FillInTheBlank) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta são obrigatórias');
+                    alert('Pergunta e resposta sÃ£o obrigatÃ³rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.Dictionary) {
                 if (!editFormData.term?.trim() || !editFormData.definition?.trim()) {
-                    alert('Termo e definição são obrigatórios');
+                    alert('Termo e definiÃ§Ã£o sÃ£o obrigatÃ³rios');
                     return;
                 }
             }
@@ -532,7 +585,7 @@ const DeckDetails: React.FC = () => {
                 type="button"
                 onClick={() => handleFormat(field, 'i', textareaId)}
                 className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm italic transition-colors"
-                title="Itálico"
+                title="ItÃ¡lico"
             >
                 I
             </button>
@@ -551,7 +604,7 @@ const DeckDetails: React.FC = () => {
     );
 
     const handleBackHome = () => {
-        // Voltar sempre para a página inicial
+        // Voltar sempre para a pÃ¡gina inicial
         navigate('/home');
     };
 
@@ -605,7 +658,7 @@ const DeckDetails: React.FC = () => {
                                     onClick={() => navigate('/study', { state: { deckId } })}
                                     className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                                 >
-                                    <span aria-hidden>📚</span>
+                                    <span aria-hidden>ð</span>
                                     <span className="hidden md:inline text-sm font-semibold">Modo Estudo</span>
                                 </button>
                             )}
@@ -661,7 +714,7 @@ const DeckDetails: React.FC = () => {
                                         ? 'text-gray-500 dark:text-gray-400 cursor-default'
                                         : 'hover:text-indigo-700 dark:hover:text-indigo-200'}`}
                                 >
-                                    {idx === 0 && <span aria-hidden>←</span>}
+                                    {idx === 0 && <span aria-hidden>â</span>}
                                     <span>{item.name}</span>
                                 </button>
                             </React.Fragment>
@@ -676,7 +729,7 @@ const DeckDetails: React.FC = () => {
                     </div>
                 ) : flashcards.length === 0 ? (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 sm:p-8 text-center shadow-sm border border-gray-100 dark:border-gray-700">
-                        <div className="text-5xl mb-4">📭</div>
+                        <div className="text-5xl mb-4">ð­</div>
                         <p className="text-gray-500 dark:text-gray-400 text-lg">
                             Nenhum flashcard encontrado neste deck.
                         </p>
@@ -689,6 +742,93 @@ const DeckDetails: React.FC = () => {
                     </div>
                 ) : (
                     <>
+                        {/* Filters */}
+                        <div className="mb-5 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <div className="flex flex-col md:flex-row md:items-end gap-4">
+                                <div className="flex-1 min-w-[240px]">
+                                    <label className="sr-only" htmlFor="mode-filter-select">
+                                        Modalidade do flashcard
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                                            Modalidade do flashcard
+                                        </span>
+                                        <select
+                                            id="mode-filter-select"
+                                            value={modeFilter}
+                                            onChange={(e) => setModeFilter(e.target.value as CardMode | 'all')}
+                                            className="w-full h-11 pt-4 px-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:border-indigo-500 dark:focus:border-indigo-400 outline-none"
+                                        >
+                                            <option value="all">Todas as modalidades</option>
+                                            <option value={CardMode.QA}>Pergunta &amp; Resposta</option>
+                                            <option value={CardMode.TrueFalse}>Verdadeiro ou Falso</option>
+                                            <option value={CardMode.MultipleChoice}>MÃºltipla Escolha</option>
+                                            <option value={CardMode.PracticalExample}>Exemplo PrÃ¡tico</option>
+                                            <option value={CardMode.FillInTheBlank}>Lacunas</option>
+                                            <option value={CardMode.Dictionary}>DicionÃ¡rio</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1">
+                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                                        Tags
+                                    </label>
+                                    {availableTags.length > 0 ? (
+                                        <>
+                                            <div className={`flex flex-wrap gap-2 ${showAllTags ? 'max-h-40' : 'max-h-24'} overflow-y-auto pr-1`}>
+                                                {(showAllTags ? availableTags : availableTags.slice(0, 8)).map(tag => {
+                                                    const isActive = tagFilter.includes(tag);
+                                                    return (
+                                                        <button
+                                                            type="button"
+                                                            key={tag}
+                                                            onClick={() => handleTagToggle(tag)}
+                                                            className={`px-3 py-1 rounded-full border text-sm transition-colors ${isActive
+                                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-transparent hover:border-gray-300 dark:hover:border-gray-500'}`}
+                                                        >
+                                                            {tag}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            {availableTags.length > 8 && (
+                                                <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowAllTags(prev => !prev)}
+                                                        className="text-indigo-600 dark:text-indigo-300 font-semibold hover:underline"
+                                                    >
+                                                        {showAllTags ? 'Mostrar menos' : 'Mostrar todas'}
+                                                    </button>
+                                                    <span>
+                                                        {showAllTags
+                                                            ? `Exibindo ${availableTags.length} tags`
+                                                            : `Exibindo 8 de ${availableTags.length} tags`}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma tag cadastrada neste deck.</p>
+                                    )}
+                                </div>
+
+                                <div className="flex md:w-auto gap-2">
+                                    <button
+                                        onClick={handleClearFilters}
+                                        className="h-11 px-4 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:border-indigo-400 dark:hover:border-indigo-400 transition-colors"
+                                    >
+                                        Limpar filtros
+                                    </button>
+                                </div>
+                            </div>
+                            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                Filtre por modalidade e combine multiplas tags para focar nos flashcards certos.
+                            </p>
+                        </div>
+
                         {/* Bulk Actions Bar */}
                         {selectedCards.size > 0 && (
                             <div className="mb-4 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border-2 border-indigo-200 dark:border-indigo-800 flex flex-wrap items-center justify-between gap-3 sticky top-20 z-10 shadow-md">
@@ -700,7 +840,7 @@ const DeckDetails: React.FC = () => {
                                         onClick={() => setSelectedCards(new Set())}
                                         className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                                     >
-                                        Limpar seleção
+                                        Limpar selecao
                                     </button>
                                 </div>
                                 <div className="flex gap-2">
@@ -709,14 +849,14 @@ const DeckDetails: React.FC = () => {
                                         disabled={isBulkMoving}
                                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
                                     >
-                                        <span>➡️</span> Mover
+                                        Mover
                                     </button>
                                     <button
                                         onClick={handleBulkDelete}
                                         disabled={isBulkDeleting}
                                         className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
                                     >
-                                        <span>🗑️</span> Excluir
+                                        Excluir
                                     </button>
                                 </div>
                             </div>
@@ -726,104 +866,111 @@ const DeckDetails: React.FC = () => {
                         <div className="mb-4 flex justify-between items-center">
                             <button
                                 onClick={toggleSelectAll}
-                                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold transition-colors"
+                                disabled={filteredFlashcards.length === 0}
+                                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
                             >
-                                {selectedCards.size === flashcards.length ? '☑️ Desselecionar Todos' : '☐ Selecionar Todos'}
+                                {allVisibleSelected ? 'Desselecionar visiveis' : 'Selecionar visiveis'}
                             </button>
                             <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {flashcards.length} flashcard{flashcards.length > 1 ? 's' : ''}
+                                Mostrando {filteredFlashcards.length} de {flashcards.length} flashcard{flashcards.length > 1 ? 's' : ''}
                             </span>
                         </div>
 
                         {/* Flashcards List */}
-                        <div className="flex flex-col gap-4">
-                            {flashcards.map((card) => (
-                                <div
-                                    key={card.id}
-                                    className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-md group ${selectedCards.has(card.id)
-                                        ? 'border-indigo-500 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10'
-                                        : 'border-gray-100 dark:border-gray-700'
-                                        }`}
-                                >
-                                    <div className="flex gap-4">
-                                        {/* Checkbox */}
-                                        <div className="flex items-start pt-1">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedCards.has(card.id)}
-                                                onChange={() => toggleCardSelection(card.id)}
-                                                className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                                            />
-                                        </div>
-
-                                        {/* Card Content */}
-                                        <div className="flex-1">
-                                            <div className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-semibold mb-3">
-                                                {getCardTypeLabel(card.mode)}
+                        {filteredFlashcards.length === 0 ? (
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-100 dark:border-gray-700">
+                                <p className="text-gray-600 dark:text-gray-300">Nenhum flashcard corresponde aos filtros selecionados.</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {filteredFlashcards.map((card) => (
+                                    <div
+                                        key={card.id}
+                                        className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 transition-all hover:shadow-md group ${selectedCards.has(card.id)
+                                            ? 'border-indigo-500 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10'
+                                            : 'border-gray-100 dark:border-gray-700'
+                                            }`}
+                                    >
+                                        <div className="flex gap-4">
+                                            {/* Checkbox */}
+                                            <div className="flex items-start pt-1">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedCards.has(card.id)}
+                                                    onChange={() => toggleCardSelection(card.id)}
+                                                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                />
                                             </div>
 
-                                            <div className="mb-4">
-                                                <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                    Pergunta/Frente
-                                                </strong>
-                                                <p className="text-gray-800 dark:text-gray-200 font-medium">
-                                                    {card.mode === CardMode.QA && card.question}
-                                                    {card.mode === CardMode.TrueFalse && card.statement}
-                                                    {card.mode === CardMode.MultipleChoice && card.question}
-                                                    {card.mode === CardMode.PracticalExample && (
-                                                        <>
-                                                            <div className="font-semibold mb-1">Problema: {card.problem}</div>
-                                                            <div>Pergunta: {card.question}</div>
-                                                        </>
-                                                    )}
-                                                    {card.mode === CardMode.FillInTheBlank && card.question}
-                                                    {card.mode === CardMode.Dictionary ? ((card as any).term || (card as any).question || '(sem termo)') : null}
-                                                </p>
+                                            {/* Card Content */}
+                                            <div className="flex-1">
+                                                <div className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-semibold mb-3">
+                                                    {getCardTypeLabel(card.mode)}
+                                                </div>
+
+                                                <div className="mb-4">
+                                                    <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                                        Pergunta/Frente
+                                                    </strong>
+                                                    <p className="text-gray-800 dark:text-gray-200 font-medium">
+                                                        {card.mode === CardMode.QA && card.question}
+                                                        {card.mode === CardMode.TrueFalse && card.statement}
+                                                        {card.mode === CardMode.MultipleChoice && card.question}
+                                                        {card.mode === CardMode.PracticalExample && (
+                                                            <>
+                                                                <div className="font-semibold mb-1">Problema: {card.problem}</div>
+                                                                <div>Pergunta: {card.question}</div>
+                                                            </>
+                                                        )}
+                                                        {card.mode === CardMode.FillInTheBlank && card.question}
+                                                        {card.mode === CardMode.Dictionary ? ((card as any).term || (card as any).question || '(sem termo)') : null}
+                                                    </p>
+                                                </div>
+
+                                                <div>
+                                                    <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                                                        Resposta/Verso
+                                                    </strong>
+                                                    <p className="text-gray-600 dark:text-gray-400">
+                                                        {card.mode === CardMode.QA && card.answer}
+                                                        {card.mode === CardMode.TrueFalse && (card.isTrue ? 'Verdadeiro' : 'Falso')}
+                                                        {card.mode === CardMode.MultipleChoice && (card.options && card.correctAnswerIndex !== undefined ? card.options[card.correctAnswerIndex] : (card as any).answer)}
+                                                        {card.mode === CardMode.PracticalExample && card.solution}
+                                                        {card.mode === CardMode.FillInTheBlank && card.answer}
+                                                        {card.mode === CardMode.Dictionary ? ((card as any).definition || (card as any).answer || '(sem definicao)') : null}
+                                                    </p>
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                    Resposta/Verso
-                                                </strong>
-                                                <p className="text-gray-600 dark:text-gray-400">
-                                                    {card.mode === CardMode.QA && card.answer}
-                                                    {card.mode === CardMode.TrueFalse && (card.isTrue ? 'Verdadeiro' : 'Falso')}
-                                                    {card.mode === CardMode.MultipleChoice && (card.options && card.correctAnswerIndex !== undefined ? card.options[card.correctAnswerIndex] : (card as any).answer)}
-                                                    {card.mode === CardMode.PracticalExample && card.solution}
-                                                    {card.mode === CardMode.FillInTheBlank && card.answer}
-                                                    {card.mode === CardMode.Dictionary ? ((card as any).definition || (card as any).answer || '(sem definição)') : null}
-                                                </p>
+                                            {/* Individual Actions */}
+                                            <div className="flex flex-col gap-2">
+                                                <button
+                                                    onClick={() => openEditModal(card)}
+                                                    className="px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors flex items-center justify-center gap-2"
+                                                    title="Editar flashcard"
+                                                >
+                                                    Editar
+                                                </button>
+                                                <button
+                                                    onClick={() => openMoveCardModal(card)}
+                                                    className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2"
+                                                    title="Mover flashcard"
+                                                >
+                                                    Mover
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteCard(card.id)}
+                                                    className="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex items-center justify-center gap-2"
+                                                    title="Excluir flashcard"
+                                                >
+                                                    Excluir
+                                                </button>
                                             </div>
-                                        </div>
-
-                                        {/* Individual Actions */}
-                                        <div className="flex flex-col gap-2">
-                                            <button
-                                                onClick={() => openEditModal(card)}
-                                                className="px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg text-sm hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors flex items-center justify-center gap-2"
-                                                title="Editar flashcard"
-                                            >
-                                                <span>✏️</span>
-                                            </button>
-                                            <button
-                                                onClick={() => openMoveCardModal(card)}
-                                                className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2"
-                                                title="Mover flashcard"
-                                            >
-                                                <span>➡️</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteCard(card.id)}
-                                                className="px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex items-center justify-center gap-2"
-                                                title="Excluir flashcard"
-                                            >
-                                                <span>🗑️</span>
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -831,7 +978,7 @@ const DeckDetails: React.FC = () => {
                 {subdecks.length > 0 && (
                     <div className="mt-8">
                         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span>📂</span> Subdecks
+                            <span>ð</span> Subdecks
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {subdecks.map((subdeck) => (
@@ -842,7 +989,7 @@ const DeckDetails: React.FC = () => {
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="text-3xl group-hover:scale-110 transition-transform">
-                                            📁
+                                            ð
                                         </div>
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
@@ -850,7 +997,7 @@ const DeckDetails: React.FC = () => {
                                             </h3>
                                         </div>
                                         <div className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            →
+                                            â
                                         </div>
                                     </div>
                                 </div>
@@ -871,7 +1018,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck disponível.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck disponÃ­vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -879,7 +1026,7 @@ const DeckDetails: React.FC = () => {
                                             onClick={() => handleMoveCard(deck.id)}
                                             className="w-full text-left p-3 rounded-lg transition-colors flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent"
                                         >
-                                            <span className="text-xl">📁</span>
+                                            <span className="text-xl">ð</span>
                                             <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                         </button>
                                     ))
@@ -911,7 +1058,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck disponível.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck disponÃ­vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -920,7 +1067,7 @@ const DeckDetails: React.FC = () => {
                                             disabled={isBulkMoving}
                                             className="w-full text-left p-3 rounded-lg transition-colors flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent disabled:opacity-50"
                                         >
-                                            <span className="text-xl">📁</span>
+                                            <span className="text-xl">ð</span>
                                             <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                         </button>
                                     ))
@@ -990,7 +1137,7 @@ const DeckDetails: React.FC = () => {
                                     <>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Afirmação *
+                                                Afirmacao *
                                             </label>
                                             <TextFormatToolbar field="statement" textareaId="edit-tf-statement" />
                                             <textarea
@@ -999,7 +1146,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('statement', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a afirmação..."
+                                                placeholder="Digite a afirmacao..."
                                             />
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -1010,7 +1157,7 @@ const DeckDetails: React.FC = () => {
                                                 className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                             />
                                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                Esta afirmação é verdadeira
+                                                Esta afirmacao e verdadeira
                                             </label>
                                         </div>
                                         <div>
@@ -1047,6 +1194,7 @@ const DeckDetails: React.FC = () => {
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
+
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Opções *
@@ -1069,12 +1217,12 @@ const DeckDetails: React.FC = () => {
                                                             handleEditChange('options', newOptions);
                                                         }}
                                                         className="flex-1 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                        placeholder={`Opção ${String.fromCharCode(65 + index)}`}
+                                                        placeholder={`Opções ${String.fromCharCode(65 + index)}`}
                                                     />
                                                 </div>
                                             ))}
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                Selecione o círculo da opção correta
+                                                Selecione o circulo da opção correta
                                             </p>
                                         </div>
                                         <div>
@@ -1127,7 +1275,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Solução *
+                                                SoluÃ§Ã£o *
                                             </label>
                                             <TextFormatToolbar field="solution" textareaId="edit-pe-solution" />
                                             <textarea
@@ -1136,7 +1284,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('solution', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a solução..."
+                                                placeholder="Digite a soluÃ§Ã£o..."
                                             />
                                         </div>
                                     </>
@@ -1195,7 +1343,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Definição *
+                                                DefiniÃ§Ã£o *
                                             </label>
                                             <TextFormatToolbar field="definition" textareaId="edit-dict-definition" />
                                             <textarea
@@ -1204,7 +1352,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('definition', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a definição..."
+                                                placeholder="Digite a definiÃ§Ã£o..."
                                             />
                                         </div>
                                     </>
@@ -1217,13 +1365,13 @@ const DeckDetails: React.FC = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        value={editFormData.tags || ''}
-                                        onChange={(e) => handleEditChange('tags', e.target.value)}
-                                        placeholder="Ex: matemática, álgebra (separadas por vírgula)"
+                                        value={editFormData.tags || ""}
+                                        onChange={(e) => handleEditChange("tags", e.target.value)}
+                                        placeholder="Ex: matematica, algebra (separadas por vírgula)"
                                         className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        💡 Adicione tags separadas por vírgula para organizar seus flashcards
+                                        Adicione tags separadas por vírgula para organizar seus flashcards
                                     </p>
                                 </div>
                             </div>
@@ -1247,7 +1395,7 @@ const DeckDetails: React.FC = () => {
                                             Salvando...
                                         </>
                                     ) : (
-                                        'Salvar Alterações'
+                                        'Salvar AlteraÃ§Ãµes'
                                     )}
                                 </button>
                             </div>
