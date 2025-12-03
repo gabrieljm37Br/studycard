@@ -5,7 +5,7 @@ import { CardMode } from '../types';
 import type { FlashcardData } from '../types';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
-import { Home } from 'lucide-react';
+import { Home, BookOpenCheck, Library, Folder, FolderTree, ChevronRight, BookX } from 'lucide-react';
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();
@@ -658,7 +658,7 @@ const DeckDetails: React.FC = () => {
                                     onClick={() => navigate('/study', { state: { deckId } })}
                                     className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                                 >
-                                    <span aria-hidden>ð</span>
+                                    <BookOpenCheck className="w-5 h-5" aria-hidden />
                                     <span className="hidden md:inline text-sm font-semibold">Modo Estudo</span>
                                 </button>
                             )}
@@ -714,7 +714,7 @@ const DeckDetails: React.FC = () => {
                                         ? 'text-gray-500 dark:text-gray-400 cursor-default'
                                         : 'hover:text-indigo-700 dark:hover:text-indigo-200'}`}
                                 >
-                                    {idx === 0 && <span aria-hidden>â</span>}
+                                    {idx === 0 && <Library className="w-4 h-4" aria-hidden />}
                                     <span>{item.name}</span>
                                 </button>
                             </React.Fragment>
@@ -729,7 +729,7 @@ const DeckDetails: React.FC = () => {
                     </div>
                 ) : flashcards.length === 0 ? (
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 sm:p-8 text-center shadow-sm border border-gray-100 dark:border-gray-700">
-                        <div className="text-5xl mb-4">ð­</div>
+                        <BookX className="w-12 h-12 mx-auto text-indigo-500 mb-4" aria-hidden />
                         <p className="text-gray-500 dark:text-gray-400 text-lg">
                             Nenhum flashcard encontrado neste deck.
                         </p>
@@ -978,7 +978,7 @@ const DeckDetails: React.FC = () => {
                 {subdecks.length > 0 && (
                     <div className="mt-8">
                         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <span>ð</span> Subdecks
+                            <FolderTree className="w-6 h-6" aria-hidden /> Subdecks
                         </h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {subdecks.map((subdeck) => (
@@ -988,8 +988,8 @@ const DeckDetails: React.FC = () => {
                                     className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 border-gray-100 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-600 transition-all cursor-pointer group hover:shadow-md"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="text-3xl group-hover:scale-110 transition-transform">
-                                            ð
+                                        <div className="group-hover:scale-110 transition-transform">
+                                            <Folder className="w-10 h-10 text-indigo-500" aria-hidden />
                                         </div>
                                         <div className="flex-1">
                                             <h3 className="font-semibold text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
@@ -997,7 +997,7 @@ const DeckDetails: React.FC = () => {
                                             </h3>
                                         </div>
                                         <div className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            â
+                                            <ChevronRight className="w-5 h-5" aria-hidden />
                                         </div>
                                     </div>
                                 </div>
@@ -1026,7 +1026,7 @@ const DeckDetails: React.FC = () => {
                                             onClick={() => handleMoveCard(deck.id)}
                                             className="w-full text-left p-3 rounded-lg transition-colors flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent"
                                         >
-                                            <span className="text-xl">ð</span>
+                                            <Folder className="w-5 h-5" aria-hidden />
                                             <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                         </button>
                                     ))
@@ -1067,7 +1067,7 @@ const DeckDetails: React.FC = () => {
                                             disabled={isBulkMoving}
                                             className="w-full text-left p-3 rounded-lg transition-colors flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent disabled:opacity-50"
                                         >
-                                            <span className="text-xl">ð</span>
+                                            <Folder className="w-5 h-5" aria-hidden />
                                             <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                         </button>
                                     ))
