@@ -762,10 +762,10 @@ const DeckDetails: React.FC = () => {
                                             <option value="all">Todas as modalidades</option>
                                             <option value={CardMode.QA}>Pergunta &amp; Resposta</option>
                                             <option value={CardMode.TrueFalse}>Verdadeiro ou Falso</option>
-                                            <option value={CardMode.MultipleChoice}>MÃºltipla Escolha</option>
-                                            <option value={CardMode.PracticalExample}>Exemplo PrÃ¡tico</option>
+                                            <option value={CardMode.MultipleChoice}>Múlltipla Escolha</option>
+                                            <option value={CardMode.PracticalExample}>Exemplo Prático</option>
                                             <option value={CardMode.FillInTheBlank}>Lacunas</option>
-                                            <option value={CardMode.Dictionary}>DicionÃ¡rio</option>
+                                            <option value={CardMode.Dictionary}>Dicionário</option>
                                         </select>
                                     </div>
                                 </div>
