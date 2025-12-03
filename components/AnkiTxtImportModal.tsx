@@ -157,9 +157,10 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
             case CardMode.PracticalExample:
                 return {
                     ...base,
-                    problem: card.front,
-                    question: card.front,
-                    solution: card.back,
+                    problem: card.problem || card.front,
+                    // Prefer explicit question; fall back to problem or solution, but not to the combined "front" to avoid duplicating texto
+                    question: card.practicalQuestion || card.problem || card.solution || card.back || '',
+                    solution: card.solution || card.back,
                     explanation: card.explanation || null,
                 };
             case CardMode.Dictionary:

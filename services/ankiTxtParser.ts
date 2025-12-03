@@ -5,6 +5,9 @@ export interface ParsedAnkiCard {
     front: string;
     back: string;
     explanation?: string;
+    problem?: string;
+    practicalQuestion?: string;
+    solution?: string;
     options?: string[];
     correctAnswerIndex?: number;
     isTrue?: boolean;
@@ -32,6 +35,7 @@ const keywordPatterns = {
     significado: '(?:Significado:)',
     certoErrado: '(?:Certo ou Errado:)',
     situacao: '(?:Situacao[- ]?Problema:|Situacao[- ]?Problema:|Situação[- ]?Problema:)',
+    problema: '(?:Problema:)',
     hipotese: '(?:Hipotese:|Hipotese:|Hipótese:)',
     tags: '(?:Tags:|Etiquetas:)'
 };
@@ -167,14 +171,27 @@ function parseDicionarioCard(blockText: string): ParsedAnkiCard {
 }
 
 function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnkiCard {
-    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
-    const question = extractFieldByPattern(blockText, keywordPatterns.questao, [keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
-    const front = question ? `${situation}\n\n${question}` : situation;
+    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.problema, keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const question =
+        extractFieldByPattern(blockText, keywordPatterns.problema, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]) ||
+        extractFieldByPattern(blockText, keywordPatterns.questao, [keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const problemText = normalizeWhitespace(situation, true);
+    const questionText = normalizeWhitespace(question, true);
+    const front = [problemText, questionText].filter(Boolean).join('\n\n') || problemText;
     const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao, keywordPatterns.tags]);
     const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
     const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
     const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
-    return { type: CardMode.PracticalExample, front: normalizeWhitespace(front, true), back, explanation: explanation || undefined, tags };
+    return {
+        type: CardMode.PracticalExample,
+        front: normalizeWhitespace(front, true),
+        back,
+        explanation: explanation || undefined,
+        problem: problemText || undefined,
+        practicalQuestion: questionText || undefined,
+        solution: back || undefined,
+        tags
+    };
 }
 
 function detectCardType(blockText: string): { type: string; keyword: string } | null {

@@ -1,0 +1,19 @@
+                                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                                            📖 Resposta Correta
+                                        </h3>
+
+                                        <div className="space-y-4">
+                                            <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
+                                                <p
+                                                    className="text-lg text-gray-800 dark:text-gray-200 font-medium leading-relaxed"
+                                                    dangerouslySetInnerHTML={renderHTML(
+                                                        currentCard.mode === CardMode.QA
+                                                            ? currentCard.answer
+                                                            : currentCard.mode === CardMode.Dictionary
+                                                                ? (currentCard as any).definition || ''
+                                                                : (currentCard as any).solution || ''
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">
