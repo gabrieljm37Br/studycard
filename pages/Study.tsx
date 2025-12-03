@@ -1458,7 +1458,7 @@ const Study: React.FC = () => {
 
                                             {currentCard.mode === CardMode.PracticalExample && (currentCard as any).explanation && (
                                                 <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
-                                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Explica��ǜo</p>
+                                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Explicação</p>
                                                     <p
                                                         className="text-gray-700 dark:text-gray-300 leading-relaxed"
                                                         dangerouslySetInnerHTML={renderHTML((currentCard as any).explanation)}
