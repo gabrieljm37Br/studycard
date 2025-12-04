@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Deck } from '../types';
+import { BookOpenCheck } from 'lucide-react';
 
 interface Profile {
     id: string;
@@ -44,6 +45,7 @@ const Dashboard: React.FC = () => {
 
     // Deck statistics
     const [deckStats, setDeckStats] = useState<Record<string, { subdecks: number; flashcards: number }>>({});
+    const [currentDeckFlashcardCount, setCurrentDeckFlashcardCount] = useState<number | null>(null);
 
     // Move Deck State
     const [showMoveDeckModal, setShowMoveDeckModal] = useState(false);
@@ -140,6 +142,30 @@ const Dashboard: React.FC = () => {
             window.history.replaceState({}, document.title);
         }
     }, [location]);
+
+    const loadCurrentDeckFlashcardCount = async (deckId: string) => {
+        if (!user) return;
+
+        try {
+            const { count, error } = await supabase
+                .from('flashcards')
+                .select('*', { count: 'exact', head: true })
+                .eq('deck_id', deckId);
+
+            if (error) throw error;
+            setCurrentDeckFlashcardCount(count ?? 0);
+        } catch (error) {
+            console.error('Error loading flashcard count for deck:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (currentParentId) {
+            loadCurrentDeckFlashcardCount(currentParentId);
+        } else {
+            setCurrentDeckFlashcardCount(null);
+        }
+    }, [currentParentId, user]);
 
     const loadProfile = async () => {
         try {
@@ -541,9 +567,12 @@ const Dashboard: React.FC = () => {
                     {currentParentId && (
                         <button
                             onClick={() => navigate(`/deck/${currentParentId}`)}
-                            className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-2"
+                            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-xl text-base md:text-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-3"
                         >
-                            <span>🗂️</span> Ver Flashcards deste Deck
+                            <BookOpenCheck className="w-5 h-5" aria-hidden />
+                            <span className="font-semibold">
+                                Ver {currentDeckFlashcardCount === null ? '...' : currentDeckFlashcardCount} flashcard{currentDeckFlashcardCount === 1 ? '' : 's'} deste deck
+                            </span>
                         </button>
                     )}
                 </div>
