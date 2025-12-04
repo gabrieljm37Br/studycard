@@ -7,6 +7,7 @@ import { CardMode } from '../types';
 import * as pdfjsLib from 'pdfjs-dist';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
+import StructuredTextImportModal from '../components/StructuredTextImportModal';
 import { Home } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
@@ -31,6 +32,7 @@ const Generator: React.FC = () => {
     const [newDeckName, setNewDeckName] = useState('');
     const [showCSVImport, setShowCSVImport] = useState(false);
     const [showAnkiImport, setShowAnkiImport] = useState(false);
+    const [showStructuredImport, setShowStructuredImport] = useState(false);
     const [tags, setTags] = useState<string>('');
 
     // Manual flashcard creation state
@@ -433,6 +435,13 @@ const Generator: React.FC = () => {
                             >
                                 <span>{'\U0001f4c4'}</span>
                                 <span>TXT Anki</span>
+                            </button>
+                            <button
+                                onClick={() => setShowStructuredImport(true)}
+                                className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                            >
+                                <span>{'\U0001f4dd'}</span>
+                                <span>Colar texto estruturado</span>
                             </button>
                             <button
                                 onClick={() => setShowCSVImport(true)}
@@ -1044,6 +1053,18 @@ const Generator: React.FC = () => {
                     </form>
                 </div>
             </div>
+
+            <StructuredTextImportModal
+                isOpen={showStructuredImport}
+                onClose={() => setShowStructuredImport(false)}
+                onImportComplete={(count) => {
+                    setShowStructuredImport(false);
+                    navigate('/dashboard', {
+                        state: { message: `${count} flashcards importados com sucesso do texto colado!` }
+                    });
+                }}
+                preselectedDeckId={selectedDeckId || undefined}
+            />
 
             {/* CSV Import Modal */}
             <CSVImportModal
