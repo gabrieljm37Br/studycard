@@ -661,7 +661,7 @@ const Dashboard: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-gray-800/90 p-1 rounded-lg backdrop-blur-sm shadow-sm border border-gray-100 dark:border-gray-700">
+                                <div className="absolute top-4 right-4 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-gray-800/90 p-1 rounded-lg backdrop-blur-sm shadow-sm border border-gray-100 dark:border-gray-700">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
