@@ -1404,7 +1404,7 @@ const Study: React.FC = () => {
                                                 : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-indigo-300'
                                                 }`}
                                         >
-                                            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${selectedOption === index
+                                            <span className={`w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] rounded-full flex items-center justify-center text-base font-bold border shrink-0 leading-none ${selectedOption === index
                                                 ? 'bg-indigo-600 border-indigo-600 text-white'
                                                 : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-500 dark:text-gray-400'
                                                 }`}>
