@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { CardMode } from '../types';
 import type { FlashcardData } from '../types';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
-import { Home, BookOpenCheck, Library, Folder, FolderTree, ChevronRight, BookX } from 'lucide-react';
+import { Home, BookOpenCheck, Library, Folder, BookX } from 'lucide-react';
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();
@@ -182,6 +182,11 @@ const DeckDetails: React.FC = () => {
         }
     };
 
+    const handleViewSubdecks = () => {
+        if (subdecks.length === 0) return;
+        navigate('/dashboard', { state: { deckId } });
+    };
+
     const availableTags = useMemo(() => {
         const tags = new Set<string>();
         flashcards.forEach(card => {
@@ -233,7 +238,7 @@ const DeckDetails: React.FC = () => {
                 throw error;
             }
 
-            console.log('Flashcard excluÃ­do com sucesso:', data);
+            console.log('Flashcard exclu├â┬¡do com sucesso:', data);
             await loadFlashcards(); // Reload list
         } catch (error: any) {
             console.error('Error deleting flashcard:', error);
@@ -259,7 +264,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks disponÃ­veis.');
+            alert('Erro ao carregar decks dispon├â┬¡veis.');
         }
     };
 
@@ -362,7 +367,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks disponÃ­veis.');
+            alert('Erro ao carregar decks dispon├â┬¡veis.');
         }
     };
 
@@ -459,32 +464,32 @@ const DeckDetails: React.FC = () => {
             // Validate required fields
             if (editFormData.mode === CardMode.QA) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta sÃ£o obrigatÃ³rias');
+                    alert('Pergunta e resposta s├â┬úo obrigat├â┬│rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.TrueFalse) {
                 if (!editFormData.statement?.trim()) {
-                    alert('AfirmaÃ§Ã£o Ã© obrigatÃ³ria');
+                    alert('Afirma├â┬º├â┬úo ├â┬® obrigat├â┬│ria');
                     return;
                 }
             } else if (editFormData.mode === CardMode.MultipleChoice) {
                 if (!editFormData.question?.trim() || editFormData.options.some((opt: string) => !opt?.trim())) {
-                    alert('Pergunta e todas as opÃ§Ãµes sÃ£o obrigatÃ³rias');
+                    alert('Pergunta e todas as op├â┬º├â┬Áes s├â┬úo obrigat├â┬│rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.PracticalExample) {
                 if (!editFormData.problem?.trim() || !editFormData.question?.trim() || !editFormData.solution?.trim()) {
-                    alert('Problema, pergunta e soluÃ§Ã£o sÃ£o obrigatÃ³rios');
+                    alert('Problema, pergunta e solu├â┬º├â┬úo s├â┬úo obrigat├â┬│rios');
                     return;
                 }
             } else if (editFormData.mode === CardMode.FillInTheBlank) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta sÃ£o obrigatÃ³rias');
+                    alert('Pergunta e resposta s├â┬úo obrigat├â┬│rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.Dictionary) {
                 if (!editFormData.term?.trim() || !editFormData.definition?.trim()) {
-                    alert('Termo e definiÃ§Ã£o sÃ£o obrigatÃ³rios');
+                    alert('Termo e defini├â┬º├â┬úo s├â┬úo obrigat├â┬│rios');
                     return;
                 }
             }
@@ -585,7 +590,7 @@ const DeckDetails: React.FC = () => {
                 type="button"
                 onClick={() => handleFormat(field, 'i', textareaId)}
                 className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm italic transition-colors"
-                title="ItÃ¡lico"
+                title="It├â┬ílico"
             >
                 I
             </button>
@@ -604,7 +609,7 @@ const DeckDetails: React.FC = () => {
     );
 
     const handleBackHome = () => {
-        // Voltar sempre para a pÃ¡gina inicial
+        // Voltar sempre para a p├â┬ígina inicial
         navigate('/home');
     };
 
@@ -739,9 +744,30 @@ const DeckDetails: React.FC = () => {
                         >
                             Criar Primeiro Flashcard
                         </button>
+                        {subdecks.length > 0 && (
+                            <div className="mt-3">
+                                <button
+                                    onClick={handleViewSubdecks}
+                                    className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                    Ver subdecks
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <>
+                        {subdecks.length > 0 && (
+                            <div className="mb-4 flex justify-end">
+                                <button
+                                    onClick={handleViewSubdecks}
+                                    className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-md transition-all"
+                                >
+                                    Ver subdecks
+                                </button>
+                            </div>
+                        )}
+
                         {/* Filters */}
                         <div className="mb-5 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
                             <div className="flex flex-col md:flex-row md:items-end gap-4">
@@ -762,10 +788,10 @@ const DeckDetails: React.FC = () => {
                                             <option value="all">Todas as modalidades</option>
                                             <option value={CardMode.QA}>Pergunta &amp; Resposta</option>
                                             <option value={CardMode.TrueFalse}>Verdadeiro ou Falso</option>
-                                            <option value={CardMode.MultipleChoice}>Múlltipla Escolha</option>
-                                            <option value={CardMode.PracticalExample}>Exemplo Prático</option>
+                                            <option value={CardMode.MultipleChoice}>M├║lltipla Escolha</option>
+                                            <option value={CardMode.PracticalExample}>Exemplo Pr├ítico</option>
                                             <option value={CardMode.FillInTheBlank}>Lacunas</option>
-                                            <option value={CardMode.Dictionary}>Dicionário</option>
+                                            <option value={CardMode.Dictionary}>Dicion├írio</option>
                                         </select>
                                     </div>
                                 </div>
@@ -974,37 +1000,6 @@ const DeckDetails: React.FC = () => {
                     </>
                 )}
 
-                {/* Subdecks Section */}
-                {subdecks.length > 0 && (
-                    <div className="mt-8">
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                            <FolderTree className="w-6 h-6" aria-hidden /> Subdecks
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {subdecks.map((subdeck) => (
-                                <div
-                                    key={subdeck.id}
-                                    onClick={() => navigate(`/deck/${subdeck.id}`)}
-                                    className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border-2 border-gray-100 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-600 transition-all cursor-pointer group hover:shadow-md"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="group-hover:scale-110 transition-transform">
-                                            <Folder className="w-10 h-10 text-indigo-500" aria-hidden />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                                {subdeck.name}
-                                            </h3>
-                                        </div>
-                                        <div className="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            <ChevronRight className="w-5 h-5" aria-hidden />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Move Single Card Modal */}
@@ -1018,7 +1013,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck disponÃ­vel.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon├â┬¡vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -1058,7 +1053,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck disponÃ­vel.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon├â┬¡vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -1162,7 +1157,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explicação
+                                                Explica├º├úo
                                             </label>
                                             <TextFormatToolbar field="explanation" textareaId="edit-tf-explanation" />
                                             <textarea
@@ -1171,7 +1166,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('explanation', e.target.value)}
                                                 rows={2}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite uma explicação..."
+                                                placeholder="Digite uma explica├º├úo..."
                                             />
                                         </div>
                                     </>
@@ -1197,7 +1192,7 @@ const DeckDetails: React.FC = () => {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Opções *
+                                                Op├º├Áes *
                                             </label>
                                             {editFormData.options?.map((option: string, index: number) => (
                                                 <div key={index} className="flex items-center gap-3 mb-2">
@@ -1217,17 +1212,17 @@ const DeckDetails: React.FC = () => {
                                                             handleEditChange('options', newOptions);
                                                         }}
                                                         className="flex-1 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                        placeholder={`Opções ${String.fromCharCode(65 + index)}`}
+                                                        placeholder={`Op├º├Áes ${String.fromCharCode(65 + index)}`}
                                                     />
                                                 </div>
                                             ))}
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                Selecione o circulo da opção correta
+                                                Selecione o circulo da op├º├úo correta
                                             </p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explicação
+                                                Explica├º├úo
                                             </label>
                                             <TextFormatToolbar field="explanation" textareaId="edit-mc-explanation" />
                                             <textarea
@@ -1236,7 +1231,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('explanation', e.target.value)}
                                                 rows={2}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite uma explicação..."
+                                                placeholder="Digite uma explica├º├úo..."
                                             />
                                         </div>
                                     </>
@@ -1275,7 +1270,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                SoluÃ§Ã£o *
+                                                Solu├â┬º├â┬úo *
                                             </label>
                                             <TextFormatToolbar field="solution" textareaId="edit-pe-solution" />
                                             <textarea
@@ -1284,7 +1279,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('solution', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a soluÃ§Ã£o..."
+                                                placeholder="Digite a solu├â┬º├â┬úo..."
                                             />
                                         </div>
                                     </>
@@ -1343,7 +1338,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                DefiniÃ§Ã£o *
+                                                Defini├â┬º├â┬úo *
                                             </label>
                                             <TextFormatToolbar field="definition" textareaId="edit-dict-definition" />
                                             <textarea
@@ -1352,7 +1347,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('definition', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a definiÃ§Ã£o..."
+                                                placeholder="Digite a defini├â┬º├â┬úo..."
                                             />
                                         </div>
                                     </>
@@ -1367,11 +1362,11 @@ const DeckDetails: React.FC = () => {
                                         type="text"
                                         value={editFormData.tags || ""}
                                         onChange={(e) => handleEditChange("tags", e.target.value)}
-                                        placeholder="Ex: matematica, algebra (separadas por vírgula)"
+                                        placeholder="Ex: matematica, algebra (separadas por v├¡rgula)"
                                         className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Adicione tags separadas por vírgula para organizar seus flashcards
+                                        Adicione tags separadas por v├¡rgula para organizar seus flashcards
                                     </p>
                                 </div>
                             </div>
@@ -1395,7 +1390,7 @@ const DeckDetails: React.FC = () => {
                                             Salvando...
                                         </>
                                     ) : (
-                                        'Salvar AlteraÃ§Ãµes'
+                                        'Salvar Altera├â┬º├â┬Áes'
                                     )}
                                 </button>
                             </div>
@@ -1431,3 +1426,4 @@ const DeckDetails: React.FC = () => {
 };
 
 export default DeckDetails;
+

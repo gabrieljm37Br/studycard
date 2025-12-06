@@ -8,7 +8,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
 import StructuredTextImportModal from '../components/StructuredTextImportModal';
-import { Home } from 'lucide-react';
+import { Home, FileDown, ClipboardList, Table } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 
@@ -433,21 +433,21 @@ const Generator: React.FC = () => {
                                 onClick={() => setShowAnkiImport(true)}
                                 className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                             >
-                                <span>{'\U0001f4c4'}</span>
-                                <span>TXT Anki</span>
+                                <FileDown className="w-4 h-4" aria-hidden />
+                                <span>Importar TXT</span>
                             </button>
                             <button
                                 onClick={() => setShowStructuredImport(true)}
                                 className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                             >
-                                <span>{'\U0001f4dd'}</span>
+                                <ClipboardList className="w-4 h-4" aria-hidden />
                                 <span>Colar texto estruturado</span>
                             </button>
                             <button
                                 onClick={() => setShowCSVImport(true)}
                                 className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                             >
-                                <span>{'\U0001f5c2'}</span>
+                                <Table className="w-4 h-4" aria-hidden />
                                 <span>Importar CSV</span>
                             </button>
                             <button

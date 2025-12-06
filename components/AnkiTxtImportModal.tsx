@@ -279,7 +279,7 @@ const AnkiTxtImportModal: React.FC<AnkiTxtImportModalProps> = ({
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                                Importar TXT do Anki
+                                Importar TXT
                             </h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                 {step === 'upload'

@@ -565,15 +565,23 @@ const Dashboard: React.FC = () => {
                     </div>
 
                     {currentParentId && (
-                        <button
-                            onClick={() => navigate(`/deck/${currentParentId}`)}
-                            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-xl text-base md:text-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-3"
-                        >
-                            <BookOpenCheck className="w-5 h-5" aria-hidden />
-                            <span className="font-semibold">
-                                Ver {currentDeckFlashcardCount === null ? '...' : currentDeckFlashcardCount} flashcard{currentDeckFlashcardCount === 1 ? '' : 's'} deste deck
-                            </span>
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-start sm:justify-end items-stretch sm:items-center">
+                            <button
+                                onClick={() => navigate('/generator', { state: { deckId: currentParentId } })}
+                                className="px-6 py-3 bg-white/15 hover:bg-white/25 border border-white/25 text-white rounded-xl text-base md:text-lg font-semibold transition-all hover:shadow-md active:scale-95 flex items-center justify-center"
+                            >
+                                Criar Flashcards
+                            </button>
+                            <button
+                                onClick={() => navigate(`/deck/${currentParentId}`)}
+                                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-xl text-base md:text-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-3 justify-center"
+                            >
+                                <BookOpenCheck className="w-5 h-5" aria-hidden />
+                                <span className="font-semibold">
+                                    Ver {currentDeckFlashcardCount === null ? '...' : currentDeckFlashcardCount} flashcard{currentDeckFlashcardCount === 1 ? '' : 's'} deste deck
+                                </span>
+                            </button>
+                        </div>
                     )}
                 </div>
 
