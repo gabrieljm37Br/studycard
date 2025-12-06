@@ -178,6 +178,16 @@ const Help: React.FC = () => {
                                     <span>Timer Pomodoro integrado para sessões de estudo</span>
                                 </li>
                             </ul>
+                            <div className="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                                    Como usar esta Central
+                                </h3>
+                                <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300 text-sm">
+                                    <li>Use o menu lateral para abrir a secao desejada (Importar CSV, Modo de Estudo, etc.).</li>
+                                    <li>Leia os passos e requisitos de formato antes de importar ou criar cards para evitar erros.</li>
+                                    <li>Quando um botao for citado, ele esta na tela correspondente (Gerador, Detalhe do Deck ou Dashboard).</li>
+                                </ol>
+                            </div>
                         </div>
                     </section>
 
@@ -196,6 +206,16 @@ const Help: React.FC = () => {
                                 <p className="text-gray-700 dark:text-gray-300 mb-4">
                                     O aplicativo oferece várias formas de gerar flashcards automaticamente usando inteligência artificial:
                                 </p>
+
+                                <div className="mb-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 text-sm text-gray-700 dark:text-gray-200">
+                                    <p className="font-semibold mb-2">Passo a passo rÇ¡pido no Gerador:</p>
+                                    <ol className="list-decimal list-inside space-y-1">
+                                        <li>Abra o Gerador e selecione o deck ou crie um novo.</li>
+                                        <li>Escolha a fonte (TÇüpico, Texto, PDF, Arquivo TXT/CSV ou Manual).</li>
+                                        <li>Envie o conteÇ§do (colar texto ou fazer upload) e aguarde a geraÇõÇœo.</li>
+                                        <li>Revise o preview, adicione tags se quiser e salve.</li>
+                                    </ol>
+                                </div>
 
                                 <div className="space-y-4">
                                     <div className="pl-4 border-l-4 border-indigo-500">
