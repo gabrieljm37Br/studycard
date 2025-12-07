@@ -1,4 +1,4 @@
-# 🎓 Gerador de Flashcards AI - Guia Completo
+# 🎓 StudyCard - Guia Completo
 
 ## 📋 Índice
 1. [Visão Geral](#-visão-geral)

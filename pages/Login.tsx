@@ -59,7 +59,7 @@ const Login: React.FC = () => {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent'
                 }}>
-                    Flashcards AI
+                    StudyCard
                 </h1>
                 <p style={{
                     textAlign: 'center',

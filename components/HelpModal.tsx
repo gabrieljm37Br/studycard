@@ -15,7 +15,7 @@ const HelpModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             >
                 <div className="flex justify-between items-center mb-4 pb-4 border-b dark:border-slate-700">
                     <h2 id="help-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white">
-                        Como Usar o Gerador de Flashcards AI
+                        Como Usar o StudyCard
                     </h2>
                     <button
                         onClick={onClose}

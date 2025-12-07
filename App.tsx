@@ -910,7 +910,7 @@ const App: React.FC = () => {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <span className="font-bold text-xl text-slate-800 dark:text-slate-100">Flashcards AI</span>
+              <span className="font-bold text-xl text-slate-800 dark:text-slate-100">StudyCard</span>
             </div>
             {/* Desktop Nav */}
             <div className="hidden md:flex md:items-center md:gap-2">

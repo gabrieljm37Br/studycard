@@ -145,7 +145,7 @@ const Help: React.FC = () => {
                         </h2>
                         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                             <p className="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
-                                Bem-vindo ao <strong>Flashcards AI</strong>, sua plataforma inteligente de estudos!
+                                Bem-vindo ao <strong>StudyCard</strong>, sua plataforma inteligente de estudos!
                                 Este aplicativo foi desenvolvido para otimizar seu aprendizado através de flashcards
                                 gerados por inteligência artificial e organizados de forma eficiente.
                             </p>
