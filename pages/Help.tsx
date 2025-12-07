@@ -30,6 +30,7 @@ const Help: React.FC = () => {
     const { theme } = useTheme();
     const [activeSection, setActiveSection] = useState('intro');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [showIaPromptFull, setShowIaPromptFull] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -618,14 +619,97 @@ Qual a capital do Brasil?,Brasília`}
 
                                     <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg">
                                         <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Exemplo de Arquivo TXT:</h4>
-                                        <pre className="bg-gray-800 dark:bg-gray-950 text-green-400 p-3 rounded text-xs overflow-x-auto">
-                                            {`Pergunta:    O que é React?
-Resposta:    Uma biblioteca JavaScript para construir interfaces.
-Explicação:    React foi criado pelo Facebook em 2013.
+                                        <pre className="bg-gray-800 dark:bg-gray-950 text-green-100 p-3 rounded text-xs overflow-x-auto leading-relaxed">
+                                            {`Preciso que você identifique os flashcards no texto fornecido e os transforme em um formato específico de texto estruturado.
 
-Certo ou Errado:    TypeScript é uma linguagem compilada.
-Resposta:    Verdadeiro.
-Explicação:    TypeScript é transpilado para JavaScript.`}
+FORMATO DE SAÍDA ESPERADO:
+
+Cada flashcard deve seguir este padrão, com blocos separados apenas por espaço, sem caracteres:
+
+Para flashcards de Pergunta e Resposta:
+
+Pergunta: [texto da pergunta]
+
+Resposta: [texto da resposta] [explicação opcional]
+
+Tags: [tags separadas por vírgulas]
+
+Para flashcards de Verdadeiro ou Falso:
+
+Certo ou Errado: [afirmação]
+
+Resposta: [Verdadeiro ou Falso]
+
+Explicação: [explicação]
+
+Tags: [tags separadas por vírgulas]
+
+Para flashcards de Múltipla Escolha:
+
+Questão: [enunciado da questão]
+
+A) [alternativa A]
+
+B) [alternativa B]
+
+C) [alternativa C]
+
+D) [alternativa D]
+
+Resposta: [letra da alternativa correta]
+
+Explicação: [explicação]
+
+Tags: [tags separadas por vírgulas]
+
+Para flashcards de Dicionário/Vocabulário:
+
+Dicionário: [termo]
+
+Significado: [definição]
+
+Tags: [tags separadas por vírgulas]
+
+Para flashcards de Situação-Problema:
+
+Hipótese: [descrição do cenário]
+
+Problema: [pergunta sobre o cenário]
+
+Resposta: [resposta] [explicação]
+
+Tags: [tags separadas por vírgulas]
+
+Para flashcards de Hipótese/Caso de Estudo:
+
+Hipótese: [descrição da hipótese ou caso]
+
+Problema: [pergunta]
+
+Resposta: [resposta] [explicação]
+
+Tags: [tags separadas por vírgulas]
+
+REGRAS IMPORTANTES:
+
+1. Classifique cada flashcard no tipo mais adequado. Adapte se necessário.
+2. Mantenha o conteúdo original, apenas reorganize no formato.
+3. Separe cada flashcard com espaços, sem caracteres.
+4. Use exatamente as palavras-chave especificadas (Pergunta:, Resposta:, etc.).
+5. Se não houver explicação no original, você pode omitir o campo "Explicação:".
+6. Retire as palavras e caracteres que não integrem os flashcards.
+7. Nos de flashcards de Múltipla Escolha, acrescente a letra das alternativas com parêntese após a letra. Ex.: A), B), C), D).
+8. Não escreva linha (---) para separar os flashcards.
+9. As tags serão determinadas por mim.
+10. Não use markdown. Deixe o texto limpo.
+11. Adapte os flashcards que não corresponderem diretamente a algum formato indicado.
+12. Para que o app identifique a modalidade do Flashcard, você deve organizar o texto e iniciar cada item do Flashcard em uma nova linha.
+
+
+
+Abaixo seguem os flashcards:
+
+USE AS TAGS:`}
                                         </pre>
                                     </div>
                                 </div>
@@ -813,70 +897,117 @@ Explicação:    TypeScript é transpilado para JavaScript.`}
                                     </div>
 
                                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-indigo-200 dark:border-indigo-700">
-                                        <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center justify-between gap-3 mb-2">
                                             <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
                                                 📋 Prompt para IA
                                             </span>
-                                            <button
-                                                onClick={() => {
-                                                    const prompt = `Preciso que você transforme os flashcards do Anki que vou fornecer em um formato específico de texto estruturado.
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setShowIaPromptFull(prev => !prev)}
+                                                    className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded transition-colors"
+                                                >
+                                                    {showIaPromptFull ? 'Recolher' : 'Expandir'}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const prompt = `Preciso que você identifique os flashcards no texto fornecido e os transforme em um formato específico de texto estruturado.
 
 FORMATO DE SAÍDA ESPERADO:
-Cada flashcard deve seguir este padrão, com blocos separados por uma linha em branco:
+
+Cada flashcard deve seguir este padrão, com blocos separados apenas por espaço, sem caracteres:
 
 Para flashcards de Pergunta e Resposta:
+
 Pergunta: [texto da pergunta]
-Resposta: [texto da resposta]
-Explicação: [explicação opcional]
+
+Resposta: [texto da resposta] [explicação opcional]
+
+Tags: [tags separadas por vírgulas]
 
 Para flashcards de Verdadeiro ou Falso:
+
 Certo ou Errado: [afirmação]
+
 Resposta: [Verdadeiro ou Falso]
+
 Explicação: [explicação]
+
+Tags: [tags separadas por vírgulas]
 
 Para flashcards de Múltipla Escolha:
+
 Questão: [enunciado da questão]
-[alternativa A]
-[alternativa B]
-[alternativa C]
-[alternativa D]
+
+A) [alternativa A]
+
+B) [alternativa B]
+
+C) [alternativa C]
+
+D) [alternativa D]
+
 Resposta: [letra da alternativa correta]
+
 Explicação: [explicação]
+
+Tags: [tags separadas por vírgulas]
 
 Para flashcards de Dicionário/Vocabulário:
+
 Dicionário: [termo]
+
 Significado: [definição]
 
+Tags: [tags separadas por vírgulas]
+
 Para flashcards de Situação-Problema:
-Situação-Problema: [descrição do cenário]
-Questão: [pergunta sobre o cenário]
-Resposta: [resposta]
-Explicação: [explicação]
+
+Hipótese: [descrição do cenário]
+
+Problema: [pergunta sobre o cenário]
+
+Resposta: [resposta] [explicação]
+
+Tags: [tags separadas por vírgulas]
 
 Para flashcards de Hipótese/Caso de Estudo:
+
 Hipótese: [descrição da hipótese ou caso]
-Questão: [pergunta]
-Resposta: [resposta]
-Explicação: [explicação]
+
+Problema: [pergunta]
+
+Resposta: [resposta] [explicação]
+
+Tags: [tags separadas por vírgulas]
 
 REGRAS IMPORTANTES:
-1. Classifique cada flashcard no tipo mais adequado
-2. Mantenha o conteúdo original, apenas reorganize no formato
-3. Separe cada flashcard com uma linha em branco
-4. Use exatamente as palavras-chave especificadas (Pergunta:, Resposta:, etc.)
-5. Se não houver explicação no original, você pode omitir o campo "Explicação:"
 
-Aqui estão os flashcards do Anki para converter:
-[COLE SEUS FLASHCARDS AQUI]`;
-                                                    navigator.clipboard.writeText(prompt);
-                                                    alert('✅ Prompt copiado! Cole no ChatGPT ou Claude.');
-                                                }}
-                                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded transition-colors"
-                                            >
-                                                📋 Copiar Prompt
-                                            </button>
+1. Classifique cada flashcard no tipo mais adequado. Adapte se necessário.
+2. Mantenha o conteúdo original, apenas reorganize no formato.
+3. Separe cada flashcard com espaços, sem caracteres.
+4. Use exatamente as palavras-chave especificadas (Pergunta:, Resposta:, etc.).
+5. Se não houver explicação no original, você pode omitir o campo "Explicação:".
+6. Retire as palavras e caracteres que não integrem os flashcards.
+7. Nos de flashcards de Múltipla Escolha, acrescente a letra das alternativas com parêntese após a letra. Ex.: A), B), C), D).
+8. Não escreva linha (---) para separar os flashcards.
+9. As tags serão determinadas por mim.
+10. Não use markdown. Deixe o texto limpo.
+11. Adapte os flashcards que não corresponderem diretamente a algum formato indicado.
+12. Para que o app identifique a modalidade do Flashcard, você deve organizar o texto e iniciar cada item do Flashcard em uma nova linha.
+
+Abaixo seguem os flashcards:
+
+USE AS TAGS:`;
+                                                        navigator.clipboard.writeText(prompt);
+                                                        alert('✅ Prompt copiado! Cole no ChatGPT ou Claude.');
+                                                    }}
+                                                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded transition-colors"
+                                                >
+                                                    📋 Copiar Prompt
+                                                </button>
+                                            </div>
                                         </div>
-                                        <pre className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-3 rounded text-xs overflow-x-auto leading-relaxed border border-gray-200 dark:border-gray-700 max-h-64 overflow-y-auto">
+                                        <pre className={`bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-3 rounded text-xs overflow-x-auto leading-relaxed border border-gray-200 dark:border-gray-700 ${showIaPromptFull ? 'max-h-80' : 'max-h-40'} overflow-y-auto`}>
                                             {`Preciso que você transforme os flashcards do Anki que vou 
 fornecer em um formato específico de texto estruturado.
 
