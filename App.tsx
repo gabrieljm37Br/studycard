@@ -909,7 +909,8 @@ const App: React.FC = () => {
       <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
+              <img src="/logo_studycard_sf.svg" alt="StudyCard" className="h-8 w-8" />
               <span className="font-bold text-xl text-slate-800 dark:text-slate-100">StudyCard</span>
             </div>
             {/* Desktop Nav */}

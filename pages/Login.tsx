@@ -50,6 +50,9 @@ const Login: React.FC = () => {
                 width: '100%',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
             }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                    <img src="/logo_studycard_sf.svg" alt="StudyCard" style={{ height: '56px', width: '56px' }} />
+                </div>
                 <h1 style={{
                     fontSize: '28px',
                     fontWeight: 'bold',

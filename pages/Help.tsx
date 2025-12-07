@@ -79,7 +79,10 @@ const Help: React.FC = () => {
                         >
                             <Home className="h-6 w-6" />
                         </button>
-                        <h1 className="text-2xl font-bold">📖 Central de Ajuda</h1>
+                        <div className="flex items-center gap-3">
+                            <img src="/logo_studycard_sf.svg" alt="StudyCard" className="h-10 w-10 rounded-md bg-white/10 p-1" />
+                            <h1 className="text-2xl font-bold">📖 Central de Ajuda</h1>
+                        </div>
                     </div>
 
                     {/* Mobile menu toggle */}
