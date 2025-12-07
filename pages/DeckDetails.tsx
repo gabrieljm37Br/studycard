@@ -697,6 +697,23 @@ const DeckDetails: React.FC = () => {
 
 
             <div className="max-w-4xl mx-auto px-4 py-8">
+                <div className="mb-4">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex items-center justify-center gap-3 flex-wrap">
+                        <button
+                            onClick={() => navigate('/generator', { state: { deckId } })}
+                            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors whitespace-nowrap min-w-[160px]"
+                        >
+                            Criar Flashcards
+                        </button>
+                        <button
+                            onClick={() => navigate('/study', { state: { deckId } })}
+                            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[200px]"
+                        >
+                            Ver {flashcards.length} flashcard{flashcards.length === 1 ? '' : 's'} do deck
+                        </button>
+                    </div>
+                </div>
+
                 <div className="mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">
                     {breadcrumb.map((item, idx) => {
                         const isLast = idx === breadcrumb.length - 1;
