@@ -808,7 +808,7 @@ const DeckDetails: React.FC = () => {
                                             <option value={CardMode.MultipleChoice}>Múltipla Escolha</option>
                                             <option value={CardMode.PracticalExample}>Exemplo Pr├ítico</option>
                                             <option value={CardMode.FillInTheBlank}>Lacunas</option>
-                                            <option value={CardMode.Dictionary}>Dicion├írio</option>
+                                            <option value={CardMode.Dictionary}>Dicionário</option>
                                         </select>
                                     </div>
                                 </div>
