@@ -75,6 +75,7 @@ const Study: React.FC = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editData, setEditData] = useState<EditFormData | null>(null);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         let interval: NodeJS.Timeout | null = null;
@@ -99,6 +100,46 @@ const Study: React.FC = () => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const handleDeleteCurrentCard = async () => {
+        const card = flashcards[currentIndex];
+        if (!card) return;
+        if (!confirm('Tem certeza que deseja excluir este flashcard?')) return;
+
+        try {
+            setIsDeleting(true);
+            const { error } = await supabase
+                .from('flashcards')
+                .delete()
+                .eq('id', card.id);
+
+            if (error) throw error;
+
+            setFlashcards(prev => {
+                const updated = [...prev];
+                updated.splice(currentIndex, 1);
+                return updated;
+            });
+
+            const nextLength = flashcards.length - 1;
+            const nextIndex = Math.max(0, Math.min(currentIndex, nextLength - 1));
+            setCurrentIndex(nextIndex);
+            setShowResult(false);
+            setResult(null);
+            setSelectedOption(null);
+            setUserAnswer('');
+
+            if (nextLength <= 0) {
+                alert('Flashcard excluído. Não há mais itens neste deck para estudar.');
+                navigate('/dashboard');
+            }
+        } catch (error) {
+            console.error('Error deleting current flashcard:', error);
+            alert('Erro ao excluir flashcard. Tente novamente.');
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const toggleTimer = () => setIsActive(!isActive);
@@ -1237,6 +1278,23 @@ const Study: React.FC = () => {
 
                 {/* Flashcard */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
+                    {showResult && (
+                        <div className="flex justify-end gap-3 mb-4">
+                            <button
+                                onClick={openEditModal}
+                                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 cursor-pointer text-sm font-semibold transition-colors"
+                            >
+                                Editar Flashcard
+                            </button>
+                            <button
+                                onClick={handleDeleteCurrentCard}
+                                disabled={isDeleting}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors border border-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isDeleting ? 'Excluindo...' : 'Excluir'}
+                            </button>
+                        </div>
+                    )}
                     <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 leading-relaxed">
                         {currentCard.mode === CardMode.Dictionary && (
                             <div className="flex flex-col gap-2">
@@ -1510,14 +1568,6 @@ const Study: React.FC = () => {
                                             <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">0 XP</span>
                                         </button>
                                     </div>
-                                    <div className="mt-4 flex justify-end">
-                                        <button
-                                            onClick={openEditModal}
-                                            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 cursor-pointer text-sm font-semibold transition-colors"
-                                        >
-                                            Editar Flashcard
-                                        </button>
-                                    </div>
                                 </div>
                             ) : (
                                 /* Automatic Evaluation for other modes */
@@ -1573,14 +1623,6 @@ const Study: React.FC = () => {
                                             'Finalizar Sessão'
                                         )}
                                     </button>
-                                    <div className="mt-4 flex justify-end">
-                                        <button
-                                            onClick={openEditModal}
-                                            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 cursor-pointer text-sm font-semibold transition-colors"
-                                        >
-                                            Editar Flashcard
-                                        </button>
-                                    </div>
                                 </div>
                             )}
                         </div>
