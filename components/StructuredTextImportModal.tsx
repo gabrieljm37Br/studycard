@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabaseClient';
 import { CardMode, FeedbackStatus } from '../types';
@@ -245,7 +245,7 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
             <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-gray-700">
                 <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 z-10">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Colar texto estruturado</h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -254,13 +254,21 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
                                     : `${parsedCards.length} flashcards reconhecidos`}
                             </p>
                         </div>
-                        <button
-                            onClick={handleClose}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl"
-                            disabled={isImporting}
-                        >
-                            �
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => window.open('/help', '_blank')}
+                                className="px-3 py-1.5 text-sm font-semibold rounded-md border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                            >
+                                Central de Ajuda
+                            </button>
+                            <button
+                                onClick={handleClose}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl"
+                                disabled={isImporting}
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -454,3 +462,4 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
 };
 
 export default StructuredTextImportModal;
+

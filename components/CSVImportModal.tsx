@@ -197,7 +197,7 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
             <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 dark:border-gray-700">
                 {/* Header */}
                 <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 z-10">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
                                 Importar CSV do NotebookLM
@@ -206,13 +206,21 @@ const CSVImportModal: React.FC<CSVImportModalProps> = ({
                                 {step === 'upload' ? 'Selecione um arquivo CSV' : `${parsedCards.length} flashcards encontrados`}
                             </p>
                         </div>
-                        <button
-                            onClick={handleClose}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl"
-                            disabled={isImporting}
-                        >
-                            ×
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => window.open('/help', '_blank')}
+                                className="px-3 py-1.5 text-sm font-semibold rounded-md border border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                            >
+                                Central de Ajuda
+                            </button>
+                            <button
+                                onClick={handleClose}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl"
+                                disabled={isImporting}
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                 </div>
 
