@@ -805,7 +805,7 @@ const DeckDetails: React.FC = () => {
                                             <option value="all">Todas as modalidades</option>
                                             <option value={CardMode.QA}>Pergunta &amp; Resposta</option>
                                             <option value={CardMode.TrueFalse}>Verdadeiro ou Falso</option>
-                                            <option value={CardMode.MultipleChoice}>M├║lltipla Escolha</option>
+                                            <option value={CardMode.MultipleChoice}>Múltipla Escolha</option>
                                             <option value={CardMode.PracticalExample}>Exemplo Pr├ítico</option>
                                             <option value={CardMode.FillInTheBlank}>Lacunas</option>
                                             <option value={CardMode.Dictionary}>Dicion├írio</option>
