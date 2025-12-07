@@ -705,12 +705,14 @@ const DeckDetails: React.FC = () => {
                         >
                             Criar Flashcards
                         </button>
-                        <button
-                            onClick={() => navigate('/study', { state: { deckId } })}
-                            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[200px]"
-                        >
-                            Ver {flashcards.length} flashcard{flashcards.length === 1 ? '' : 's'} do deck
-                        </button>
+                        {subdecks.length > 0 && (
+                            <button
+                                onClick={handleViewSubdecks}
+                                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[160px]"
+                            >
+                                Ver subdecks
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -761,30 +763,9 @@ const DeckDetails: React.FC = () => {
                         >
                             Criar Primeiro Flashcard
                         </button>
-                        {subdecks.length > 0 && (
-                            <div className="mt-3">
-                                <button
-                                    onClick={handleViewSubdecks}
-                                    className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                >
-                                    Ver subdecks
-                                </button>
-                            </div>
-                        )}
                     </div>
                 ) : (
                     <>
-                        {subdecks.length > 0 && (
-                            <div className="mb-4 flex justify-end">
-                                <button
-                                    onClick={handleViewSubdecks}
-                                    className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-md transition-all"
-                                >
-                                    Ver subdecks
-                                </button>
-                            </div>
-                        )}
-
                         {/* Filters */}
                         <div className="mb-5 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
                             <div className="flex flex-col md:flex-row md:items-end gap-4">
