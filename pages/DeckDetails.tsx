@@ -1130,7 +1130,7 @@ const DeckDetails: React.FC = () => {
                                     <>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Afirmacao *
+                                                Afirmação *
                                             </label>
                                             <TextFormatToolbar field="statement" textareaId="edit-tf-statement" />
                                             <textarea
@@ -1139,7 +1139,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('statement', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a afirmacao..."
+                                                placeholder="Digite a afirmação..."
                                             />
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -1150,12 +1150,12 @@ const DeckDetails: React.FC = () => {
                                                 className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                             />
                                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                Esta afirmacao e verdadeira
+                                                Esta afirmação e verdadeira
                                             </label>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explica├º├úo
+                                                Explicação
                                             </label>
                                             <TextFormatToolbar field="explanation" textareaId="edit-tf-explanation" />
                                             <textarea
@@ -1164,7 +1164,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('explanation', e.target.value)}
                                                 rows={2}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite uma explica├º├úo..."
+                                                placeholder="Digite uma explicação..."
                                             />
                                         </div>
                                     </>
@@ -1220,7 +1220,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explica├º├úo
+                                                Explicação
                                             </label>
                                             <TextFormatToolbar field="explanation" textareaId="edit-mc-explanation" />
                                             <textarea
@@ -1229,7 +1229,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('explanation', e.target.value)}
                                                 rows={2}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite uma explica├º├úo..."
+                                                placeholder="Digite uma explicação..."
                                             />
                                         </div>
                                     </>
@@ -1360,11 +1360,11 @@ const DeckDetails: React.FC = () => {
                                         type="text"
                                         value={editFormData.tags || ""}
                                         onChange={(e) => handleEditChange("tags", e.target.value)}
-                                        placeholder="Ex: matematica, algebra (separadas por v├¡rgula)"
+                                        placeholder="Ex: matematica, algebra (separadas por vírgula)"
                                         className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Adicione tags separadas por v├¡rgula para organizar seus flashcards
+                                        Adicione tags separadas por vírgula para organizar seus flashcards
                                     </p>
                                 </div>
                             </div>
