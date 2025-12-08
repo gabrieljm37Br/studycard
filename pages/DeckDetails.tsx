@@ -1388,7 +1388,7 @@ const DeckDetails: React.FC = () => {
                                             Salvando...
                                         </>
                                     ) : (
-                                        'Salvar Altera├â┬º├â┬Áes'
+                                        'Salvar Alterações'
                                     )}
                                 </button>
                             </div>
