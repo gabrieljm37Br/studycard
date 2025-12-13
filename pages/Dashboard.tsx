@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // Deck statistics
-    const [deckStats, setDeckStats] = useState<Record<string, { subdecks: number; flashcards: number }>>({});
+    const [deckStats] = useState<Record<string, { subdecks: number; flashcards: number }>>({});
     const [currentDeckFlashcardCount, setCurrentDeckFlashcardCount] = useState<number | null>(null);
 
     // Move Deck State
@@ -201,7 +201,7 @@ const Dashboard: React.FC = () => {
             setLoading(true);
             let query = supabase
                 .from('decks')
-                .select('*')
+                .select('id, name, parent_id, updated_at')
                 .eq('user_id', user!.id);
 
             if (currentParentId) {
@@ -213,73 +213,18 @@ const Dashboard: React.FC = () => {
             const { data, error } = await query;
 
             if (error) throw error;
-            setDecks(data || []);
 
-            // Load statistics for each deck
-            if (data && data.length > 0) {
-                await loadDeckStats(data);
-            }
+            const mappedDecks: Deck[] = (data || []).map((deck: any) => ({
+                id: deck.id,
+                name: deck.name,
+                parentId: deck.parent_id ?? null,
+            }));
+
+            setDecks(mappedDecks);
         } catch (error) {
             console.error('Error loading decks:', error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const loadDeckStats = async (decksList: Deck[]) => {
-        if (!user) return;
-
-        try {
-            const stats: Record<string, { subdecks: number; flashcards: number }> = {};
-
-            // Helper function to recursively get all subdeck IDs
-            const getAllSubdeckIds = async (deckId: string): Promise<string[]> => {
-                const { data: children, error } = await supabase
-                    .from('decks')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .eq('parent_id', deckId);
-
-                if (error || !children || children.length === 0) {
-                    return [];
-                }
-
-                const childIds = children.map(child => child.id);
-
-                // Recursively get subdecks of each child
-                const nestedIds: string[] = [];
-                for (const childId of childIds) {
-                    const nested = await getAllSubdeckIds(childId);
-                    nestedIds.push(...nested);
-                }
-
-                return [...childIds, ...nestedIds];
-            };
-
-            for (const deck of decksList) {
-                // Get all subdeck IDs recursively
-                const allSubdeckIds = await getAllSubdeckIds(deck.id);
-                const subdeckCount = allSubdeckIds.length;
-
-                // Count flashcards in this deck and all subdecks
-                const deckIdsToCount = [deck.id, ...allSubdeckIds];
-
-                const { count: flashcardCount, error: flashcardError } = await supabase
-                    .from('flashcards')
-                    .select('*', { count: 'exact', head: true })
-                    .in('deck_id', deckIdsToCount);
-
-                if (!flashcardError) {
-                    stats[deck.id] = {
-                        subdecks: subdeckCount,
-                        flashcards: flashcardCount || 0
-                    };
-                }
-            }
-
-            setDeckStats(stats);
-        } catch (error) {
-            console.error('Error loading deck stats:', error);
         }
     };
 
@@ -820,4 +765,3 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
-
