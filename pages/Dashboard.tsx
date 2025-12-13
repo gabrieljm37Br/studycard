@@ -43,7 +43,6 @@ const Dashboard: React.FC = () => {
     const [newBadges, setNewBadges] = useState<Badge[]>([]);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    // Deck statistics (carregadas sob demanda)
     const [currentDeckFlashcardCount, setCurrentDeckFlashcardCount] = useState<number | null>(null);
     const [statsModalOpen, setStatsModalOpen] = useState(false);
     const [statsLoading, setStatsLoading] = useState(false);
@@ -56,18 +55,15 @@ const Dashboard: React.FC = () => {
         accuracyPercent: number | null;
     } | null>(null);
 
-    // Move Deck State
     const [showMoveDeckModal, setShowMoveDeckModal] = useState(false);
     const [deckToMove, setDeckToMove] = useState<Deck | null>(null);
     const [availableDecks, setAvailableDecks] = useState<Deck[]>([]);
     const [isMovingDeck, setIsMovingDeck] = useState(false);
 
-    // Rename Deck State
     const [showRenameModal, setShowRenameModal] = useState(false);
     const [deckToRename, setDeckToRename] = useState<Deck | null>(null);
     const [renameDeckName, setRenameDeckName] = useState('');
     const [isRenamingDeck, setIsRenamingDeck] = useState(false);
-
     useEffect(() => {
         if (user) {
             loadProfile();
@@ -80,30 +76,21 @@ const Dashboard: React.FC = () => {
         if (location.state?.newBadges && location.state.newBadges.length > 0) {
             setNewBadges(location.state.newBadges);
             setShowNewBadgeModal(true);
-            // Clear state to prevent showing again on refresh
             window.history.replaceState({}, document.title);
         }
 
-        // Show success message if present
         if (location.state?.message) {
             setSuccessMessage(location.state.message);
-            // Auto-hide after 5 seconds
             setTimeout(() => setSuccessMessage(null), 5000);
-            // Clear state to prevent showing again on refresh
             window.history.replaceState({}, document.title);
         }
 
-        // Navigate to specific deck if deckId is provided
         if (location.state?.deckId !== undefined) {
             const targetDeckId = location.state.deckId;
-
-            // If deckId is null, go to root
             if (targetDeckId === null) {
                 setCurrentParentId(null);
                 setNavigationPath([{ id: null, name: 'Meus Decks' }]);
             } else {
-                // Navigate to the specified deck
-                // We need to build the path to this deck
                 const buildPathToDeck = async (deckId: string) => {
                     try {
                         const { data: deck, error } = await supabase
@@ -117,7 +104,6 @@ const Dashboard: React.FC = () => {
                             return;
                         }
 
-                        // Build path recursively
                         const path: Array<{ id: string | null; name: string }> = [{ id: null, name: 'Meus Decks' }];
 
                         const buildPath = async (currentDeckId: string): Promise<void> => {
@@ -126,45 +112,37 @@ const Dashboard: React.FC = () => {
                                 .select('id, name, parent_id')
                                 .eq('id', currentDeckId)
                                 .single();
-
                             if (error || !data) return;
-
                             if (data.parent_id) {
                                 await buildPath(data.parent_id);
                             }
-
                             path.push({ id: data.id, name: data.name });
                         };
 
                         await buildPath(deckId);
                         setNavigationPath(path);
                         setCurrentParentId(deckId);
-                    } catch (error) {
-                        console.error('Error building path to deck:', error);
+                    } catch (err) {
+                        console.error('Error building path to deck:', err);
                     }
                 };
-
                 buildPathToDeck(targetDeckId);
             }
-
-            // Clear state to prevent re-navigation on refresh
             window.history.replaceState({}, document.title);
         }
     }, [location]);
 
     const loadCurrentDeckFlashcardCount = async (deckId: string) => {
         if (!user) return;
-
         try {
             const { count, error } = await supabase
                 .from('flashcards')
                 .select('*', { count: 'exact', head: true })
                 .eq('deck_id', deckId);
-
             if (error) throw error;
             setCurrentDeckFlashcardCount(count ?? 0);
-        } catch (error) {
-            console.error('Error loading flashcard count for deck:', error);
+        } catch (err) {
+            console.error('Error loading flashcard count for deck:', err);
         }
     };
 
@@ -175,7 +153,6 @@ const Dashboard: React.FC = () => {
             setCurrentDeckFlashcardCount(null);
         }
     }, [currentParentId, user]);
-
     const loadProfile = async () => {
         try {
             const { data, error } = await supabase
@@ -183,11 +160,10 @@ const Dashboard: React.FC = () => {
                 .select('*')
                 .eq('id', user!.id)
                 .single();
-
             if (error) throw error;
             setProfile(data);
-        } catch (error) {
-            console.error('Error loading profile:', error);
+        } catch (err) {
+            console.error('Error loading profile:', err);
         }
     };
 
@@ -197,11 +173,10 @@ const Dashboard: React.FC = () => {
                 .from('user_badges')
                 .select('badges(*)')
                 .eq('user_id', user!.id);
-
             if (error) throw error;
             setBadges(data?.map((item: any) => item.badges) || []);
-        } catch (error) {
-            console.error('Error loading badges:', error);
+        } catch (err) {
+            console.error('Error loading badges:', err);
         }
     };
 
@@ -220,22 +195,21 @@ const Dashboard: React.FC = () => {
             }
 
             const { data, error } = await query;
-
             if (error) throw error;
+
             const mappedDecks: Deck[] = (data || []).map((deck: any) => ({
                 id: deck.id,
                 name: deck.name,
                 parentId: deck.parent_id ?? null,
             }));
             setDecks(mappedDecks);
-        } catch (error) {
-            console.error('Error loading decks:', error);
+        } catch (err) {
+            console.error('Error loading decks:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    // Carrega Estatísticas de um deck sob demanda (incluindo subdecks)
     const loadDeckStatsOnDemand = async (deck: Deck) => {
         if (!user) return;
         try {
@@ -243,12 +217,10 @@ const Dashboard: React.FC = () => {
             setStatsError(null);
             setStatsData(null);
 
-            // Buscar todos os decks para montar árvore em memória
             const { data: allDecks, error: decksError } = await supabase
                 .from('decks')
                 .select('id, parent_id, name')
                 .eq('user_id', user.id);
-
             if (decksError) throw decksError;
 
             const childrenMap = new Map<string | null, string[]>();
@@ -273,18 +245,24 @@ const Dashboard: React.FC = () => {
             const descendantIds = collectDescendants(deck.id);
             const idsToQuery = [deck.id, ...descendantIds];
 
-            const { data: flashRows, error: flashError } = await supabase
-                .from('flashcards')
-                .select('deck_id, feedback')
-                .in('deck_id', idsToQuery)
-                .eq('user_id', user.id);
+            const getCount = async (configure: (query: any) => any) => {
+                let query = supabase
+                    .from('flashcards')
+                    .select('*', { count: 'exact', head: true })
+                    .in('deck_id', idsToQuery)
+                    .eq('user_id', user.id);
+                query = configure(query);
+                const { count, error } = await query;
+                if (error) throw error;
+                return count || 0;
+            };
 
-            if (flashError) throw flashError;
-
-            const totalFlashcards = flashRows?.length || 0;
-            const studied = (flashRows || []).filter((f: any) => f.feedback && f.feedback !== 'unseen').length;
-            const correct = (flashRows || []).filter((f: any) => f.feedback === 'correct').length;
-            const incorrect = (flashRows || []).filter((f: any) => f.feedback === 'incorrect').length;
+            const [totalFlashcards, studied, correct, incorrect] = await Promise.all([
+                getCount(q => q),
+                getCount(q => q.neq('feedback', 'unseen')),
+                getCount(q => q.eq('feedback', 'correct')),
+                getCount(q => q.eq('feedback', 'incorrect')),
+            ]);
 
             const studiedPercent = totalFlashcards > 0 ? Math.round((studied / totalFlashcards) * 100) : null;
             const accuracyDen = correct + incorrect;
@@ -297,18 +275,16 @@ const Dashboard: React.FC = () => {
                 studiedPercent,
                 accuracyPercent,
             });
-        } catch (error) {
-            console.error('Error loading deck stats on demand:', error);
-            setStatsError('Não foi possível carregar as Estatísticas.');
+        } catch (err) {
+            console.error('Error loading deck stats on demand:', err);
+            setStatsError('Não foi possível carregar as estatísticas.');
         } finally {
             setStatsLoading(false);
         }
     };
-
     const handleCreateDeck = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newDeckName.trim()) return;
-
         try {
             const { error } = await supabase
                 .from('decks')
@@ -317,12 +293,11 @@ const Dashboard: React.FC = () => {
                     name: newDeckName,
                     parent_id: currentParentId
                 });
-
             if (error) throw error;
             setNewDeckName('');
             loadDecks();
-        } catch (error) {
-            console.error('Error creating deck:', error);
+        } catch (err) {
+            console.error('Error creating deck:', err);
             alert('Erro ao criar deck');
         }
     };
@@ -341,18 +316,16 @@ const Dashboard: React.FC = () => {
 
     const handleDeleteDeck = async (deckId: string) => {
         if (!confirm('Tem certeza que deseja excluir este deck?')) return;
-
         try {
             const { error } = await supabase
                 .from('decks')
                 .delete()
                 .eq('id', deckId);
-
             if (error) throw error;
             loadDecks();
-        } catch (error: any) {
-            console.error('Error deleting deck:', error);
-            alert(`Erro ao excluir deck: ${error.message || 'Erro desconhecido'}`);
+        } catch (err: any) {
+            console.error('Error deleting deck:', err);
+            alert(`Erro ao excluir deck: ${err.message || 'Erro desconhecido'}`);
         }
     };
 
@@ -360,47 +333,39 @@ const Dashboard: React.FC = () => {
         setDeckToMove(deck);
         setShowMoveDeckModal(true);
         try {
-            // Fetch all decks to list as potential parents
-            // Exclude the deck itself to prevent cycles (basic check)
             const { data, error } = await supabase
                 .from('decks')
                 .select('*')
                 .eq('user_id', user!.id)
-                .neq('id', deck.id); // Exclude self
-
+                .neq('id', deck.id);
             if (error) throw error;
             setAvailableDecks(data || []);
-        } catch (error) {
-            console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks dispon├¡veis para mover.');
+        } catch (err) {
+            console.error('Error loading available decks:', err);
+            alert('Erro ao carregar decks disponíveis para mover.');
         }
     };
 
     const handleMoveDeck = async (targetParentId: string | null) => {
         if (!deckToMove) return;
-
         try {
             setIsMovingDeck(true);
             const { error } = await supabase
                 .from('decks')
                 .update({ parent_id: targetParentId })
                 .eq('id', deckToMove.id);
-
             if (error) throw error;
-
             setSuccessMessage(`Deck "${deckToMove.name}" movido com sucesso!`);
             setShowMoveDeckModal(false);
             setDeckToMove(null);
-            loadDecks(); // Reload current view
-        } catch (error) {
-            console.error('Error moving deck:', error);
+            loadDecks();
+        } catch (err) {
+            console.error('Error moving deck:', err);
             alert('Erro ao mover deck.');
         } finally {
             setIsMovingDeck(false);
         }
     };
-
-
 
     const openRenameDeckModal = (deck: Deck) => {
         setDeckToRename(deck);
@@ -411,22 +376,19 @@ const Dashboard: React.FC = () => {
     const handleRenameDeck = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!deckToRename || !renameDeckName.trim()) return;
-
         try {
             setIsRenamingDeck(true);
             const { error } = await supabase
                 .from('decks')
                 .update({ name: renameDeckName.trim() })
                 .eq('id', deckToRename.id);
-
             if (error) throw error;
-
             setSuccessMessage(`Deck renomeado para "${renameDeckName}" com sucesso!`);
             setShowRenameModal(false);
             setDeckToRename(null);
             loadDecks();
-        } catch (error) {
-            console.error('Error renaming deck:', error);
+        } catch (err) {
+            console.error('Error renaming deck:', err);
             alert('Erro ao renomear deck.');
         } finally {
             setIsRenamingDeck(false);
@@ -442,7 +404,6 @@ const Dashboard: React.FC = () => {
     const filteredDecks = normalizedSearchTerm
         ? decks.filter(deck => deck.name.toLowerCase().includes(normalizedSearchTerm))
         : decks;
-
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
@@ -465,7 +426,7 @@ const Dashboard: React.FC = () => {
                                 </svg>
                                 <span className="hidden md:inline text-sm font-semibold">Home</span>
                             </button>
-                            {/* Search Decks */}
+
                             <button
                                 onClick={() => setIsSearchOpen(prev => !prev)}
                                 className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
@@ -477,7 +438,6 @@ const Dashboard: React.FC = () => {
                                 </svg>
                             </button>
 
-                            {/* Dark Mode Toggle */}
                             <button
                                 onClick={toggleTheme}
                                 className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
@@ -495,7 +455,6 @@ const Dashboard: React.FC = () => {
                                 )}
                             </button>
 
-                            {/* Help Button */}
                             <button
                                 onClick={() => navigate('/help')}
                                 className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
@@ -549,25 +508,20 @@ const Dashboard: React.FC = () => {
                 </div>
             </header>
 
-            {/* Success Message */}
             {successMessage && (
                 <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-in">
-                    <span className="text-xl">Ô£à</span>
+                    <span className="text-xl">🎉</span>
                     <span className="font-semibold">{successMessage}</span>
                     <button
                         onClick={() => setSuccessMessage(null)}
                         className="bg-white/20 hover:bg-white/30 border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer text-white text-base transition-colors"
                     >
-                        ├ù
+                        ×
                     </button>
                 </div>
             )}
 
-            {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8 md:px-6">
-
-                {/* Breadcrumb */}
-                {/* Actions box for current deck */}
                 {currentParentId && (
                     <div className="mb-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex flex-wrap items-center justify-center gap-3">
                         <button
@@ -588,12 +542,11 @@ const Dashboard: React.FC = () => {
                     </div>
                 )}
 
-                {/* Breadcrumb and Actions */}
                 <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex gap-2 items-center flex-wrap text-base md:text-lg">
                         {navigationPath.map((item, index) => (
                             <React.Fragment key={index}>
-                                {index > 0 && <span className="text-gray-400">ÔÇ║</span>}
+                                {index > 0 && <span className="text-gray-400">|</span>}
                                 <button
                                     onClick={() => handleNavigateToPath(index)}
                                     className={`bg-transparent border-none cursor-pointer hover:underline ${index === navigationPath.length - 1
@@ -608,7 +561,6 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Create Deck Form */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Criar Novo Deck</h2>
                     <form onSubmit={handleCreateDeck} className="flex flex-col sm:flex-row gap-3">
@@ -627,8 +579,6 @@ const Dashboard: React.FC = () => {
                         </button>
                     </form>
                 </div>
-
-                {/* Decks Grid */}
                 {loading ? (
                     <div className="text-center p-10 text-gray-400 animate-pulse">Carregando...</div>
                 ) : filteredDecks.length === 0 ? (
@@ -642,21 +592,21 @@ const Dashboard: React.FC = () => {
                         {filteredDecks.map((deck) => (
                             <div
                                 key={deck.id}
-                                className="bg-white dark:bg-gray-800 rounded-xl p-6 pt-16 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all relative group border border-gray-100 dark:border-gray-700 min-h-[220px] flex flex-col justify-between"
+                                className="bg-white dark:bg-gray-800 rounded-xl p-6 pt-20 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all relative group border border-gray-100 dark:border-gray-700 min-h-[240px] flex flex-col justify-between"
                             >
-                                <div onClick={() => handleNavigateToDeck(deck)} className="cursor-pointer flex-1">
+                                <div className="flex-1">
                                     <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                                         {deck.name}
                                     </h3>
                                 </div>
 
-                                <div className="flex gap-2 mt-4">
+                                <div className="flex gap-2 mt-4 flex-wrap">
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             navigate('/study', { state: { deckId: deck.id } });
                                         }}
-                                        className="flex-1 py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-700 border-none rounded-md text-sm text-white cursor-pointer font-semibold hover:opacity-90 transition-opacity shadow-sm"
+                                        className="flex-1 min-w-[120px] py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-700 border-none rounded-md text-sm text-white cursor-pointer font-semibold hover:opacity-90 transition-opacity shadow-sm"
                                     >
                                         Estudar
                                     </button>
@@ -665,7 +615,7 @@ const Dashboard: React.FC = () => {
                                             e.stopPropagation();
                                             navigate(`/deck/${deck.id}`);
                                         }}
-                                        className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+                                        className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
                                         <span aria-hidden>📑</span>
                                         <span>Flashcards</span>
@@ -673,10 +623,19 @@ const Dashboard: React.FC = () => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            handleNavigateToDeck(deck);
+                                        }}
+                                        className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200 cursor-pointer font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        Subdecks
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             setStatsModalOpen(true);
                                             loadDeckStatsOnDemand(deck);
                                         }}
-                                        className="flex-1 py-2.5 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200 cursor-pointer font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                        className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200 cursor-pointer font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     >
                                         Estatísticas
                                     </button>
@@ -691,7 +650,7 @@ const Dashboard: React.FC = () => {
                                         className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-md transition-colors"
                                         title="Renomear"
                                     >
-                                        ✏️
+                                        Renomear
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -701,7 +660,7 @@ const Dashboard: React.FC = () => {
                                         className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md transition-colors"
                                         title="Mover"
                                     >
-                                        ➡️
+                                        Mover
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -711,7 +670,7 @@ const Dashboard: React.FC = () => {
                                         className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition-colors"
                                         title="Excluir"
                                     >
-                                        ❌
+                                        Excluir
                                     </button>
                                 </div>
                             </div>
@@ -719,8 +678,6 @@ const Dashboard: React.FC = () => {
                     </div>
                 )}
             </div>
-
-            {/* Deck Stats Modal */}
             {statsModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
@@ -730,7 +687,7 @@ const Dashboard: React.FC = () => {
                                 onClick={() => setStatsModalOpen(false)}
                                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
-                                &times;
+                                ×
                             </button>
                         </div>
 
@@ -771,11 +728,10 @@ const Dashboard: React.FC = () => {
                 </div>
             )}
 
-            {/* New Badge Modal */}
             {showNewBadgeModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl text-center max-w-md w-full animate-pop-in shadow-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="text-6xl mb-5 animate-bounce">­ƒÄë</div>
+                        <div className="text-6xl mb-5 animate-bounce">🎉</div>
                         <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">Nova Conquista Desbloqueada!</h2>
                         {newBadges.map(badge => (
                             <div key={badge.id} className="mb-5">
@@ -788,13 +744,12 @@ const Dashboard: React.FC = () => {
                             onClick={() => setShowNewBadgeModal(false)}
                             className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg text-base font-semibold cursor-pointer mt-5 hover:shadow-lg hover:scale-105 transition-all"
                         >
-                            Incr├¡vel!
+                            Incrível!
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* Move Deck Modal */}
             {showMoveDeckModal && deckToMove && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
@@ -810,7 +765,7 @@ const Dashboard: React.FC = () => {
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                     }`}
                             >
-                                <span className="text-xl">­ƒÅá</span>
+                                <span className="text-xl">🏠</span>
                                 <span className="font-medium text-gray-700 dark:text-gray-200">Raiz (Meus Decks)</span>
                                 {deckToMove.parentId === null && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                             </button>
@@ -824,7 +779,7 @@ const Dashboard: React.FC = () => {
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                         }`}
                                 >
-                                    <span className="text-xl">­ƒôü</span>
+                                    <span className="text-xl">📁</span>
                                     <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                     {deckToMove.parentId === deck.id && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                                 </button>
@@ -844,57 +799,46 @@ const Dashboard: React.FC = () => {
                 </div>
             )}
 
+            {showRenameModal && deckToRename && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
+                        <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">
+                            Renomear Deck
+                        </h2>
 
-            {/* Rename Deck Modal */}
-            {
-                showRenameModal && deckToRename && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
-                            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">
-                                Renomear Deck
-                            </h2>
+                        <form onSubmit={handleRenameDeck}>
+                            <input
+                                type="text"
+                                value={renameDeckName}
+                                onChange={(e) => setRenameDeckName(e.target.value)}
+                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-transparent dark:text-white mb-4"
+                                placeholder="Novo nome do deck"
+                                autoFocus
+                            />
 
-                            <form onSubmit={handleRenameDeck}>
-                                <input
-                                    type="text"
-                                    value={renameDeckName}
-                                    onChange={(e) => setRenameDeckName(e.target.value)}
-                                    className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-transparent dark:text-white mb-4"
-                                    placeholder="Novo nome do deck"
-                                    autoFocus
-                                />
-
-                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRenameModal(false)}
-                                        className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                        disabled={isRenamingDeck}
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                                        disabled={isRenamingDeck || !renameDeckName.trim()}
-                                    >
-                                        {isRenamingDeck ? 'Salvando...' : 'Salvar'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRenameModal(false)}
+                                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                    disabled={isRenamingDeck}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                    disabled={isRenamingDeck || !renameDeckName.trim()}
+                                >
+                                    {isRenamingDeck ? 'Salvando...' : 'Salvar'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 };
 
 export default Dashboard;
-
-
-
-
-
-
-
