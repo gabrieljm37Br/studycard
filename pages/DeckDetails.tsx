@@ -658,23 +658,6 @@ const DeckDetails: React.FC = () => {
                                 <span className="hidden md:inline text-sm font-semibold">Home</span>
                             </button>
 
-                            {flashcards.length > 0 && (
-                                <button
-                                    onClick={() => navigate('/study', { state: { deckId } })}
-                                    className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                >
-                                    <BookOpenCheck className="w-5 h-5" aria-hidden />
-                                    <span className="hidden md:inline text-sm font-semibold">Modo Estudo</span>
-                                </button>
-                            )}
-
-                            <button
-                                onClick={() => navigate('/generator', { state: { deckId } })}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                            >
-                                <span className="text-lg">+</span>
-                                <span className="hidden md:inline text-sm font-semibold">Adicionar</span>
-                            </button>
                             <button
                                 onClick={() => navigate('/help')}
                                 className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
@@ -701,10 +684,18 @@ const DeckDetails: React.FC = () => {
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex items-center justify-center gap-3 flex-wrap">
                         <button
                             onClick={() => navigate('/generator', { state: { deckId } })}
-                            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors whitespace-nowrap min-w-[160px]"
+                            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[160px]"
                         >
                             Criar Flashcards
                         </button>
+                        {flashcards.length > 0 && (
+                            <button
+                                onClick={() => navigate('/study', { state: { deckId } })}
+                                className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[160px]"
+                            >
+                                Estudar Flashcards
+                            </button>
+                        )}
                         {subdecks.length > 0 && (
                             <button
                                 onClick={handleViewSubdecks}
@@ -1424,4 +1415,3 @@ const DeckDetails: React.FC = () => {
 };
 
 export default DeckDetails;
-
