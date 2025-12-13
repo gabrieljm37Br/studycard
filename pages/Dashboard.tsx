@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Deck } from '../types';
-import { BookOpenCheck } from 'lucide-react';
+import { BookOpenCheck, Folder, Library } from 'lucide-react';
 
 interface Profile {
     id: string;
@@ -62,13 +62,8 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         if (user) {
             loadProfile();
-            loadBadges();
-        }
-    }, [user]);
-
-    useEffect(() => {
-        if (user) {
             loadDecks();
+            loadBadges();
         }
     }, [user, currentParentId]);
 
@@ -148,6 +143,30 @@ const Dashboard: React.FC = () => {
         }
     }, [location]);
 
+    const loadCurrentDeckFlashcardCount = async (deckId: string) => {
+        if (!user) return;
+
+        try {
+            const { count, error } = await supabase
+                .from('flashcards')
+                .select('*', { count: 'exact', head: true })
+                .eq('deck_id', deckId);
+
+            if (error) throw error;
+            setCurrentDeckFlashcardCount(count ?? 0);
+        } catch (error) {
+            console.error('Error loading flashcard count for deck:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (currentParentId) {
+            loadCurrentDeckFlashcardCount(currentParentId);
+        } else {
+            setCurrentDeckFlashcardCount(null);
+        }
+    }, [currentParentId, user]);
+
     const loadProfile = async () => {
         try {
             const { data, error } = await supabase
@@ -178,14 +197,12 @@ const Dashboard: React.FC = () => {
     };
 
     const loadDecks = async () => {
-        if (!user) return;
-
         try {
             setLoading(true);
             let query = supabase
                 .from('decks')
                 .select('*')
-                .eq('user_id', user.id);
+                .eq('user_id', user!.id);
 
             if (currentParentId) {
                 query = query.eq('parent_id', currentParentId);
@@ -196,9 +213,12 @@ const Dashboard: React.FC = () => {
             const { data, error } = await query;
 
             if (error) throw error;
-            const decksData = data || [];
-            setDecks(decksData);
-            loadDeckStats(decksData);
+            setDecks(data || []);
+
+            // Load statistics for each deck
+            if (data && data.length > 0) {
+                await loadDeckStats(data);
+            }
         } catch (error) {
             console.error('Error loading decks:', error);
         } finally {
@@ -210,81 +230,56 @@ const Dashboard: React.FC = () => {
         if (!user) return;
 
         try {
-            const { data: allDecks, error: decksError } = await supabase
-                .from('decks')
-                .select('id, parent_id')
-                .eq('user_id', user.id);
-
-            if (decksError) throw decksError;
-
-            const deckChildrenMap = new Map<string | null, string[]>();
-            (allDecks || []).forEach((deck) => {
-                const siblings = deckChildrenMap.get(deck.parent_id) || [];
-                siblings.push(deck.id);
-                deckChildrenMap.set(deck.parent_id, siblings);
-            });
-
-            const allDeckIds = (allDecks || []).map(deck => deck.id);
-
-            const { data: flashcardsData, error: flashcardError } = allDeckIds.length === 0
-                ? { data: [], error: null }
-                : await supabase
-                    .from('flashcards')
-                    .select('deck_id')
-                    .in('deck_id', allDeckIds);
-
-            if (flashcardError) throw flashcardError;
-
-            const flashcardCountMap = new Map<string, number>();
-            (flashcardsData || []).forEach((row: any) => {
-                flashcardCountMap.set(row.deck_id, (flashcardCountMap.get(row.deck_id) || 0) + 1);
-            });
-
-            const collectDescendants = (deckId: string): string[] => {
-                const stack = [...(deckChildrenMap.get(deckId) || [])];
-                const descendants: string[] = [];
-
-                while (stack.length) {
-                    const childId = stack.pop()!;
-                    descendants.push(childId);
-                    const childChildren = deckChildrenMap.get(childId);
-                    if (childChildren && childChildren.length) {
-                        stack.push(...childChildren);
-                    }
-                }
-
-                return descendants;
-            };
-
             const stats: Record<string, { subdecks: number; flashcards: number }> = {};
 
-            const buildStatsForDeck = (deckId: string) => {
-                const descendants = collectDescendants(deckId);
-                const deckIdsToCount = [deckId, ...descendants];
-                const totalFlashcards = deckIdsToCount.reduce((total, id) => total + (flashcardCountMap.get(id) || 0), 0);
+            // Helper function to recursively get all subdeck IDs
+            const getAllSubdeckIds = async (deckId: string): Promise<string[]> => {
+                const { data: children, error } = await supabase
+                    .from('decks')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('parent_id', deckId);
 
-                stats[deckId] = {
-                    subdecks: descendants.length,
-                    flashcards: totalFlashcards
-                };
+                if (error || !children || children.length === 0) {
+                    return [];
+                }
+
+                const childIds = children.map(child => child.id);
+
+                // Recursively get subdecks of each child
+                const nestedIds: string[] = [];
+                for (const childId of childIds) {
+                    const nested = await getAllSubdeckIds(childId);
+                    nestedIds.push(...nested);
+                }
+
+                return [...childIds, ...nestedIds];
             };
 
-            decksList.forEach((deck) => buildStatsForDeck(deck.id));
+            for (const deck of decksList) {
+                // Get all subdeck IDs recursively
+                const allSubdeckIds = await getAllSubdeckIds(deck.id);
+                const subdeckCount = allSubdeckIds.length;
 
-            if (currentParentId) {
-                buildStatsForDeck(currentParentId);
-                setCurrentDeckFlashcardCount(stats[currentParentId]?.flashcards ?? 0);
-            } else {
-                setCurrentDeckFlashcardCount(null);
+                // Count flashcards in this deck and all subdecks
+                const deckIdsToCount = [deck.id, ...allSubdeckIds];
+
+                const { count: flashcardCount, error: flashcardError } = await supabase
+                    .from('flashcards')
+                    .select('*', { count: 'exact', head: true })
+                    .in('deck_id', deckIdsToCount);
+
+                if (!flashcardError) {
+                    stats[deck.id] = {
+                        subdecks: subdeckCount,
+                        flashcards: flashcardCount || 0
+                    };
+                }
             }
 
             setDeckStats(stats);
         } catch (error) {
             console.error('Error loading deck stats:', error);
-            setDeckStats({});
-            if (currentParentId) {
-                setCurrentDeckFlashcardCount(null);
-            }
         }
     };
 
@@ -355,7 +350,7 @@ const Dashboard: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks disponíveis para mover.');
+            alert('Erro ao carregar decks dispon├¡veis para mover.');
         }
     };
 
@@ -535,13 +530,13 @@ const Dashboard: React.FC = () => {
             {/* Success Message */}
             {successMessage && (
                 <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-in">
-                    <span className="text-xl">✅</span>
+                    <span className="text-xl">Ô£à</span>
                     <span className="font-semibold">{successMessage}</span>
                     <button
                         onClick={() => setSuccessMessage(null)}
                         className="bg-white/20 hover:bg-white/30 border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer text-white text-base transition-colors"
                     >
-                        ×
+                        ├ù
                     </button>
                 </div>
             )}
@@ -576,7 +571,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex gap-2 items-center flex-wrap text-base md:text-lg">
                         {navigationPath.map((item, index) => (
                             <React.Fragment key={index}>
-                                {index > 0 && <span className="text-gray-400">›</span>}
+                                {index > 0 && <span className="text-gray-400">|</span>}
                                 <button
                                     onClick={() => handleNavigateToPath(index)}
                                     className={`bg-transparent border-none cursor-pointer hover:underline ${index === navigationPath.length - 1
@@ -635,11 +630,11 @@ const Dashboard: React.FC = () => {
                                     {/* Deck Statistics */}
                                     <div className="flex gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
                                         <div className="flex items-center gap-1" title="Subdecks">
-                                            <span>📁</span>
+                                            <span>­📂</span>
                                             <span>{deckStats[deck.id]?.subdecks ?? 0}</span>
                                         </div>
                                         <div className="flex items-center gap-1" title="Flashcards">
-                                            <span>🎴</span>
+                                            <span>­🎴</span>
                                             <span>{deckStats[deck.id]?.flashcards ?? 0}</span>
                                         </div>
                                     </div>
@@ -662,7 +657,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <span aria-hidden>📑</span>
+                                        <span aria-hidden>🗒️</span>
                                         <span>Flashcards</span>
                                     </button>
                                 </div>
@@ -686,7 +681,7 @@ const Dashboard: React.FC = () => {
                                         className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md transition-colors"
                                         title="Mover"
                                     >
-                                        ➡️
+                                        🔀
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -696,7 +691,7 @@ const Dashboard: React.FC = () => {
                                         className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md transition-colors"
                                         title="Excluir"
                                     >
-                                        🗑️
+                                        ❌
                                     </button>
                                 </div>
                             </div>
@@ -709,7 +704,7 @@ const Dashboard: React.FC = () => {
             {showNewBadgeModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl text-center max-w-md w-full animate-pop-in shadow-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="text-6xl mb-5 animate-bounce">🎉</div>
+                        <div className="text-6xl mb-5 animate-bounce">­ƒÄë</div>
                         <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">Nova Conquista Desbloqueada!</h2>
                         {newBadges.map(badge => (
                             <div key={badge.id} className="mb-5">
@@ -722,7 +717,7 @@ const Dashboard: React.FC = () => {
                             onClick={() => setShowNewBadgeModal(false)}
                             className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg text-base font-semibold cursor-pointer mt-5 hover:shadow-lg hover:scale-105 transition-all"
                         >
-                            Incrível!
+                            Incr├¡vel!
                         </button>
                     </div>
                 </div>
@@ -744,7 +739,7 @@ const Dashboard: React.FC = () => {
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                     }`}
                             >
-                                <span className="text-xl">🏠</span>
+                                <span className="text-xl">🗃️</span>
                                 <span className="font-medium text-gray-700 dark:text-gray-200">Raiz (Meus Decks)</span>
                                 {deckToMove.parentId === null && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                             </button>
@@ -758,7 +753,7 @@ const Dashboard: React.FC = () => {
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                         }`}
                                 >
-                                    <span className="text-xl">📁</span>
+                                    <span className="text-xl">🎴</span>
                                     <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                     {deckToMove.parentId === deck.id && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                                 </button>
@@ -825,3 +820,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+

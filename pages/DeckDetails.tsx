@@ -464,32 +464,32 @@ const DeckDetails: React.FC = () => {
             // Validate required fields
             if (editFormData.mode === CardMode.QA) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta s├â┬úo obrigat├â┬│rias');
+                    alert('Pergunta e resposta são obrigatórias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.TrueFalse) {
                 if (!editFormData.statement?.trim()) {
-                    alert('Afirma├â┬º├â┬úo ├â┬® obrigat├â┬│ria');
+                    alert('Afirmação é obrigatória');
                     return;
                 }
             } else if (editFormData.mode === CardMode.MultipleChoice) {
                 if (!editFormData.question?.trim() || editFormData.options.some((opt: string) => !opt?.trim())) {
-                    alert('Pergunta e todas as op├â┬º├â┬Áes s├â┬úo obrigat├â┬│rias');
+                    alert('Pergunta e todas as opções são obrigatórias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.PracticalExample) {
                 if (!editFormData.problem?.trim() || !editFormData.question?.trim() || !editFormData.solution?.trim()) {
-                    alert('Problema, pergunta e solu├â┬º├â┬úo s├â┬úo obrigat├â┬│rios');
+                    alert('Problema, pergunta e solução são obrigatórios');
                     return;
                 }
             } else if (editFormData.mode === CardMode.FillInTheBlank) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta s├â┬úo obrigat├â┬│rias');
+                    alert('Pergunta e resposta são obrigatórias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.Dictionary) {
                 if (!editFormData.term?.trim() || !editFormData.definition?.trim()) {
-                    alert('Termo e defini├â┬º├â┬úo s├â┬úo obrigat├â┬│rios');
+                    alert('Termo e definição são obrigatórios');
                     return;
                 }
             }
@@ -1268,7 +1268,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Solu├â┬º├â┬úo *
+                                                Solução *
                                             </label>
                                             <TextFormatToolbar field="solution" textareaId="edit-pe-solution" />
                                             <textarea
@@ -1277,7 +1277,7 @@ const DeckDetails: React.FC = () => {
                                                 onChange={(e) => handleEditChange('solution', e.target.value)}
                                                 rows={3}
                                                 className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a solu├â┬º├â┬úo..."
+                                                placeholder="Digite a solução..."
                                             />
                                         </div>
                                     </>
