@@ -657,6 +657,15 @@ const DeckDetails: React.FC = () => {
                                 <Home className="w-5 h-5" />
                                 <span className="hidden md:inline text-sm font-semibold">Home</span>
                             </button>
+                            <button
+                                onClick={() => navigate('/dashboard')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Meus Decks"
+                                aria-label="Meus Decks"
+                            >
+                                <Folder className="w-5 h-5" />
+                                <span className="hidden md:inline text-sm font-semibold">Meus Decks</span>
+                            </button>
 
                             <button
                                 onClick={() => navigate('/help')}
