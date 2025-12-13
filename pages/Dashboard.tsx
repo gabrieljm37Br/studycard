@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
@@ -43,9 +43,18 @@ const Dashboard: React.FC = () => {
     const [newBadges, setNewBadges] = useState<Badge[]>([]);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    // Deck statistics
-    const [deckStats, setDeckStats] = useState<Record<string, { subdecks: number; flashcards: number }>>({});
+    // Deck statistics (carregadas sob demanda)
     const [currentDeckFlashcardCount, setCurrentDeckFlashcardCount] = useState<number | null>(null);
+    const [statsModalOpen, setStatsModalOpen] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(false);
+    const [statsError, setStatsError] = useState<string | null>(null);
+    const [statsData, setStatsData] = useState<{
+        deckName: string;
+        subdecks: number;
+        flashcards: number;
+        studiedPercent: number | null;
+        accuracyPercent: number | null;
+    } | null>(null);
 
     // Move Deck State
     const [showMoveDeckModal, setShowMoveDeckModal] = useState(false);
@@ -223,6 +232,76 @@ const Dashboard: React.FC = () => {
             console.error('Error loading decks:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Carrega Estatísticas de um deck sob demanda (incluindo subdecks)
+    const loadDeckStatsOnDemand = async (deck: Deck) => {
+        if (!user) return;
+        try {
+            setStatsLoading(true);
+            setStatsError(null);
+            setStatsData(null);
+
+            // Buscar todos os decks para montar árvore em memória
+            const { data: allDecks, error: decksError } = await supabase
+                .from('decks')
+                .select('id, parent_id, name')
+                .eq('user_id', user.id);
+
+            if (decksError) throw decksError;
+
+            const childrenMap = new Map<string | null, string[]>();
+            (allDecks || []).forEach((d: any) => {
+                const list = childrenMap.get(d.parent_id) || [];
+                list.push(d.id);
+                childrenMap.set(d.parent_id, list);
+            });
+
+            const collectDescendants = (rootId: string): string[] => {
+                const stack = [...(childrenMap.get(rootId) || [])];
+                const acc: string[] = [];
+                while (stack.length) {
+                    const child = stack.pop()!;
+                    acc.push(child);
+                    const next = childrenMap.get(child);
+                    if (next && next.length) stack.push(...next);
+                }
+                return acc;
+            };
+
+            const descendantIds = collectDescendants(deck.id);
+            const idsToQuery = [deck.id, ...descendantIds];
+
+            const { data: flashRows, error: flashError } = await supabase
+                .from('flashcards')
+                .select('deck_id, feedback')
+                .in('deck_id', idsToQuery)
+                .eq('user_id', user.id);
+
+            if (flashError) throw flashError;
+
+            const totalFlashcards = flashRows?.length || 0;
+            const studied = (flashRows || []).filter((f: any) => f.feedback && f.feedback !== 'unseen').length;
+            const correct = (flashRows || []).filter((f: any) => f.feedback === 'correct').length;
+            const incorrect = (flashRows || []).filter((f: any) => f.feedback === 'incorrect').length;
+
+            const studiedPercent = totalFlashcards > 0 ? Math.round((studied / totalFlashcards) * 100) : null;
+            const accuracyDen = correct + incorrect;
+            const accuracyPercent = accuracyDen > 0 ? Math.round((correct / accuracyDen) * 100) : null;
+
+            setStatsData({
+                deckName: deck.name,
+                subdecks: descendantIds.length,
+                flashcards: totalFlashcards,
+                studiedPercent,
+                accuracyPercent,
+            });
+        } catch (error) {
+            console.error('Error loading deck stats on demand:', error);
+            setStatsError('Não foi possível carregar as Estatísticas.');
+        } finally {
+            setStatsLoading(false);
         }
     };
 
@@ -514,7 +593,7 @@ const Dashboard: React.FC = () => {
                     <div className="flex gap-2 items-center flex-wrap text-base md:text-lg">
                         {navigationPath.map((item, index) => (
                             <React.Fragment key={index}>
-                                {index > 0 && <span className="text-gray-400">|</span>}
+                                {index > 0 && <span className="text-gray-400">ÔÇ║</span>}
                                 <button
                                     onClick={() => handleNavigateToPath(index)}
                                     className={`bg-transparent border-none cursor-pointer hover:underline ${index === navigationPath.length - 1
@@ -569,18 +648,6 @@ const Dashboard: React.FC = () => {
                                     <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                                         {deck.name}
                                     </h3>
-
-                                    {/* Deck Statistics */}
-                                    <div className="flex gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                        <div className="flex items-center gap-1" title="Subdecks">
-                                            <span>­📂</span>
-                                            <span>{deckStats[deck.id]?.subdecks ?? 0}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1" title="Flashcards">
-                                            <span>­🎴</span>
-                                            <span>{deckStats[deck.id]?.flashcards ?? 0}</span>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <div className="flex gap-2 mt-4">
@@ -591,7 +658,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-700 border-none rounded-md text-sm text-white cursor-pointer font-semibold hover:opacity-90 transition-opacity shadow-sm"
                                     >
-                                        📚 Estudar
+                                        Estudar
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -600,8 +667,18 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <span aria-hidden>­🗒️</span>
+                                        <span aria-hidden>📑</span>
                                         <span>Flashcards</span>
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setStatsModalOpen(true);
+                                            loadDeckStatsOnDemand(deck);
+                                        }}
+                                        className="flex-1 py-2.5 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200 cursor-pointer font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        Estatísticas
                                     </button>
                                 </div>
 
@@ -624,7 +701,7 @@ const Dashboard: React.FC = () => {
                                         className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md transition-colors"
                                         title="Mover"
                                     >
-                                        🔀
+                                        ➡️
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -642,6 +719,57 @@ const Dashboard: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Deck Stats Modal */}
+            {statsModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Estatísticas do Deck</h2>
+                            <button
+                                onClick={() => setStatsModalOpen(false)}
+                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        {statsLoading && (
+                            <div className="py-6 text-center text-gray-500 dark:text-gray-300">Carregando estatísticas...</div>
+                        )}
+
+                        {statsError && (
+                            <div className="py-4 text-center text-red-500 dark:text-red-400">{statsError}</div>
+                        )}
+
+                        {!statsLoading && !statsError && statsData && (
+                            <div className="space-y-3 text-gray-800 dark:text-gray-200">
+                                <p className="text-lg font-semibold">{statsData.deckName}</p>
+                                <div className="flex justify-between">
+                                    <span>Subdecks</span>
+                                    <span className="font-bold">{statsData.subdecks}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>Total de flashcards</span>
+                                    <span className="font-bold">{statsData.flashcards}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>% estudados (≥ 1 vez)</span>
+                                    <span className="font-bold">
+                                        {statsData.studiedPercent === null ? '-' : `${statsData.studiedPercent}%`}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span>% acerto (último estudo)</span>
+                                    <span className="font-bold">
+                                        {statsData.accuracyPercent === null ? '-' : `${statsData.accuracyPercent}%`}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* New Badge Modal */}
             {showNewBadgeModal && (
@@ -696,7 +824,7 @@ const Dashboard: React.FC = () => {
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                         }`}
                                 >
-                                    <span className="text-xl">🎴</span>
+                                    <span className="text-xl">­ƒôü</span>
                                     <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                     {deckToMove.parentId === deck.id && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                                 </button>
@@ -763,3 +891,10 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+
+
+
+
+
+
