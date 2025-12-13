@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Deck } from '../types';
-import { BookOpenCheck, Folder, Library } from 'lucide-react';
+import { BookOpenCheck } from 'lucide-react';
 
 interface Profile {
     id: string;
@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // Deck statistics
-    const [deckStats] = useState<Record<string, { subdecks: number; flashcards: number }>>({});
+    const [deckStats, setDeckStats] = useState<Record<string, { subdecks: number; flashcards: number }>>({});
     const [currentDeckFlashcardCount, setCurrentDeckFlashcardCount] = useState<number | null>(null);
 
     // Move Deck State
@@ -201,7 +201,7 @@ const Dashboard: React.FC = () => {
             setLoading(true);
             let query = supabase
                 .from('decks')
-                .select('id, name, parent_id, updated_at')
+                .select('*')
                 .eq('user_id', user!.id);
 
             if (currentParentId) {
@@ -213,18 +213,73 @@ const Dashboard: React.FC = () => {
             const { data, error } = await query;
 
             if (error) throw error;
+            setDecks(data || []);
 
-            const mappedDecks: Deck[] = (data || []).map((deck: any) => ({
-                id: deck.id,
-                name: deck.name,
-                parentId: deck.parent_id ?? null,
-            }));
-
-            setDecks(mappedDecks);
+            // Load statistics for each deck
+            if (data && data.length > 0) {
+                await loadDeckStats(data);
+            }
         } catch (error) {
             console.error('Error loading decks:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadDeckStats = async (decksList: Deck[]) => {
+        if (!user) return;
+
+        try {
+            const stats: Record<string, { subdecks: number; flashcards: number }> = {};
+
+            // Helper function to recursively get all subdeck IDs
+            const getAllSubdeckIds = async (deckId: string): Promise<string[]> => {
+                const { data: children, error } = await supabase
+                    .from('decks')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('parent_id', deckId);
+
+                if (error || !children || children.length === 0) {
+                    return [];
+                }
+
+                const childIds = children.map(child => child.id);
+
+                // Recursively get subdecks of each child
+                const nestedIds: string[] = [];
+                for (const childId of childIds) {
+                    const nested = await getAllSubdeckIds(childId);
+                    nestedIds.push(...nested);
+                }
+
+                return [...childIds, ...nestedIds];
+            };
+
+            for (const deck of decksList) {
+                // Get all subdeck IDs recursively
+                const allSubdeckIds = await getAllSubdeckIds(deck.id);
+                const subdeckCount = allSubdeckIds.length;
+
+                // Count flashcards in this deck and all subdecks
+                const deckIdsToCount = [deck.id, ...allSubdeckIds];
+
+                const { count: flashcardCount, error: flashcardError } = await supabase
+                    .from('flashcards')
+                    .select('*', { count: 'exact', head: true })
+                    .in('deck_id', deckIdsToCount);
+
+                if (!flashcardError) {
+                    stats[deck.id] = {
+                        subdecks: subdeckCount,
+                        flashcards: flashcardCount || 0
+                    };
+                }
+            }
+
+            setDeckStats(stats);
+        } catch (error) {
+            console.error('Error loading deck stats:', error);
         }
     };
 
@@ -602,7 +657,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <span aria-hidden>🗒️</span>
+                                        <span aria-hidden>­🗒️</span>
                                         <span>Flashcards</span>
                                     </button>
                                 </div>
@@ -684,7 +739,7 @@ const Dashboard: React.FC = () => {
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                     }`}
                             >
-                                <span className="text-xl">🗃️</span>
+                                <span className="text-xl">­ƒÅá</span>
                                 <span className="font-medium text-gray-700 dark:text-gray-200">Raiz (Meus Decks)</span>
                                 {deckToMove.parentId === null && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                             </button>
@@ -765,3 +820,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
