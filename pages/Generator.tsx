@@ -428,10 +428,10 @@ const Generator: React.FC = () => {
                             <p className="text-white/80 text-sm">Crie flashcards via texto, PDF, CSV ou digitação manual.</p>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full md:w-auto">
+                        <div className="flex items-center justify-center md:justify-end gap-3 flex-wrap">
                             <button
                                 onClick={() => navigate('/help')}
-                                className="w-full sm:w-auto p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
                                 title="Central de Ajuda"
                                 aria-label="Abrir central de ajuda"
                             >
@@ -442,14 +442,14 @@ const Generator: React.FC = () => {
                                         clipRule="evenodd"
                                     />
                                 </svg>
-                                <span className="hidden sm:inline">Ajuda</span>
+                                <span className="hidden md:inline text-sm font-semibold">Ajuda</span>
                             </button>
                             <button
                                 onClick={() => navigate('/home')}
-                                className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
+                                className="p-2.5 bg-white text-indigo-700 hover:shadow-lg rounded-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
                             >
                                 <Home className="w-4 h-4" />
-                                <span>Voltar</span>
+                                <span className="hidden md:inline text-sm font-semibold">Voltar</span>
                             </button>
                         </div>
                     </div>
