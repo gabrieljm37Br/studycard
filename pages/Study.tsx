@@ -471,17 +471,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
     const applySrsAndUpdate = async (card: FlashcardData, quality: number, feedbackOverride?: FeedbackStatus) => {
         if (isSimulatedStudy) {
-            if (quality < 3) {
-                setFlashcards(prev => {
-                    const copy = [...prev];
-                    const idx = copy.findIndex(fc => fc.id === card.id);
-                    if (idx >= 0) {
-                        const [failed] = copy.splice(idx, 1);
-                        copy.push(failed);
-                    }
-                    return copy;
-                });
-            }
+            // No SRS updates or requeue in modo simulado
             return;
         }
         const { interval, repetition, easeFactor, nextReview } = applySm2(card, quality);
@@ -730,10 +720,31 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         // Save session with custom XP and explicit result
         saveStudySession(evaluation === 'correct' || evaluation === 'almost' ? 'correct' : 'incorrect', xpEarned);
 
+        // Modo simulado: não reencola erros, apenas avança a fila uma vez
+        if (isSimulatedStudy) {
+            if (currentIndex < flashcards.length - 1) {
+                setCurrentIndex(currentIndex + 1);
+                setUserAnswer('');
+                setSelectedOption(null);
+                setShowResult(false);
+                setResult(null);
+                return;
+            }
+
+            const summary = await flushSessionResults();
+            navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
+                state: {
+                    message: `Sessão do simulado concluída! ✅ ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
+                }
+            });
+            return;
+        }
+
         // If failed (<3), keep studying within this session
         if (quality < 3) {
-            const nextIndex = currentIndex < flashcards.length - 1 ? currentIndex + 1 : 0;
-            setCurrentIndex(nextIndex);
+            // Mantém o ponteiro no mesmo índice após mover o card para o fim,
+            // evitando pular o próximo card da fila.
+            setCurrentIndex(prev => (prev >= flashcards.length - 1 ? 0 : prev));
             setUserAnswer('');
             setSelectedOption(null);
             setShowResult(false);
@@ -776,6 +787,27 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         const quality = qualityFromAuto(result === 'correct');
         await applySrsAndUpdate(card, quality);
         await saveStudySession(result === 'correct' ? 'correct' : 'incorrect');
+
+        // Modo simulado: percorre a fila uma única vez, sem reencolar erros
+        if (isSimulatedStudy) {
+            if (currentIndex < flashcards.length - 1) {
+                setCurrentIndex(currentIndex + 1);
+                setUserAnswer('');
+                setSelectedOption(null);
+                setShowResult(false);
+                setResult(null);
+                return;
+            }
+
+            // End of simulation session
+            const summary = await flushSessionResults();
+            navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
+                state: {
+                    message: `Sessão do simulado concluída! ✅ ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
+                }
+            });
+            return;
+        }
 
         if (quality < 3) {
             const nextIndex = currentIndex < flashcards.length - 1 ? currentIndex + 1 : 0;
