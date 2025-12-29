@@ -272,19 +272,21 @@ const SimulationDetails: React.FC = () => {
             <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
                 <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="space-y-2 text-center lg:text-left">
+                        <div className="space-y-3 text-center lg:text-left">
                             <p className="text-xs uppercase tracking-widest text-white/70">Simulado</p>
                             <h1 className="text-3xl md:text-4xl font-bold leading-tight truncate max-w-full lg:max-w-2xl">
                                 {simulation.title}
                             </h1>
-                            <div className="text-sm text-white/80 flex flex-wrap items-center justify-center lg:justify-start gap-3">
-                                <span>Criado em {new Date(simulation.created_at).toLocaleDateString()}</span>
+                            <div className="text-base md:text-lg text-white/90 flex flex-wrap items-center justify-center lg:justify-start gap-3 font-medium">
+                                <span className="whitespace-nowrap">Criado em {new Date(simulation.created_at).toLocaleDateString()}</span>
                                 <span className="opacity-40">|</span>
-                                <span>{items.length} questões</span>
+                                <span className="whitespace-nowrap">{items.length} questões</span>
                                 {lastSessionInfo && (
                                     <>
                                         <span className="opacity-40">|</span>
-                                        <span>Ultima sessao: {new Date(lastSessionInfo.date).toLocaleDateString()} - {lastSessionInfo.accuracy}% de acerto</span>
+                                        <span className="text-white font-semibold whitespace-nowrap">
+                                            Última sessão: {new Date(lastSessionInfo.date).toLocaleDateString()} - <span className="text-white font-extrabold">{lastSessionInfo.accuracy}% de acerto</span>
+                                        </span>
                                     </>
                                 )}
                             </div>
@@ -312,7 +314,7 @@ const SimulationDetails: React.FC = () => {
                 </div>
             </header>
 
-            <div className="max-w-4xl mx-auto px-4 -mt-8">
+            <div className="max-w-4xl mx-auto px-4 mt-8">
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex items-center justify-center gap-3 flex-wrap">
                     <button
                         onClick={() => setShowAddModal(true)}
