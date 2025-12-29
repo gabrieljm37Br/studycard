@@ -182,3 +182,23 @@ export interface SimulationItem {
   flashcard_id: string;
   flashcard?: FlashcardData; // Optional property for joined data
 }
+
+// Simulation study sessions (modo simulado)
+export interface SimulationSession {
+  id: string;
+  simulation_id: string;
+  user_id: string;
+  total_cards: number;
+  correct: number;
+  incorrect: number;
+  accuracy: number;
+  created_at: string;
+}
+
+export interface SimulationSessionItem {
+  id: string;
+  simulation_session_id: string;
+  flashcard_id: string;
+  result: 'correct' | 'incorrect';
+  created_at: string;
+}

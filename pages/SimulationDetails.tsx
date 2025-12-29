@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,12 +13,45 @@ const SimulationDetails: React.FC = () => {
     const [simulation, setSimulation] = useState<Simulation | null>(null);
     const [items, setItems] = useState<SimulationItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastSessionInfo, setLastSessionInfo] = useState<{ accuracy: number; date: string } | null>(null);
 
     useEffect(() => {
         if (user && id) {
             loadSimulationDetails();
         }
     }, [user, id]);
+
+    const fetchLastSessionInfo = async () => {
+        if (!user || !id) {
+            setLastSessionInfo(null);
+            return;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('simulation_sessions')
+                .select('created_at, accuracy, correct, incorrect')
+                .eq('simulation_id', id)
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+            const session = data?.[0];
+            if (!session) {
+                setLastSessionInfo(null);
+                return;
+            }
+
+            setLastSessionInfo({
+                accuracy: session.accuracy ?? 0,
+                date: session.created_at
+            });
+        } catch (error) {
+            console.error('Error fetching last session info:', error);
+            setLastSessionInfo(null);
+        }
+    };
 
     const loadSimulationDetails = async () => {
         try {
@@ -48,6 +81,7 @@ const SimulationDetails: React.FC = () => {
             })) || [];
 
             setItems(formattedItems);
+            await fetchLastSessionInfo();
 
         } catch (error) {
             console.error('Error loading simulation details:', error);
@@ -104,6 +138,14 @@ const SimulationDetails: React.FC = () => {
                                 <span className="text-sm text-gray-500 dark:text-gray-400">
                                     {new Date(simulation.created_at).toLocaleDateString()}
                                 </span>
+                                {lastSessionInfo && (
+                                    <>
+                                        <span className="text-gray-300 dark:text-gray-600">|</span>
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                                            Ultima sessao: {new Date(lastSessionInfo.date).toLocaleDateString()} - {lastSessionInfo.accuracy}% de acerto
+                                        </span>
+                                    </>
+                                )}
                             </div>
                             <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{simulation.title}</h1>
                             <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -111,7 +153,7 @@ const SimulationDetails: React.FC = () => {
                             </p>
                         </div>
                         <button
-                            onClick={() => navigate('/study', { state: { simulationId: simulation.id } })}
+                            onClick={() => navigate('/simulation-study', { state: { simulationId: simulation.id } })}
                             className="px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             ▶ Iniciar Simulado
@@ -179,3 +221,4 @@ const SimulationDetails: React.FC = () => {
 };
 
 export default SimulationDetails;
+

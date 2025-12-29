@@ -15,6 +15,7 @@ import Statistics from './pages/Statistics';
 import Topicogram from './pages/Topicogram';
 import { hasSupabaseEnv, supabaseEnvError } from './services/supabaseClient';
 import Home from './pages/Home';
+import SimulatedStudy from './pages/SimulatedStudy';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -85,6 +86,14 @@ const AppRouter: React.FC = () => {
                             element={
                                 <ProtectedRoute>
                                     <Study />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/simulation-study"
+                            element={
+                                <ProtectedRoute>
+                                    <SimulatedStudy />
                                 </ProtectedRoute>
                             }
                         />

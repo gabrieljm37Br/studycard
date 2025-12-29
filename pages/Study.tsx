@@ -36,7 +36,11 @@ type UpdatePayload = {
     solution?: string;
 };
 
-const Study: React.FC = () => {
+interface StudyProps {
+    simulationMode?: boolean;
+}
+
+const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -53,6 +57,7 @@ const Study: React.FC = () => {
     const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
     const [loading, setLoading] = useState(true);
     const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
+    const sessionRecordsRef = useRef<Map<string, { result: 'correct' | 'incorrect'; xpEarned: number }>>(new Map());
     const [pomodoroPos, setPomodoroPos] = useState<{ top: number; left: number } | null>(null);
     const [isDraggingPomodoro, setIsDraggingPomodoro] = useState(false);
     const [isPomodoroVisible, setIsPomodoroVisible] = useState(false);
@@ -241,6 +246,8 @@ const Study: React.FC = () => {
                 // For now, let's just use them as they come.
                 const cards = items?.map((item: any) => normalizeCard(item.flashcard)) || [];
                 setFlashcards(cards);
+                sessionRecordsRef.current = new Map();
+                setSessionStats({ correct: 0, incorrect: 0 });
 
             } else if (deckId) {
                 // Helper function to recursively get all subdeck IDs
@@ -285,6 +292,8 @@ const Study: React.FC = () => {
                 // Shuffle flashcards
                 const shuffled = normalized.sort(() => Math.random() - 0.5);
                 setFlashcards(shuffled as any);
+                sessionRecordsRef.current = new Map();
+                setSessionStats({ correct: 0, incorrect: 0 });
             }
         } catch (error) {
             console.error('Error loading flashcards:', error);
@@ -403,11 +412,6 @@ const Study: React.FC = () => {
         setResult(evaluation);
         setShowResult(true);
 
-        // Update session stats
-        setSessionStats(prev => ({
-            ...prev,
-            [evaluation]: prev[evaluation] + 1
-        }));
     };
 
     const calculateSimilarity = (str1: string, str2: string): number => {
@@ -463,7 +467,23 @@ const Study: React.FC = () => {
 
     const qualityFromAuto = (isCorrect: boolean) => (isCorrect ? 5 : 0);
 
+    const isSimulatedStudy = simulationMode || Boolean(simulationId);
+
     const applySrsAndUpdate = async (card: FlashcardData, quality: number, feedbackOverride?: FeedbackStatus) => {
+        if (isSimulatedStudy) {
+            if (quality < 3) {
+                setFlashcards(prev => {
+                    const copy = [...prev];
+                    const idx = copy.findIndex(fc => fc.id === card.id);
+                    if (idx >= 0) {
+                        const [failed] = copy.splice(idx, 1);
+                        copy.push(failed);
+                    }
+                    return copy;
+                });
+            }
+            return;
+        }
         const { interval, repetition, easeFactor, nextReview } = applySm2(card, quality);
 
         await supabase
@@ -491,64 +511,143 @@ const Study: React.FC = () => {
         }
     };
 
-    const saveStudySession = async (customXp?: number) => {
+    const computeSessionStats = () => {
+        let correct = 0;
+        let incorrect = 0;
+
+        sessionRecordsRef.current.forEach(record => {
+            if (record.result === 'correct') correct += 1;
+            else incorrect += 1;
+        });
+
+        return { correct, incorrect };
+    };
+
+    const recordSessionResult = (cardId: string, resultValue: 'correct' | 'incorrect', xpEarned: number) => {
+        sessionRecordsRef.current.set(cardId, { result: resultValue, xpEarned });
+        setSessionStats(computeSessionStats());
+    };
+
+    const saveStudySession = (sessionResult: 'correct' | 'incorrect', customXp?: number) => {
         const card = flashcards[currentIndex];
 
         // For Q&A self-evaluation, use custom XP; otherwise use result-based XP
         let xpEarned: number;
         if (customXp !== undefined) {
             xpEarned = customXp;
-        } else if (result === 'correct') {
-            xpEarned = 10;
         } else {
-            xpEarned = 0;
+            xpEarned = sessionResult === 'correct' ? 10 : 0;
         }
 
-        // Determine result for database (for Q&A self-eval, use XP to infer result)
-        let sessionResult: 'correct' | 'incorrect';
-        if (card.mode === CardMode.QA && customXp !== undefined) {
-            sessionResult = customXp >= 10 ? 'correct' : 'incorrect';
-        } else {
-            sessionResult = result || 'incorrect';
+        recordSessionResult(card.id, sessionResult, xpEarned);
+    };
+
+    const flushSessionResults = async () => {
+        if (!user) return { correct: 0, incorrect: 0 };
+
+        const entries = Array.from(sessionRecordsRef.current.entries());
+        const summary = computeSessionStats();
+        if (entries.length === 0) return summary;
+
+        // Simulated mode: store in dedicated tables, no XP/streak updates
+        if (isSimulatedStudy) {
+            if (!simulationId) {
+                return summary;
+            }
+            try {
+                const accuracy = flashcards.length > 0 ? Math.round((summary.correct / flashcards.length) * 100) : 0;
+                const { data: simSession, error: simSessionError } = await supabase
+                    .from('simulation_sessions')
+                    .insert({
+                        simulation_id: simulationId,
+                        user_id: user.id,
+                        total_cards: flashcards.length,
+                        correct: summary.correct,
+                        incorrect: summary.incorrect,
+                        accuracy
+                    })
+                    .select()
+                    .single();
+
+                if (simSessionError) throw simSessionError;
+
+                if (simSession?.id) {
+                    const itemsPayload = entries.map(([cardId, info]) => ({
+                        simulation_session_id: simSession.id,
+                        flashcard_id: cardId,
+                        result: info.result
+                    }));
+
+                    const { error: itemsError } = await supabase
+                        .from('simulation_session_items')
+                        .insert(itemsPayload);
+
+                    if (itemsError) throw itemsError;
+                }
+            } catch (error) {
+                console.error('Error saving simulated session summary:', error);
+            } finally {
+                sessionRecordsRef.current.clear();
+                setSessionStats({ correct: 0, incorrect: 0 });
+            }
+            return summary;
         }
+
+        const payload = entries
+            .map(([cardId, info]) => {
+                const card = flashcards.find(fc => fc.id === cardId);
+                const effectiveDeckId = (card as any)?.deckId ?? deckId;
+                if (!effectiveDeckId) return null;
+                return {
+                    user_id: user.id,
+                    flashcard_id: cardId,
+                    deck_id: effectiveDeckId,
+                    result: info.result,
+                    xp_earned: info.xpEarned
+                };
+            })
+            .filter(Boolean) as {
+                user_id: string;
+                flashcard_id: string;
+                deck_id: string;
+                result: 'correct' | 'incorrect';
+                xp_earned: number;
+            }[];
+
+        if (payload.length === 0) return summary;
 
         try {
-            // Save study session
-            await supabase.from('study_sessions').insert({
-                user_id: user!.id,
-                flashcard_id: card.id,
-                deck_id: deckId,
-                result: sessionResult,
-                xp_earned: xpEarned
-            });
+            await supabase.from('study_sessions').insert(payload);
 
-            // Update user XP
-            if (xpEarned > 0) {
+            const totalXp = payload.reduce((sum, item) => sum + (item.xp_earned || 0), 0);
+            if (totalXp > 0) {
                 const { data: profile } = await supabase
                     .from('profiles')
                     .select('xp, level')
-                    .eq('id', user!.id)
+                    .eq('id', user.id)
                     .single();
 
                 if (profile) {
-                    const newXp = profile.xp + xpEarned;
+                    const newXp = profile.xp + totalXp;
                     const newLevel = Math.floor(newXp / 100) + 1;
-
 
                     await supabase
                         .from('profiles')
                         .update({ xp: newXp, level: newLevel })
-                        .eq('id', user!.id);
+                        .eq('id', user.id);
                 }
             }
 
-            // Update deck's last_studied_at timestamp for Topicogram
             if (deckId) {
                 await updateLastStudied(deckId);
             }
         } catch (error) {
-            console.error('Error saving study session:', error);
+            console.error('Error saving study session summary:', error);
+        } finally {
+            sessionRecordsRef.current.clear();
+            setSessionStats({ correct: 0, incorrect: 0 });
         }
+        return summary;
     };
 
     const updateStreak = async () => {
@@ -628,15 +727,8 @@ const Study: React.FC = () => {
 
         await applySrsAndUpdate(card, quality, evaluation === 'almost' ? FeedbackStatus.Almost : undefined);
 
-        // Update session stats
-        if (evaluation === 'correct' || evaluation === 'almost') {
-            setSessionStats(prev => ({ ...prev, correct: prev.correct + 1 }));
-        } else {
-            setSessionStats(prev => ({ ...prev, incorrect: prev.incorrect + 1 }));
-        }
-
-        // Save session with custom XP
-        await saveStudySession(xpEarned);
+        // Save session with custom XP and explicit result
+        saveStudySession(evaluation === 'correct' || evaluation === 'almost' ? 'correct' : 'incorrect', xpEarned);
 
         // If failed (<3), keep studying within this session
         if (quality < 3) {
@@ -658,15 +750,24 @@ const Study: React.FC = () => {
             setResult(null);
         } else {
             // End of session
-            await updateStreak();
-            const newBadges = await checkBadges();
+            const summary = await flushSessionResults();
+            if (!isSimulatedStudy) {
+                await updateStreak();
+                const newBadges = await checkBadges();
 
-            navigate('/dashboard', {
-                state: {
-                    message: `Sessão concluída! ✅ ${sessionStats.correct + (evaluation === 'correct' || evaluation === 'almost' ? 1 : 0)} corretas, ❌ ${sessionStats.incorrect + (evaluation === 'incorrect' ? 1 : 0)} incorretas`,
-                    newBadges: newBadges
-                }
-            });
+                navigate('/dashboard', {
+                    state: {
+                        message: `Sessão concluída! ✅ ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
+                        newBadges: newBadges
+                    }
+                });
+            } else {
+                navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
+                    state: {
+                        message: `Sessão do simulado concluída! ✅ ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
+                    }
+                });
+            }
         }
     };
 
@@ -674,7 +775,7 @@ const Study: React.FC = () => {
         const card = flashcards[currentIndex];
         const quality = qualityFromAuto(result === 'correct');
         await applySrsAndUpdate(card, quality);
-        await saveStudySession();
+        await saveStudySession(result === 'correct' ? 'correct' : 'incorrect');
 
         if (quality < 3) {
             const nextIndex = currentIndex < flashcards.length - 1 ? currentIndex + 1 : 0;
@@ -694,15 +795,24 @@ const Study: React.FC = () => {
             setResult(null);
         } else {
             // End of session
-            await updateStreak();
-            const newBadges = await checkBadges();
+            const summary = await flushSessionResults();
+            if (!isSimulatedStudy) {
+                await updateStreak();
+                const newBadges = await checkBadges();
 
-            navigate('/dashboard', {
-                state: {
-                    message: `Sessão concluída! ✅ ${sessionStats.correct} corretas, ❌ ${sessionStats.incorrect} incorretas`,
-                    newBadges: newBadges
-                }
-            });
+                navigate('/dashboard', {
+                    state: {
+                        message: `Sessão concluída! ✅ ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
+                        newBadges: newBadges
+                    }
+                });
+            } else {
+                navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
+                    state: {
+                        message: `Sessão do simulado concluída! ✅ ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
+                    }
+                });
+            }
         }
     };
 
@@ -1084,7 +1194,10 @@ const Study: React.FC = () => {
     }
 
     const currentCard = flashcards[currentIndex];
-    const progressPercent = Math.min(100, Math.round(((currentIndex + 1) / flashcards.length) * 100));
+    const answeredCount = Math.min(flashcards.length, sessionStats.correct + sessionStats.incorrect);
+    const progressPercent = flashcards.length === 0
+        ? 0
+        : Math.min(100, Math.round((answeredCount / flashcards.length) * 100));
     const pomodoroStyle = pomodoroPos
         ? { top: pomodoroPos.top, left: pomodoroPos.left, right: 'auto', bottom: 'auto' }
         : { right: 24, bottom: defaultPomodoroBottom };
@@ -1249,7 +1362,7 @@ const Study: React.FC = () => {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-0.5">Progresso</p>
-                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{currentIndex + 1} / {flashcards.length}</div>
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{answeredCount} / {flashcards.length}</div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">Flashcards vistos</p>
                         </div>
                         <div className="w-full sm:w-1/2">
@@ -1298,11 +1411,11 @@ const Study: React.FC = () => {
                     <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 leading-relaxed">
                         {currentCard.mode === CardMode.Dictionary && (
                             <div className="flex flex-col gap-2">
-                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wide">
+                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 dark:text-indigo-300 uppercase tracking-wide">
                                     <span className="text-sm">📖</span>
                                     <span>Dicionário</span>
                                 </div>
-                                <div className="text-2xl font-bold text-gray-100">{currentCard.term || '(sem termo)'}</div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentCard.term || '(sem termo)'}</div>
                             </div>
                         )}
                         {currentCard.mode === CardMode.QA && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
