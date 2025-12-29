@@ -430,27 +430,6 @@ const Generator: React.FC = () => {
 
                         <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full md:w-auto">
                             <button
-                                onClick={() => setShowAnkiImport(true)}
-                                className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                            >
-                                <FileDown className="w-4 h-4" aria-hidden />
-                                <span>Importar TXT</span>
-                            </button>
-                            <button
-                                onClick={() => setShowStructuredImport(true)}
-                                className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                            >
-                                <ClipboardList className="w-4 h-4" aria-hidden />
-                                <span>Colar texto estruturado</span>
-                            </button>
-                            <button
-                                onClick={() => setShowCSVImport(true)}
-                                className="w-full sm:w-auto px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Table className="w-4 h-4" aria-hidden />
-                                <span>Importar CSV</span>
-                            </button>
-                            <button
                                 onClick={() => navigate('/help')}
                                 className="w-full sm:w-auto p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                                 title="Central de Ajuda"
@@ -480,6 +459,29 @@ const Generator: React.FC = () => {
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-10">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-8">
+                        <button
+                            onClick={() => setShowAnkiImport(true)}
+                            className="w-full md:w-auto px-4 py-3 bg-indigo-50 border-2 border-indigo-100 text-indigo-700 hover:bg-indigo-100 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-100 dark:hover:bg-indigo-900/40"
+                        >
+                            <FileDown className="w-4 h-4" aria-hidden />
+                            <span>Importar TXT</span>
+                        </button>
+                        <button
+                            onClick={() => setShowStructuredImport(true)}
+                            className="w-full md:w-auto px-4 py-3 bg-indigo-50 border-2 border-indigo-100 text-indigo-700 hover:bg-indigo-100 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-100 dark:hover:bg-indigo-900/40"
+                        >
+                            <ClipboardList className="w-4 h-4" aria-hidden />
+                            <span>Colar texto estruturado</span>
+                        </button>
+                        <button
+                            onClick={() => setShowCSVImport(true)}
+                            className="w-full md:w-auto px-4 py-3 bg-indigo-50 border-2 border-indigo-100 text-indigo-700 hover:bg-indigo-100 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-100 dark:hover:bg-indigo-900/40"
+                        >
+                            <Table className="w-4 h-4" aria-hidden />
+                            <span>Importar CSV</span>
+                        </button>
+                    </div>
                     <h2 className="text-2xl font-bold mb-8 text-gray-800 dark:text-gray-100 text-center md:text-left">
                         Criar Flashcards com IA
                     </h2>
