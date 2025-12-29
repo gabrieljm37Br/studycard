@@ -4,7 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import type { Simulation, SimulationItem, Deck } from '../types';
 import { CardMode } from '../types';
-import { Home, PlusCircle } from 'lucide-react';
+import { Home, PlusCircle, Library } from 'lucide-react';
 
 const SimulationDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -268,56 +268,69 @@ const SimulationDetails: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
-            <div className="max-w-4xl mx-auto">
-                {/* Header */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <button
-                                    onClick={() => navigate('/simulations')}
-                                    className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors inline-flex items-center gap-2"
-                                >
-                                    <Home className="w-4 h-4" />
-                                    <span>Voltar para Modo Simulado</span>
-                                </button>
-                                <span className="text-gray-300 dark:text-gray-600">|</span>
-                                <span className="text-sm text-gray-500 dark:text-gray-400">
-                                    {new Date(simulation.created_at).toLocaleDateString()}
-                                </span>
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
+                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="space-y-2 text-center lg:text-left">
+                            <p className="text-xs uppercase tracking-widest text-white/70">Simulado</p>
+                            <h1 className="text-3xl md:text-4xl font-bold leading-tight truncate max-w-full lg:max-w-2xl">
+                                {simulation.title}
+                            </h1>
+                            <div className="text-sm text-white/80 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                                <span>Criado em {new Date(simulation.created_at).toLocaleDateString()}</span>
+                                <span className="opacity-40">|</span>
+                                <span>{items.length} questões</span>
                                 {lastSessionInfo && (
                                     <>
-                                        <span className="text-gray-300 dark:text-gray-600">|</span>
-                                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                                            Ultima sessao: {new Date(lastSessionInfo.date).toLocaleDateString()} - {lastSessionInfo.accuracy}% de acerto
-                                        </span>
+                                        <span className="opacity-40">|</span>
+                                        <span>Ultima sessao: {new Date(lastSessionInfo.date).toLocaleDateString()} - {lastSessionInfo.accuracy}% de acerto</span>
                                     </>
                                 )}
                             </div>
-                            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{simulation.title}</h1>
-                            <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                {items.length} questões
-                            </p>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2">
+
+                        <div className="flex items-center justify-center lg:justify-end gap-2 md:gap-3 flex-wrap">
                             <button
-                                onClick={() => setShowAddModal(true)}
-                                className="px-6 py-3 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg font-semibold hover:bg-indigo-100 transition-colors shadow-sm flex items-center justify-center gap-2"
+                                onClick={() => navigate('/home')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Voltar para Home"
                             >
-                                <PlusCircle className="w-5 h-5" />
-                                Adicionar cards
+                                <Home className="w-5 h-5" />
+                                <span className="hidden md:inline text-sm font-semibold">Home</span>
                             </button>
                             <button
-                                onClick={() => navigate('/simulation-study', { state: { simulationId: simulation.id } })}
-                                className="px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                onClick={() => navigate('/simulations')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Modo Simulado"
                             >
-                                ▶ Iniciar Simulado
+                                <Library className="w-5 h-5" />
+                                <span className="hidden md:inline text-sm font-semibold">Simulados</span>
                             </button>
                         </div>
                     </div>
                 </div>
+            </header>
 
+            <div className="max-w-4xl mx-auto px-4 -mt-8">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex items-center justify-center gap-3 flex-wrap">
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[150px] flex items-center justify-center gap-2"
+                    >
+                        <PlusCircle className="w-5 h-5" />
+                        Adicionar cards
+                    </button>
+                    <button
+                        onClick={() => navigate('/simulation-study', { state: { simulationId: simulation.id } })}
+                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[150px] flex items-center justify-center gap-2"
+                    >
+                        ▶ Iniciar Simulado
+                    </button>
+                </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Questions List */}
                 <div className="space-y-4">
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 ml-1">Questões</h2>
