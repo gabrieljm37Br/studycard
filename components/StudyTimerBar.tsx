@@ -2,6 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { usePomodoroTimer } from '../hooks/usePomodoroTimer';
 import { useStopwatch } from '../hooks/useStopwatch';
 
+type Props = {
+    variant?: 'fixed' | 'inline';
+    onActiveChange?: (active: boolean) => void;
+};
+
 const VISIBILITY_KEY = 'study_timer_bar_visible_v1';
 
 const formatLabel = (pomodoro: { formattedTime: string; status: string }, stopwatch: { formattedTime: string; status: string }) => {
@@ -10,7 +15,7 @@ const formatLabel = (pomodoro: { formattedTime: string; status: string }, stopwa
     return `⏱ ${stopwatch.formattedTime || '00:00'}`;
 };
 
-const StudyTimerBar: React.FC = () => {
+const StudyTimerBar: React.FC<Props> = ({ variant = 'fixed', onActiveChange }) => {
     const pomodoro = usePomodoroTimer();
     const stopwatch = useStopwatch();
     const [visible, setVisible] = useState<boolean>(() => {
@@ -30,29 +35,48 @@ const StudyTimerBar: React.FC = () => {
         }
     }, [visible]);
 
+    const isActive = pomodoro.status === 'running' || stopwatch.status === 'running';
+
+    useEffect(() => {
+        onActiveChange?.(isActive);
+    }, [isActive, onActiveChange]);
+
     const badgeLabel = useMemo(() => formatLabel(pomodoro, stopwatch), [pomodoro, stopwatch]);
+    const inline = variant === 'inline';
 
     if (!visible) {
+        const baseClasses = inline
+            ? 'px-3 py-2 rounded-lg shadow-md text-sm font-semibold transition-colors'
+            : 'fixed top-4 right-4 z-50 px-3 py-2 rounded-full shadow-lg text-sm font-semibold transition-colors';
+
+        const activeClasses = inline
+            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+            : 'bg-indigo-600 text-white hover:bg-indigo-700';
+
+        const inactiveClasses = inline
+            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200';
+
         return (
             <button
                 onClick={() => setVisible(true)}
-                className="fixed top-4 right-4 z-50 px-3 py-2 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-colors text-sm font-semibold"
+                className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
                 title="Mostrar timers"
             >
-                {badgeLabel}
+                {isActive ? badgeLabel : 'Mostrar timers'}
             </button>
         );
     }
 
-    return (
-        <div className="fixed top-4 right-4 z-50">
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-4 py-3 flex items-center gap-4">
-                <div className="flex items-center gap-3">
+    const Card = (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg px-4 py-3 w-full max-w-3xl">
+            <div className="grid grid-cols-2 gap-3 items-center w-full">
+                <div className="flex items-center gap-3 flex-wrap min-w-0">
                     <div className="text-sm font-semibold text-gray-600 dark:text-gray-200">Pomodoro</div>
                     <div className={`text-lg font-bold ${pomodoro.status === 'finished' ? 'text-red-600' : 'text-indigo-700 dark:text-indigo-300'}`}>
                         {pomodoro.formattedTime}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         {pomodoro.status === 'running' ? (
                             <button
                                 onClick={pomodoro.pause}
@@ -77,14 +101,12 @@ const StudyTimerBar: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="h-10 w-px bg-gray-200 dark:bg-gray-700" />
-
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap justify-end min-w-0">
                     <div className="text-sm font-semibold text-gray-600 dark:text-gray-200">Cronômetro</div>
                     <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
                         {stopwatch.formattedTime}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         {stopwatch.status === 'running' ? (
                             <button
                                 onClick={stopwatch.pause}
@@ -108,14 +130,26 @@ const StudyTimerBar: React.FC = () => {
                         </button>
                     </div>
                 </div>
+            </div>
 
+            <div className="flex justify-center mt-3">
                 <button
                     onClick={() => setVisible(false)}
-                    className="ml-2 px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200"
+                    className="px-3 py-1.5 text-xs font-semibold rounded bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-200"
                 >
                     Ocultar
                 </button>
             </div>
+        </div>
+    );
+
+    if (inline) {
+        return Card;
+    }
+
+    return (
+        <div className="fixed top-4 right-4 z-50">
+            {Card}
         </div>
     );
 };

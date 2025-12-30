@@ -8,6 +8,7 @@ import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData } from '../types';
 import { renderHTML } from '../utils/textUtils';
 import { Home } from 'lucide-react';
+import StudyTimerBar from '../components/StudyTimerBar';
 
 type EditFormData = {
     mode: CardMode;
@@ -58,18 +59,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const [loading, setLoading] = useState(true);
     const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
     const sessionRecordsRef = useRef<Map<string, { result: 'correct' | 'incorrect'; xpEarned: number }>>(new Map());
-    const [pomodoroPos, setPomodoroPos] = useState<{ top: number; left: number } | null>(null);
-    const [isDraggingPomodoro, setIsDraggingPomodoro] = useState(false);
-    const [isPomodoroVisible, setIsPomodoroVisible] = useState(false);
-    const pomodoroRef = useRef<HTMLDivElement | null>(null);
-    const pomodoroDragOffset = useRef({ x: 0, y: 0 });
-    const [defaultPomodoroBottom, setDefaultPomodoroBottom] = useState(112);
-
-    // Pomodoro Timer State
-    const [timeLeft, setTimeLeft] = useState(25 * 60);
-    const [isActive, setIsActive] = useState(false);
-    const [initialTime, setInitialTime] = useState(25 * 60);
-    const [showTimerSettings, setShowTimerSettings] = useState(false);
+    const [timerActive, setTimerActive] = useState(false);
 
     // Notes State
     const [currentNote, setCurrentNote] = useState('');
@@ -83,29 +73,8 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-
-        if (isActive && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft((prevTime) => prevTime - 1);
-            }, 1000);
-        } else if (timeLeft === 0) {
-            setIsActive(false);
-            if (interval) clearInterval(interval);
-            // Optional: Play a sound or show a notification here
-            alert('Tempo esgotado! Hora de uma pausa.');
-        }
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [isActive, timeLeft]);
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
+        // placeholder effect retained for future timers
+    }, []);
 
     const handleDeleteCurrentCard = async () => {
         const card = flashcards[currentIndex];
@@ -145,20 +114,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         } finally {
             setIsDeleting(false);
         }
-    };
-
-    const toggleTimer = () => setIsActive(!isActive);
-    const resetTimer = () => {
-        setIsActive(false);
-        setTimeLeft(initialTime);
-    };
-
-    const handleTimeChange = (minutes: number) => {
-        const newTime = minutes * 60;
-        setInitialTime(newTime);
-        setTimeLeft(newTime);
-        setIsActive(false);
-        setShowTimerSettings(false);
     };
 
     // Load note when flashcard changes
@@ -1140,62 +1095,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         setResult(null);
     };
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setDefaultPomodoroBottom(window.innerWidth < 768 ? 112 : 24);
-        }
-    }, []);
-
-    const startPomodoroDrag = (clientX: number, clientY: number) => {
-        if (!pomodoroRef.current) return;
-        const rect = pomodoroRef.current.getBoundingClientRect();
-        pomodoroDragOffset.current = { x: clientX - rect.left, y: clientY - rect.top };
-        setPomodoroPos({ top: rect.top, left: rect.left });
-        setIsDraggingPomodoro(true);
-    };
-
-    const handlePomodoroMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        startPomodoroDrag(e.clientX, e.clientY);
-    };
-
-    const handlePomodoroTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-        const touch = e.touches[0];
-        startPomodoroDrag(touch.clientX, touch.clientY);
-    };
-
-    useEffect(() => {
-        if (!isDraggingPomodoro) return;
-
-        const handleMove = (event: MouseEvent | TouchEvent) => {
-            const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
-            const clientY = 'touches' in event ? event.touches[0].clientY : event.clientY;
-            if ('touches' in event) {
-                event.preventDefault();
-            }
-            setPomodoroPos({
-                top: clientY - pomodoroDragOffset.current.y,
-                left: clientX - pomodoroDragOffset.current.x
-            });
-        };
-
-        const handleUp = () => setIsDraggingPomodoro(false);
-
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('touchmove', handleMove, { passive: false });
-        window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchend', handleUp);
-
-        return () => {
-            window.removeEventListener('mousemove', handleMove);
-            window.removeEventListener('touchmove', handleMove);
-            window.removeEventListener('mouseup', handleUp);
-            window.removeEventListener('touchend', handleUp);
-        };
-    }, [isDraggingPomodoro]);
-
-
-
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
@@ -1230,10 +1129,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const progressPercent = flashcards.length === 0
         ? 0
         : Math.min(100, Math.round((answeredCount / flashcards.length) * 100));
-    const pomodoroStyle = pomodoroPos
-        ? { top: pomodoroPos.top, left: pomodoroPos.left, right: 'auto', bottom: 'auto' }
-        : { right: 24, bottom: defaultPomodoroBottom };
-
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             {/* Header */}
@@ -1268,18 +1163,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                 </svg>
                             </button>
                             <button
-                                onClick={() => setIsPomodoroVisible((prev) => !prev)}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                aria-pressed={isPomodoroVisible}
-                                title="Mostrar/ocultar Pomodoro"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10 2a1 1 0 011 1v1h2.5a1 1 0 110 2H6.5a1 1 0 110-2H9V3a1 1 0 011-1z" />
-                                    <path fillRule="evenodd" d="M5 8a5 5 0 1110 0 5 5 0 01-10 0zm5-3a1 1 0 00-1 1v2.586l1.707 1.707a1 1 0 101.414-1.414L11 8.586V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                                <span className="hidden sm:inline">{isPomodoroVisible ? 'Ocultar Pomodoro' : 'Pomodoro'}</span>
-                            </button>
-                            <button
                                 onClick={() => navigate('/home')}
                                 className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                             >
@@ -1291,92 +1174,11 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 </div>
             </header>
 
-            {/* Pomodoro Timer Floating Component */}
-            {isPomodoroVisible && (
-                <div
-                    ref={pomodoroRef}
-                    style={pomodoroStyle}
-                    className="fixed z-50 flex flex-col items-end gap-2"
-                >
-                <div
-                    className="absolute -top-2 right-2 w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded-full border border-white/70 shadow cursor-move"
-                    onMouseDown={handlePomodoroMouseDown}
-                    onTouchStart={handlePomodoroTouchStart}
-                    title="Arraste para reposicionar"
-                />
-                <button
-                    onClick={() => setIsPomodoroVisible(false)}
-                    className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-white text-gray-600 shadow border border-gray-200 hover:bg-gray-100 text-xs font-bold"
-                    title="Fechar Pomodoro"
-                    aria-label="Fechar Pomodoro"
-                >
-                    x
-                </button>
-                {showTimerSettings && (
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 mb-2 animate-fade-in">
-                        <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-3">Definir Tempo</h4>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => handleTimeChange(25)}
-                                className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
-                            >
-                                25 min
-                            </button>
-                            <button
-                                onClick={() => handleTimeChange(50)}
-                                className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
-                            >
-                                50 min
-                            </button>
-                            <button
-                                onClick={() => handleTimeChange(15)}
-                                className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
-                            >
-                                15 min
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <div className="bg-white dark:bg-gray-800 p-3 rounded-full shadow-xl border-2 border-indigo-100 dark:border-indigo-900/50 flex items-center gap-4 pl-6 pr-2 transition-all hover:scale-105">
-                    <div className="flex flex-col">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pomodoro</span>
-                        <span className={`text-2xl font-mono font-bold ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-gray-300'}`}>
-                            {formatTime(timeLeft)}
-                        </span>
-                    </div>
-
-                    <div className="flex gap-1">
-                        <button
-                            onClick={toggleTimer}
-                            className={`p-3 rounded-full text-white shadow-md transition-all active:scale-95 ${isActive
-                                ? 'bg-yellow-500 hover:bg-yellow-600'
-                                : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                            title={isActive ? "Pausar" : "Iniciar"}
-                        >
-                            {isActive ? '⏸️' : '▶️'}
-                        </button>
-
-                        <button
-                            onClick={resetTimer}
-                            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            title="Reiniciar"
-                        >
-                            🔄
-                        </button>
-
-                        <button
-                            onClick={() => setShowTimerSettings(!showTimerSettings)}
-                            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            title="Configurações"
-                        >
-                            ⚙️
-                        </button>
-                    </div>
-                </div>
+            <div className={`max-w-6xl mx-auto px-4 pt-4 flex justify-center ${timerActive ? 'sticky top-4 z-30' : ''}`}>
+                <StudyTimerBar variant="inline" onActiveChange={setTimerActive} />
             </div>
-            )}
 
+            {/* Pomodoro Timer Floating Component */}
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
                 {deckId && deckName && (

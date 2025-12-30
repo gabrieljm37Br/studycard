@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import StudyTimerBar from './components/StudyTimerBar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Generator from './pages/Generator';
@@ -64,7 +63,6 @@ const AppRouter: React.FC = () => {
         <ThemeProvider>
             <AuthProvider>
                 <BrowserRouter>
-                    <StudyTimerBar />
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route
