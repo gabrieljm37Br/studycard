@@ -24,7 +24,7 @@ const Login: React.FC = () => {
                 alert('Conta criada! Verifique seu email para confirmar.');
             } else {
                 await signIn(email, password);
-                navigate('/dashboard');
+                navigate('/home');
             }
         } catch (err: any) {
             setError(err.message || 'Ocorreu um erro. Tente novamente.');
