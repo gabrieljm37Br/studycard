@@ -1,12 +1,62 @@
+const ALLOWED_TAGS = new Set([
+    'b', 'strong', 'i', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'a', 'code', 'pre', 'sub', 'sup', 'mark',
+]);
+
+const ALLOWED_ATTRS: Record<string, Set<string>> = {
+    a: new Set(['href', 'title', 'target', 'rel']),
+    span: new Set(['style', 'data-color']),
+    mark: new Set(['style', 'data-color']),
+};
 
 /**
- * Helper function to render HTML content safely.
- * Use this with dangerouslySetInnerHTML.
+ * Sanitiza HTML removendo tags perigosas e atributos inline on*.
+ * Mantém apenas tags/atributos da allowlist e força rel/target seguros em links.
+ */
+export const sanitizeHTML = (html: string | null | undefined): string => {
+    if (!html) return '';
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null);
+
+    const nodesToRemove: Element[] = [];
+
+    while (walker.nextNode()) {
+        const el = walker.currentNode as Element;
+        const tag = el.tagName.toLowerCase();
+
+        // Remove tags fora da allowlist ou perigosas
+        if (!ALLOWED_TAGS.has(tag)) {
+            nodesToRemove.push(el);
+            continue;
+        }
+
+        // Remover atributos on* e não permitidos
+        for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on')) {
+                el.removeAttribute(attr.name);
+                continue;
+            }
+            const allowedAttrs = ALLOWED_ATTRS[tag];
+            if (!allowedAttrs || !allowedAttrs.has(name)) {
+                el.removeAttribute(attr.name);
+            }
+        }
+
+        // Ajustar links para abrir em nova aba com noopener
+        if (tag === 'a') {
+            el.setAttribute('target', '_blank');
+            el.setAttribute('rel', 'noopener noreferrer');
+        }
+    }
+
+    nodesToRemove.forEach(node => node.remove());
+    return doc.body.innerHTML;
+};
+
+/**
+ * Helper para dangerouslySetInnerHTML com sanitização defensiva.
  */
 export const renderHTML = (text: string | null | undefined) => {
-    // In a real production app, we would use DOMPurify here.
-    // Since this is a local app and we trust the input (it comes from the user's own editor),
-    // we'll just return the object.
-    // If we add external content later, we MUST add sanitization.
-    return { __html: text || '' };
+    return { __html: sanitizeHTML(text) };
 };

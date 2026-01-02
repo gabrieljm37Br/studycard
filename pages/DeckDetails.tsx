@@ -5,6 +5,8 @@ import { CardMode } from '../types';
 import type { FlashcardData } from '../types';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
+import FlashcardWysiwygEditor from '../components/FlashcardWysiwygEditor';
+import { sanitizeHTML } from '../utils/textUtils';
 import { Home, BookOpenCheck, Library, Folder, BookX } from 'lucide-react';
 
 const DeckDetails: React.FC = () => {
@@ -495,7 +497,33 @@ const DeckDetails: React.FC = () => {
             }
 
             // Update flashcard in database
-            const updatePayload = { ...editFormData } as any;
+            const {
+                questionJson,
+                answerJson,
+                statementJson,
+                explanationJson,
+                problemJson,
+                solutionJson,
+                termJson,
+                definitionJson,
+                ...updatePayload
+            } = editFormData as any;
+
+            const sanitizeField = (field: string) => {
+                if (updatePayload[field] !== undefined) {
+                    updatePayload[field] = sanitizeHTML(updatePayload[field]);
+                }
+            };
+
+            // Sanitizar campos ricos antes de salvar (defesa em profundidade)
+            sanitizeField('question');
+            sanitizeField('answer');
+            sanitizeField('statement');
+            sanitizeField('explanation');
+            sanitizeField('problem');
+            sanitizeField('solution');
+            sanitizeField('term');
+            sanitizeField('definition');
             if (editFormData.mode === CardMode.Dictionary) {
                 updatePayload.question = editFormData.term;
                 updatePayload.answer = editFormData.definition;
@@ -549,64 +577,13 @@ const DeckDetails: React.FC = () => {
         setEditFormData({});
     };
 
-    // Text formatting helper
-    const applyFormatting = (textareaRef: HTMLTextAreaElement, tag: 'b' | 'i' | 'u') => {
-        const start = textareaRef.selectionStart;
-        const end = textareaRef.selectionEnd;
-        const selectedText = textareaRef.value.substring(start, end);
-
-        if (selectedText) {
-            const beforeText = textareaRef.value.substring(0, start);
-            const afterText = textareaRef.value.substring(end);
-            const formattedText = `<${tag}>${selectedText}</${tag}>`;
-
-            return beforeText + formattedText + afterText;
-        }
-        return textareaRef.value;
+    const handleRichChange = (field: string, html: string, json: any) => {
+        setEditFormData((prev: any) => ({
+            ...prev,
+            [field]: html,
+            [`${field}Json`]: json,
+        }));
     };
-
-    const handleFormat = (field: string, tag: 'b' | 'i' | 'u', textareaId: string) => {
-        const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-        if (textarea) {
-            const newValue = applyFormatting(textarea, tag);
-            handleEditChange(field, newValue);
-            // Restore focus
-            setTimeout(() => textarea.focus(), 0);
-        }
-    };
-
-    // Formatting toolbar component
-    const TextFormatToolbar = ({ field, textareaId }: { field: string; textareaId: string }) => (
-        <div className="flex gap-1 mb-2">
-            <button
-                type="button"
-                onClick={() => handleFormat(field, 'b', textareaId)}
-                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm font-bold transition-colors"
-                title="Negrito"
-            >
-                B
-            </button>
-            <button
-                type="button"
-                onClick={() => handleFormat(field, 'i', textareaId)}
-                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm italic transition-colors"
-                title="It├â┬ílico"
-            >
-                I
-            </button>
-            <button
-                type="button"
-                onClick={() => handleFormat(field, 'u', textareaId)}
-                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-sm underline transition-colors"
-                title="Sublinhado"
-            >
-                U
-            </button>
-            <span className="text-xs text-gray-500 dark:text-gray-400 self-center ml-2">
-                Selecione o texto e clique para formatar
-            </span>
-        </div>
-    );
 
     const handleBackHome = () => {
         // Voltar sempre para a p├â┬ígina inicial
@@ -1098,13 +1075,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Pergunta *
                                             </label>
-                                            <TextFormatToolbar field="question" textareaId="edit-qa-question" />
-                                            <textarea
-                                                id="edit-qa-question"
-                                                value={editFormData.question || ''}
-                                                onChange={(e) => handleEditChange('question', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.questionJson}
+                                                valueHtml={editFormData.question || ''}
+                                                onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
@@ -1112,13 +1087,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Resposta *
                                             </label>
-                                            <TextFormatToolbar field="answer" textareaId="edit-qa-answer" />
-                                            <textarea
-                                                id="edit-qa-answer"
-                                                value={editFormData.answer || ''}
-                                                onChange={(e) => handleEditChange('answer', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.answerJson}
+                                                valueHtml={editFormData.answer || ''}
+                                                onChangeJson={(json) => handleRichChange('answer', editFormData.answer || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('answer', html, editFormData.answerJson)}
                                                 placeholder="Digite a resposta..."
                                             />
                                         </div>
@@ -1132,14 +1105,12 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Afirmação *
                                             </label>
-                                            <TextFormatToolbar field="statement" textareaId="edit-tf-statement" />
-                                            <textarea
-                                                id="edit-tf-statement"
-                                                value={editFormData.statement || ''}
-                                                onChange={(e) => handleEditChange('statement', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a afirmação..."
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.statementJson}
+                                                valueHtml={editFormData.statement || ''}
+                                                onChangeJson={(json) => handleRichChange('statement', editFormData.statement || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('statement', html, editFormData.statementJson)}
+                                                placeholder="Digite a afirmacao..."
                                             />
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -1157,14 +1128,12 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Explicação
                                             </label>
-                                            <TextFormatToolbar field="explanation" textareaId="edit-tf-explanation" />
-                                            <textarea
-                                                id="edit-tf-explanation"
-                                                value={editFormData.explanation || ''}
-                                                onChange={(e) => handleEditChange('explanation', e.target.value)}
-                                                rows={2}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite uma explicação..."
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.explanationJson}
+                                                valueHtml={editFormData.explanation || ''}
+                                                onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                placeholder="Digite uma explicacao..."
                                             />
                                         </div>
                                     </>
@@ -1177,13 +1146,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Pergunta *
                                             </label>
-                                            <TextFormatToolbar field="question" textareaId="edit-mc-question" />
-                                            <textarea
-                                                id="edit-mc-question"
-                                                value={editFormData.question || ''}
-                                                onChange={(e) => handleEditChange('question', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.questionJson}
+                                                valueHtml={editFormData.question || ''}
+                                                onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
@@ -1222,14 +1189,12 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Explicação
                                             </label>
-                                            <TextFormatToolbar field="explanation" textareaId="edit-mc-explanation" />
-                                            <textarea
-                                                id="edit-mc-explanation"
-                                                value={editFormData.explanation || ''}
-                                                onChange={(e) => handleEditChange('explanation', e.target.value)}
-                                                rows={2}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite uma explicação..."
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.explanationJson}
+                                                valueHtml={editFormData.explanation || ''}
+                                                onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                placeholder="Digite uma explicacao..."
                                             />
                                         </div>
                                     </>
@@ -1242,13 +1207,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Problema *
                                             </label>
-                                            <TextFormatToolbar field="problem" textareaId="edit-pe-problem" />
-                                            <textarea
-                                                id="edit-pe-problem"
-                                                value={editFormData.problem || ''}
-                                                onChange={(e) => handleEditChange('problem', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.problemJson}
+                                                valueHtml={editFormData.problem || ''}
+                                                onChangeJson={(json) => handleRichChange('problem', editFormData.problem || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('problem', html, editFormData.problemJson)}
                                                 placeholder="Digite o problema..."
                                             />
                                         </div>
@@ -1256,13 +1219,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Pergunta *
                                             </label>
-                                            <TextFormatToolbar field="question" textareaId="edit-pe-question" />
-                                            <textarea
-                                                id="edit-pe-question"
-                                                value={editFormData.question || ''}
-                                                onChange={(e) => handleEditChange('question', e.target.value)}
-                                                rows={2}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.questionJson}
+                                                valueHtml={editFormData.question || ''}
+                                                onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
@@ -1270,14 +1231,12 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Solução *
                                             </label>
-                                            <TextFormatToolbar field="solution" textareaId="edit-pe-solution" />
-                                            <textarea
-                                                id="edit-pe-solution"
-                                                value={editFormData.solution || ''}
-                                                onChange={(e) => handleEditChange('solution', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a solução..."
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.solutionJson}
+                                                valueHtml={editFormData.solution || ''}
+                                                onChangeJson={(json) => handleRichChange('solution', editFormData.solution || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('solution', html, editFormData.solutionJson)}
+                                                placeholder="Digite a solucao..."
                                             />
                                         </div>
                                     </>
@@ -1290,13 +1249,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Pergunta *
                                             </label>
-                                            <TextFormatToolbar field="question" textareaId="edit-fib-question" />
-                                            <textarea
-                                                id="edit-fib-question"
-                                                value={editFormData.question || ''}
-                                                onChange={(e) => handleEditChange('question', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.questionJson}
+                                                valueHtml={editFormData.question || ''}
+                                                onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
                                                 placeholder="Digite a pergunta com lacunas..."
                                             />
                                         </div>
@@ -1304,13 +1261,11 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Resposta *
                                             </label>
-                                            <TextFormatToolbar field="answer" textareaId="edit-fib-answer" />
-                                            <textarea
-                                                id="edit-fib-answer"
-                                                value={editFormData.answer || ''}
-                                                onChange={(e) => handleEditChange('answer', e.target.value)}
-                                                rows={2}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.answerJson}
+                                                valueHtml={editFormData.answer || ''}
+                                                onChangeJson={(json) => handleRichChange('answer', editFormData.answer || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('answer', html, editFormData.answerJson)}
                                                 placeholder="Digite a resposta..."
                                             />
                                         </div>
@@ -1324,28 +1279,24 @@ const DeckDetails: React.FC = () => {
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Termo *
                                             </label>
-                                            <TextFormatToolbar field="term" textareaId="edit-dict-term" />
-                                            <textarea
-                                                id="edit-dict-term"
-                                                value={editFormData.term || ''}
-                                                onChange={(e) => handleEditChange('term', e.target.value)}
-                                                rows={2}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.termJson}
+                                                valueHtml={editFormData.term || ''}
+                                                onChangeJson={(json) => handleRichChange('term', editFormData.term || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('term', html, editFormData.termJson)}
                                                 placeholder="Digite o termo..."
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Defini├â┬º├â┬úo *
+                                                Definição *
                                             </label>
-                                            <TextFormatToolbar field="definition" textareaId="edit-dict-definition" />
-                                            <textarea
-                                                id="edit-dict-definition"
-                                                value={editFormData.definition || ''}
-                                                onChange={(e) => handleEditChange('definition', e.target.value)}
-                                                rows={3}
-                                                className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                placeholder="Digite a defini├â┬º├â┬úo..."
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.definitionJson}
+                                                valueHtml={editFormData.definition || ''}
+                                                onChangeJson={(json) => handleRichChange('definition', editFormData.definition || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('definition', html, editFormData.definitionJson)}
+                                                placeholder="Digite a definicao..."
                                             />
                                         </div>
                                     </>
@@ -1424,3 +1375,19 @@ const DeckDetails: React.FC = () => {
 };
 
 export default DeckDetails;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
