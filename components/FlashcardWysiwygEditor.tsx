@@ -187,7 +187,7 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                 <Dropdown
                     label="Cor"
                     options={[
-                        { label: 'PadrÃ£o', value: null },
+                        { label: 'Padrão', value: null },
                         ...textColors.map(c => ({ label: c, value: c, style: { color: c } })),
                     ]}
                     onSelect={(val) => {
