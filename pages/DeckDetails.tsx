@@ -478,6 +478,7 @@ const DeckDetails: React.FC = () => {
             case CardMode.FillInTheBlank:
                 formData.question = card.question;
                 formData.answer = card.answer;
+                formData.explanation = card.explanation || '';
                 break;
             case CardMode.Dictionary:
                 formData.term = (card as any).term || (card as any).question;
@@ -995,6 +996,12 @@ const DeckDetails: React.FC = () => {
                                                         className="text-gray-600 dark:text-gray-400"
                                                         dangerouslySetInnerHTML={renderHTML(getAnswerHtml(card))}
                                                     />
+                                                    {card.explanation && (
+                                                        <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                                            <span className="font-semibold block">Explica‡Æo</span>
+                                                            <div dangerouslySetInnerHTML={renderHTML(card.explanation)} />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1322,6 +1329,18 @@ const DeckDetails: React.FC = () => {
                                                 onChangeJson={(json) => handleRichChange('answer', editFormData.answer || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('answer', html, editFormData.answerJson)}
                                                 placeholder="Digite a resposta..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Explica‡Æo
+                                            </label>
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.explanationJson}
+                                                valueHtml={editFormData.explanation || ''}
+                                                onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                placeholder="Opcional: detalhe a resposta ou dÃª contexto..."
                                             />
                                         </div>
                                     </>

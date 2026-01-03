@@ -831,6 +831,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             case CardMode.FillInTheBlank:
                 data.question = currentCard.question || '';
                 data.answer = currentCard.answer || '';
+                data.explanation = (currentCard as any).explanation || '';
                 break;
             case CardMode.Dictionary:
                 data.term = (currentCard as any).term || (currentCard as any).question || '';
@@ -877,11 +878,12 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                     payload.question = editData.question.trim();
                     payload.solution = editData.solution.trim();
                     break;
-                case CardMode.FillInTheBlank:
-                    if (!editData.question?.trim() || !editData.answer?.trim()) throw new Error('Preencha pergunta e resposta.');
-                    payload.question = editData.question.trim();
-                    payload.answer = editData.answer.trim();
-                    break;
+            case CardMode.FillInTheBlank:
+                if (!editData.question?.trim() || !editData.answer?.trim()) throw new Error('Preencha pergunta e resposta.');
+                payload.question = editData.question.trim();
+                payload.answer = editData.answer.trim();
+                payload.explanation = editData.explanation?.trim() || null;
+                break;
                 case CardMode.Dictionary:
                     if (!editData.term?.trim() || !editData.definition?.trim()) throw new Error('Preencha termo e definição.');
                     payload.question = editData.term.trim();
@@ -1060,6 +1062,12 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                             placeholder="Resposta"
                             value={editData.answer || ''}
                             onChange={(e) => handleEditChange('answer', e.target.value)}
+                        />
+                        <textarea
+                            className="w-full border rounded-lg p-3"
+                            placeholder="ExplicaÇõÇœo (opcional)"
+                            value={editData.explanation || ''}
+                            onChange={(e) => handleEditChange('explanation', e.target.value)}
                         />
                     </div>
                 );
@@ -1541,13 +1549,13 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             </div>
 
                                             {(
-                                                ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation)
+                                                ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation)
                                             ) && (
                                                     <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
                                                         <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                                                             Explicação
                                                         </p>
-                                                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={renderHTML((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && currentCard.explanation ? currentCard.explanation : "Veja a solução acima.")} />
+                                                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={renderHTML((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation ? currentCard.explanation : "Veja a solucao acima.")} />
                                                     </div>
                                                 )}
 
@@ -1616,3 +1624,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 };
 
 export default Study;
+
+
+
+
