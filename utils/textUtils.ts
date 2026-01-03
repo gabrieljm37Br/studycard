@@ -1,11 +1,16 @@
 const ALLOWED_TAGS = new Set([
     'b', 'strong', 'i', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'a', 'code', 'pre', 'sub', 'sup', 'mark',
+    // Tags para fórmulas matemáticas (KaTeX)
+    'annotation', 'math', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'mtext', 'semantics',
 ]);
 
 const ALLOWED_ATTRS: Record<string, Set<string>> = {
     a: new Set(['href', 'title', 'target', 'rel']),
-    span: new Set(['style', 'data-color']),
+    span: new Set(['style', 'data-color', 'class', 'data-latex', 'data-type']),
     mark: new Set(['style', 'data-color']),
+    // Atributos para elementos matemáticos
+    math: new Set(['xmlns']),
+    annotation: new Set(['encoding']),
 };
 
 /**

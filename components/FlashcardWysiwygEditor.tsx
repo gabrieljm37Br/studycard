@@ -8,6 +8,7 @@ import Link from '@tiptap/extension-link';
 import Highlight from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
+import Mathematics from '@tiptap/extension-mathematics';
 import { sanitizeHTML } from '../utils/textUtils';
 
 type FlashcardWysiwygEditorProps = {
@@ -56,6 +57,11 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                     autolink: false,
                     protocols: ['http', 'https', 'mailto'],
                 }),
+                Mathematics.configure({
+                    katexOptions: {
+                        throwOnError: false,
+                    },
+                }),
             ],
             content: valueJson || valueHtml || '',
             onUpdate: ({ editor }) => {
@@ -70,6 +76,20 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                     'data-placeholder': placeholder || 'Digite aqui...',
                 },
                 transformPastedHTML: (html: string) => sanitizeHTML(html),
+                handleClickOn: (view, pos, node, nodePos) => {
+                    if (node.type.name === 'mathematics') {
+                        const latex = node.attrs.latex;
+                        const newLatex = window.prompt('Editar fórmula LaTeX:', latex);
+                        if (newLatex !== null && newLatex !== latex) {
+                            const tr = view.state.tr.setNodeMarkup(nodePos, null, {
+                                latex: newLatex,
+                            });
+                            view.dispatch(tr);
+                        }
+                        return true;
+                    }
+                    return false;
+                },
                 handleKeyDown: (_view, event) => {
                     if (event.metaKey || event.ctrlKey) {
                         const key = event.key.toLowerCase();
@@ -91,6 +111,17 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                         if (key === '.') {
                             event.preventDefault();
                             editor?.chain().focus().toggleSuperscript().run();
+                            return true;
+                        }
+                        if (key === 'm' && event.shiftKey) {
+                            event.preventDefault();
+                            const latex = window.prompt('Insira a fórmula LaTeX (sem delimitadores):');
+                            if (latex) {
+                                editor?.chain().focus().insertContent({
+                                    type: 'mathematics',
+                                    attrs: { latex },
+                                }).run();
+                            }
                             return true;
                         }
                     }
@@ -184,6 +215,20 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                         editor.chain().focus().setLink({ href }).run();
                     }
                 }, 'Link')}
+                {renderButton(
+                    'ƒ(x)',
+                    editor.isActive('mathematics'),
+                    () => {
+                        const latex = window.prompt('Insira a fórmula LaTeX (sem delimitadores):');
+                        if (latex) {
+                            editor.chain().focus().insertContent({
+                                type: 'mathematics',
+                                attrs: { latex },
+                            }).run();
+                        }
+                    },
+                    'Inserir fórmula matemática'
+                )}
                 <Dropdown
                     label="Cor"
                     options={[
@@ -217,6 +262,29 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                 <style>{`
                     .tiptap ul { list-style-type: disc; padding-left: 1.5rem; }
                     .tiptap ol { list-style-type: decimal; padding-left: 1.5rem; }
+                    
+                    /* Estilos para fórmulas matemáticas */
+                    .math-node {
+                        display: inline-block;
+                        padding: 2px 4px;
+                        margin: 0 2px;
+                        background-color: rgba(99, 102, 241, 0.05);
+                        border-radius: 4px;
+                        cursor: pointer;
+                        transition: background-color 0.2s;
+                    }
+                    
+                    .math-node:hover {
+                        background-color: rgba(99, 102, 241, 0.1);
+                    }
+                    
+                    .dark .math-node {
+                        background-color: rgba(129, 140, 248, 0.1);
+                    }
+                    
+                    .dark .math-node:hover {
+                        background-color: rgba(129, 140, 248, 0.15);
+                    }
                 `}</style>
                 <EditorContent editor={editor} />
             </div>

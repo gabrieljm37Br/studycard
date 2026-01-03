@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import AppRouter from './AppRouter';
+import 'katex/dist/katex.min.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
