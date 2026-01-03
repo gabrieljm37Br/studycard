@@ -42,6 +42,7 @@ export interface QACard {
   id: string;
   question: string;
   answer: string;
+  explanation?: string;
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;
@@ -92,6 +93,7 @@ export interface PracticalExampleCard {
   question: string;
   solution: string;
   sources: WebSource[];
+  explanation?: string;
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;
@@ -106,6 +108,7 @@ export interface FillInTheBlankCard {
   id: string;
   question: string; // The sentence with blanks
   answer: string;   // The correct answer
+  explanation?: string;
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;
@@ -121,6 +124,7 @@ export interface DictionaryCard {
   id: string;
   term: string;
   definition: string;
+  explanation?: string;
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;

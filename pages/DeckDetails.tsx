@@ -998,7 +998,7 @@ const DeckDetails: React.FC = () => {
                                                     />
                                                     {card.explanation && (
                                                         <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                                            <span className="font-semibold block">Explica‡Æo</span>
+                                                            <span className="font-semibold block">Explicação</span>
                                                             <div dangerouslySetInnerHTML={renderHTML(card.explanation)} />
                                                         </div>
                                                     )}
@@ -1333,7 +1333,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explica‡Æo
+                                                Explicação
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
