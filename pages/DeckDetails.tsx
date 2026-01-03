@@ -6,8 +6,10 @@ import type { FlashcardData } from '../types';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
 import FlashcardWysiwygEditor from '../components/FlashcardWysiwygEditor';
-import { sanitizeHTML } from '../utils/textUtils';
+import { sanitizeHTML, renderHTML } from '../utils/textUtils';
 import { Home, BookOpenCheck, Library, Folder, BookX } from 'lucide-react';
+import { render as renderKatex } from 'katex';
+import { useRef } from 'react';
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();
@@ -50,6 +52,7 @@ const DeckDetails: React.FC = () => {
     const [modeFilter, setModeFilter] = useState<CardMode | 'all'>('all');
     const [tagFilter, setTagFilter] = useState<string[]>([]);
     const [showAllTags, setShowAllTags] = useState(false);
+    const cardListRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         // Get current user
@@ -408,6 +411,42 @@ const DeckDetails: React.FC = () => {
         }
     };
 
+    const getQuestionHtml = (card: FlashcardData) => {
+        switch (card.mode) {
+            case CardMode.QA:
+            case CardMode.MultipleChoice:
+            case CardMode.FillInTheBlank:
+                return card.question || '';
+            case CardMode.TrueFalse:
+                return card.statement || '';
+            case CardMode.Dictionary:
+                return (card as any).term || (card as any).question || '(sem termo)';
+            default:
+                return '';
+        }
+    };
+
+    const getAnswerHtml = (card: FlashcardData) => {
+        switch (card.mode) {
+            case CardMode.QA:
+                return card.answer || '';
+            case CardMode.TrueFalse:
+                return card.isTrue ? 'Verdadeiro' : 'Falso';
+            case CardMode.MultipleChoice:
+                return card.options && card.correctAnswerIndex !== undefined
+                    ? card.options[card.correctAnswerIndex]
+                    : (card as any).answer || '';
+            case CardMode.PracticalExample:
+                return card.solution || '';
+            case CardMode.FillInTheBlank:
+                return card.answer || '';
+            case CardMode.Dictionary:
+                return (card as any).definition || (card as any).answer || '(sem definicao)';
+            default:
+                return '';
+        }
+    };
+
     const openEditModal = (card: FlashcardData) => {
         setCardToEdit(card);
         // Initialize form data based on card type
@@ -589,6 +628,22 @@ const DeckDetails: React.FC = () => {
         // Voltar sempre para a p├â┬ígina inicial
         navigate('/home');
     };
+
+    useEffect(() => {
+        const container = cardListRef.current;
+        if (!container) return;
+
+        const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex]');
+        latexNodes.forEach(node => {
+            const latex = node.dataset.latex;
+            if (!latex) return;
+            try {
+                renderKatex(latex, node, { throwOnError: false });
+            } catch (error) {
+                console.error('Erro ao renderizar LaTeX no card:', error);
+            }
+        });
+    }, [filteredFlashcards]);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
@@ -883,7 +938,7 @@ const DeckDetails: React.FC = () => {
                                 <p className="text-gray-600 dark:text-gray-300">Nenhum flashcard corresponde aos filtros selecionados.</p>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-4" ref={cardListRef}>
                                 {filteredFlashcards.map((card) => (
                                     <div
                                         key={card.id}
@@ -913,33 +968,33 @@ const DeckDetails: React.FC = () => {
                                                     <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                                                         Pergunta/Frente
                                                     </strong>
-                                                    <p className="text-gray-800 dark:text-gray-200 font-medium">
-                                                        {card.mode === CardMode.QA && card.question}
-                                                        {card.mode === CardMode.TrueFalse && card.statement}
-                                                        {card.mode === CardMode.MultipleChoice && card.question}
-                                                        {card.mode === CardMode.PracticalExample && (
-                                                            <>
-                                                                <div className="font-semibold mb-1">Problema: {card.problem}</div>
-                                                                <div>Pergunta: {card.question}</div>
-                                                            </>
-                                                        )}
-                                                        {card.mode === CardMode.FillInTheBlank && card.question}
-                                                        {card.mode === CardMode.Dictionary ? ((card as any).term || (card as any).question || '(sem termo)') : null}
-                                                    </p>
+                                                    {card.mode === CardMode.PracticalExample ? (
+                                                        <div className="space-y-2 text-gray-800 dark:text-gray-200 font-medium">
+                                                            <div>
+                                                                <div className="font-semibold mb-1">Problema:</div>
+                                                                <div dangerouslySetInnerHTML={renderHTML(card.problem)} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-semibold mb-1">Pergunta:</div>
+                                                                <div dangerouslySetInnerHTML={renderHTML(card.question)} />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <p
+                                                            className="text-gray-800 dark:text-gray-200 font-medium"
+                                                            dangerouslySetInnerHTML={renderHTML(getQuestionHtml(card))}
+                                                        />
+                                                    )}
                                                 </div>
 
                                                 <div>
                                                     <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                                                         Resposta/Verso
                                                     </strong>
-                                                    <p className="text-gray-600 dark:text-gray-400">
-                                                        {card.mode === CardMode.QA && card.answer}
-                                                        {card.mode === CardMode.TrueFalse && (card.isTrue ? 'Verdadeiro' : 'Falso')}
-                                                        {card.mode === CardMode.MultipleChoice && (card.options && card.correctAnswerIndex !== undefined ? card.options[card.correctAnswerIndex] : (card as any).answer)}
-                                                        {card.mode === CardMode.PracticalExample && card.solution}
-                                                        {card.mode === CardMode.FillInTheBlank && card.answer}
-                                                        {card.mode === CardMode.Dictionary ? ((card as any).definition || (card as any).answer || '(sem definicao)') : null}
-                                                    </p>
+                                                    <p
+                                                        className="text-gray-600 dark:text-gray-400"
+                                                        dangerouslySetInnerHTML={renderHTML(getAnswerHtml(card))}
+                                                    />
                                                 </div>
                                             </div>
 

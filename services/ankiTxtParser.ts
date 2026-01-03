@@ -37,7 +37,8 @@ const keywordPatterns = {
     situacao: '(?:Situacao[- ]?Problema:|Situacao[- ]?Problema:|Situação[- ]?Problema:)',
     problema: '(?:Problema:)',
     hipotese: '(?:Hipotese:|Hipotese:|Hipótese:)',
-    tags: '(?:Tags:|Etiquetas:)'
+    tags: '(?:Tags:|Etiquetas:)',
+    lacuna: '(?:Lacuna:|Lacunas:|Lacuna:)'
 };
 
 const startKeywordPatterns = [
@@ -47,6 +48,7 @@ const startKeywordPatterns = [
     { type: 'dicionario', pattern: keywordPatterns.dicionario },
     { type: 'situacao', pattern: keywordPatterns.situacao },
     { type: 'hipotese', pattern: keywordPatterns.hipotese },
+    { type: 'lacuna', pattern: keywordPatterns.lacuna },
 ];
 
 function extractFieldByPattern(text: string, keywordPattern: string, endPatterns: string[] = []): string {
@@ -170,6 +172,15 @@ function parseDicionarioCard(blockText: string): ParsedAnkiCard {
     return { type: CardMode.Dictionary, front, back, explanation: explanation || undefined, tags };
 }
 
+function parseLacunaCard(blockText: string): ParsedAnkiCard {
+    const front = extractFieldByPattern(blockText, keywordPatterns.lacuna, [keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const back = extractFieldByPattern(blockText, keywordPatterns.resposta, [keywordPatterns.explicacao, keywordPatterns.tags]);
+    const explanation = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
+    const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
+    const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
+    return { type: CardMode.FillInTheBlank, front, back, explanation: explanation || undefined, tags };
+}
+
 function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnkiCard {
     const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.problema, keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
     const question =
@@ -248,6 +259,9 @@ export function parseAnkiTxtFile(content: string): ParsedAnkiCard[] {
                 break;
             case 'hipotese':
                 card = parsePracticalCard(block, keywordPatterns.hipotese);
+                break;
+            case 'lacuna':
+                card = parseLacunaCard(block);
                 break;
         }
 
