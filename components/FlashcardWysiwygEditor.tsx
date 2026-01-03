@@ -77,7 +77,7 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                 },
                 transformPastedHTML: (html: string) => sanitizeHTML(html),
                 handleClickOn: (view, pos, node, nodePos) => {
-                    if (node.type.name === 'mathematics') {
+                    if (node.type.name === 'inlineMath' || node.type.name === 'blockMath') {
                         const latex = node.attrs.latex;
                         const newLatex = window.prompt('Editar fórmula LaTeX:', latex);
                         if (newLatex !== null && newLatex !== latex) {
@@ -117,10 +117,7 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                             event.preventDefault();
                             const latex = window.prompt('Insira a fórmula LaTeX (sem delimitadores):');
                             if (latex) {
-                                editor?.chain().focus().insertContent({
-                                    type: 'mathematics',
-                                    attrs: { latex },
-                                }).run();
+                                editor?.chain().focus().insertInlineMath({ latex }).run();
                             }
                             return true;
                         }
@@ -217,14 +214,11 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                 }, 'Link')}
                 {renderButton(
                     'ƒ(x)',
-                    editor.isActive('mathematics'),
+                    editor.isActive('inlineMath') || editor.isActive('blockMath'),
                     () => {
                         const latex = window.prompt('Insira a fórmula LaTeX (sem delimitadores):');
                         if (latex) {
-                            editor.chain().focus().insertContent({
-                                type: 'mathematics',
-                                attrs: { latex },
-                            }).run();
+                            editor.chain().focus().insertInlineMath({ latex }).run();
                         }
                     },
                     'Inserir fórmula matemática'
