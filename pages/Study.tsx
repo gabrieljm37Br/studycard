@@ -8,6 +8,7 @@ import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData } from '../types';
 import { renderHTML } from '../utils/textUtils';
 import { Home } from 'lucide-react';
+import { render as renderKatex } from 'katex';
 import StudyTimerBar from '../components/StudyTimerBar';
 
 type EditFormData = {
@@ -71,10 +72,28 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const [editData, setEditData] = useState<EditFormData | null>(null);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const cardContainerRef = useRef<HTMLDivElement | null>(null);
+    const currentCard = flashcards[currentIndex];
 
     useEffect(() => {
         // placeholder effect retained for future timers
     }, []);
+
+    useEffect(() => {
+        const container = cardContainerRef.current;
+        if (!container) return;
+
+        const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex], span[data-type="inline-math"], span[data-type="block-math"]');
+        latexNodes.forEach(node => {
+            const latex = node.dataset.latex || node.textContent || '';
+            if (!latex) return;
+            try {
+                renderKatex(latex, node, { throwOnError: false });
+            } catch (error) {
+                console.error('Erro ao renderizar LaTeX no estudo:', error);
+            }
+        });
+    }, [currentCard, showResult, userAnswer]);
 
     const handleDeleteCurrentCard = async () => {
         const card = flashcards[currentIndex];
@@ -1132,7 +1151,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         );
     }
 
-    const currentCard = flashcards[currentIndex];
     const answeredCount = Math.min(flashcards.length, sessionStats.correct + sessionStats.incorrect);
     const progressPercent = flashcards.length === 0
         ? 0
@@ -1232,7 +1250,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 </div>
 
                 {/* Flashcard */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
+                <div ref={cardContainerRef} className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
                     {showResult && (
                         <div className="flex justify-end gap-3 mb-4">
                             <button

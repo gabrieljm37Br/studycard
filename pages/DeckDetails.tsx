@@ -634,17 +634,20 @@ const DeckDetails: React.FC = () => {
         const container = cardListRef.current;
         if (!container) return;
 
-        const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex]');
-        latexNodes.forEach(node => {
-            const latex = node.dataset.latex;
-            if (!latex) return;
+        // Aguarda o DOM pintar e aplica KaTeX nos spans gerados pelo editor (data-latex / data-type)
+        requestAnimationFrame(() => {
             try {
-                renderKatex(latex, node, { throwOnError: false });
+                const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex], span[data-type="inline-math"], span[data-type="block-math"]');
+                latexNodes.forEach(node => {
+                    const latex = node.getAttribute('data-latex') || node.textContent || '';
+                    if (!latex) return;
+                    renderKatex(latex, node, { throwOnError: false, displayMode: node.getAttribute('data-type') === 'block-math' });
+                });
             } catch (error) {
                 console.error('Erro ao renderizar LaTeX no card:', error);
             }
         });
-    }, [filteredFlashcards]);
+    }, [filteredFlashcards, showEditModal]);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
