@@ -1167,14 +1167,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                         </div>
                         <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
                             <button
-                                onClick={shuffleCards}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Embaralhar cards"
-                            >
-                                <span aria-hidden>🔀</span>
-                                <span className="hidden sm:inline">Embaralhar</span>
-                            </button>
-                            <button
                                 onClick={() => navigate('/help')}
                                 className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                                 title="Central de Ajuda"
@@ -1199,6 +1191,17 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                     </div>
                 </div>
             </header>
+
+            <div className="max-w-6xl mx-auto px-4 pt-4 flex justify-center">
+                <button
+                    onClick={shuffleCards}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-700 rounded-lg text-sm font-semibold cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-md"
+                    title="Embaralhar cards"
+                >
+                    <span aria-hidden>🔀</span>
+                    <span>Embaralhar</span>
+                </button>
+            </div>
 
             <div className={`max-w-6xl mx-auto px-4 pt-4 flex justify-center ${timerActive ? 'sticky top-4 z-30' : ''}`}>
                 <StudyTimerBar variant="inline" onActiveChange={setTimerActive} />
