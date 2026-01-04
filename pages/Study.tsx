@@ -83,17 +83,24 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         const container = cardContainerRef.current;
         if (!container) return;
 
-        const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex], span[data-type="inline-math"], span[data-type="block-math"]');
-        latexNodes.forEach(node => {
-            const latex = node.dataset.latex || node.textContent || '';
-            if (!latex) return;
-            try {
-                renderKatex(latex, node, { throwOnError: false });
-            } catch (error) {
-                console.error('Erro ao renderizar LaTeX no estudo:', error);
-            }
+        const rafId = requestAnimationFrame(() => {
+            const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex], span[data-type="inline-math"], span[data-type="block-math"]');
+            latexNodes.forEach(node => {
+                const latex = node.getAttribute('data-latex') || node.textContent || '';
+                if (!latex) return;
+                try {
+                    renderKatex(latex, node, {
+                        throwOnError: false,
+                        displayMode: node.getAttribute('data-type') === 'block-math',
+                    });
+                } catch (error) {
+                    console.error('Erro ao renderizar LaTeX no estudo:', error);
+                }
+            });
         });
-    }, [currentCard, showResult, userAnswer]);
+
+        return () => cancelAnimationFrame(rafId);
+    }, [currentCard, showResult]);
 
     const handleDeleteCurrentCard = async () => {
         const card = flashcards[currentIndex];
@@ -1209,7 +1216,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
             {/* Pomodoro Timer Floating Component */}
             {/* Main Content */}
-            <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
+            <div ref={cardContainerRef} className="max-w-3xl mx-auto px-4 py-8 md:py-12">
                 {deckId && deckName && (
                     <button
                         onClick={() => navigate(`/deck/${deckId}`)}
@@ -1253,7 +1260,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 </div>
 
                 {/* Flashcard */}
-                <div ref={cardContainerRef} className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
                     {showResult && (
                         <div className="flex justify-end gap-3 mb-4">
                             <button
@@ -1278,7 +1285,10 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                     <span className="text-sm">📖</span>
                                     <span>Dicionário</span>
                                 </div>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentCard.term || '(sem termo)'}</div>
+                                <div
+                                    className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                                    dangerouslySetInnerHTML={renderHTML(currentCard.term || '(sem termo)')}
+                                />
                             </div>
                         )}
                         {currentCard.mode === CardMode.QA && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
