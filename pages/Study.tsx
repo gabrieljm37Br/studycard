@@ -100,7 +100,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         });
 
         return () => cancelAnimationFrame(rafId);
-    }, [currentCard, showResult]);
+    }, [currentCard, currentIndex, flashcards, showResult]);
 
     const handleDeleteCurrentCard = async () => {
         const card = flashcards[currentIndex];
@@ -1186,6 +1186,19 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                         clipRule="evenodd"
                                     />
                                 </svg>
+                            </button>
+                            <button
+                                onClick={() => navigate('/dashboard')}
+                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                                title="Meus Decks"
+                                aria-label="Ir para Meus Decks"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 3l8 4-8 4-8-4 8-4z" />
+                                    <path d="M4 11l8 4 8-4" />
+                                    <path d="M4 15l8 4 8-4" />
+                                </svg>
+                                <span className="hidden sm:inline">Meus Decks</span>
                             </button>
                             <button
                                 onClick={() => navigate('/home')}

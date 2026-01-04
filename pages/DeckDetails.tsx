@@ -647,7 +647,7 @@ const DeckDetails: React.FC = () => {
                 console.error('Erro ao renderizar LaTeX no card:', error);
             }
         });
-    }, [filteredFlashcards, showEditModal]);
+    }, [filteredFlashcards, showEditModal, selectedCards]);
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
