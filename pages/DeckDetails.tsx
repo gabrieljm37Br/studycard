@@ -9,6 +9,7 @@ import FlashcardWysiwygEditor from '../components/FlashcardWysiwygEditor';
 import { sanitizeHTML, renderHTML } from '../utils/textUtils';
 import { Home, BookOpenCheck, Library, Folder, BookX } from 'lucide-react';
 import { render as renderKatex } from 'katex';
+import 'katex/contrib/mhchem';
 import { useRef } from 'react';
 
 const DeckDetails: React.FC = () => {

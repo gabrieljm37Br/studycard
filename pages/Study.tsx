@@ -9,6 +9,7 @@ import type { FlashcardData } from '../types';
 import { renderHTML } from '../utils/textUtils';
 import { Home } from 'lucide-react';
 import { render as renderKatex } from 'katex';
+import 'katex/contrib/mhchem';
 import StudyTimerBar from '../components/StudyTimerBar';
 
 type EditFormData = {
