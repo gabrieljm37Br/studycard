@@ -6,11 +6,22 @@ import type { FlashcardData } from '../types';
 import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
 import FlashcardWysiwygEditor from '../components/FlashcardWysiwygEditor';
-import { sanitizeHTML, renderHTML } from '../utils/textUtils';
-import { Home, BookOpenCheck, Library, Folder, BookX } from 'lucide-react';
+import { sanitizeHTML, renderHTML } from '@/utils/textUtils';
+import { Home, BookOpenCheck, Library, Folder, BookX, Image as ImageIcon } from 'lucide-react';
 import { render as renderKatex } from 'katex';
 import 'katex/contrib/mhchem';
 import { useRef } from 'react';
+import { uploadFlashcardImage } from '../services/storageService';
+
+type LocalAttachment = {
+    file: File;
+    preview: string;
+    name: string;
+    size: number;
+};
+
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_SIZE_MB = 5;
 
 const DeckDetails: React.FC = () => {
     const { deckId } = useParams<{ deckId: string }>();
@@ -44,6 +55,8 @@ const DeckDetails: React.FC = () => {
     const [cardToEdit, setCardToEdit] = useState<FlashcardData | null>(null);
     const [editFormData, setEditFormData] = useState<any>({});
     const [isSaving, setIsSaving] = useState(false);
+    const [newAttachments, setNewAttachments] = useState<LocalAttachment[]>([]);
+    const [removedAttachments, setRemovedAttachments] = useState<Set<string>>(new Set());
 
     // CSV Import State
     const [showCSVImport, setShowCSVImport] = useState(false);
@@ -54,6 +67,10 @@ const DeckDetails: React.FC = () => {
     const [tagFilter, setTagFilter] = useState<string[]>([]);
     const [showAllTags, setShowAllTags] = useState(false);
     const cardListRef = useRef<HTMLDivElement | null>(null);
+    const visibleAttachments = useMemo(() => {
+        const attachments: string[] = (editFormData as any).attachments || [];
+        return attachments.filter((url: string) => !removedAttachments.has(url));
+    }, [editFormData, removedAttachments]);
 
     useEffect(() => {
         // Get current user
@@ -149,6 +166,7 @@ const DeckDetails: React.FC = () => {
             const normalized = (data || []).map((card: any) => {
                 const camelCard = {
                     ...card,
+                    attachments: card.attachments || [],
                     isTrue: card.isTrue ?? card.is_true,
                     correctAnswerIndex: card.correctAnswerIndex ?? card.correct_answer_index,
                 };
@@ -489,13 +507,77 @@ const DeckDetails: React.FC = () => {
 
         // Add tags (common for all card types)
         formData.tags = (card as any).tags ? (card as any).tags.join(', ') : '';
+        formData.attachments = (card as any).attachments || [];
 
         setEditFormData(formData);
+        setNewAttachments([]);
+        setRemovedAttachments(new Set());
         setShowEditModal(true);
     };
 
     const handleEditChange = (field: string, value: any) => {
         setEditFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleAttachmentSelect = (files: FileList | null) => {
+        if (!files) return;
+
+        const currentCount = ((cardToEdit as any)?.attachments || []).filter((url: string) => !removedAttachments.has(url)).length + newAttachments.length;
+        const availableSlots = MAX_ATTACHMENTS - currentCount;
+        if (availableSlots <= 0) {
+            alert(`Limite de ${MAX_ATTACHMENTS} imagens atingido.`);
+            return;
+        }
+
+        const accepted: LocalAttachment[] = [];
+        Array.from(files)
+            .slice(0, availableSlots)
+            .forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    return;
+                }
+                if (file.size > MAX_ATTACHMENT_SIZE_MB * 1024 * 1024) {
+                    return;
+                }
+                accepted.push({
+                    file,
+                    preview: URL.createObjectURL(file),
+                    name: file.name,
+                    size: file.size,
+                });
+            });
+
+        if (accepted.length === 0) {
+            alert(`Nenhuma imagem valida. Tipos: image/*; tamanho maximo ${MAX_ATTACHMENT_SIZE_MB}MB.`);
+            return;
+        }
+
+        setNewAttachments(prev => [...prev, ...accepted]);
+    };
+
+    const handleRemoveAttachment = (url: string) => {
+        setRemovedAttachments(prev => {
+            const next = new Set(prev);
+            next.add(url);
+            return next;
+        });
+    };
+
+    const handleRemoveNewAttachment = (preview: string) => {
+        setNewAttachments(prev => {
+            const next = prev.filter(item => item.preview !== preview);
+            const removed = prev.find(item => item.preview === preview);
+            if (removed) {
+                URL.revokeObjectURL(removed.preview);
+            }
+            return next;
+        });
+    };
+
+    const resetAttachmentsState = () => {
+        newAttachments.forEach(item => URL.revokeObjectURL(item.preview));
+        setNewAttachments([]);
+        setRemovedAttachments(new Set());
     };
 
     const handleSaveEdit = async () => {
@@ -588,6 +670,26 @@ const DeckDetails: React.FC = () => {
                     : [];
             }
 
+            const existingAttachments: string[] = (cardToEdit as any).attachments || [];
+            const keptAttachments = existingAttachments.filter(url => !removedAttachments.has(url));
+            const uploadedAttachments: string[] = [];
+
+            if (newAttachments.length > 0) {
+                if (!user?.id) {
+                    throw new Error('Usuario nao encontrado para upload de imagens.');
+                }
+                for (const item of newAttachments) {
+                    const publicUrl = await uploadFlashcardImage(item.file, user.id, cardToEdit.id);
+                    uploadedAttachments.push(publicUrl);
+                }
+            }
+
+            if (keptAttachments.length > 0 || uploadedAttachments.length > 0) {
+                updatePayload.attachments = [...keptAttachments, ...uploadedAttachments];
+            } else {
+                updatePayload.attachments = [];
+            }
+
             const { error } = await supabase
                 .from('flashcards')
                 .update(updatePayload)
@@ -604,9 +706,10 @@ const DeckDetails: React.FC = () => {
             setShowEditModal(false);
             setCardToEdit(null);
             setEditFormData({});
+            resetAttachmentsState();
         } catch (error) {
             console.error('Error updating flashcard:', error);
-            alert('Erro ao atualizar flashcard. Verifique se a coluna tags foi adicionada ao banco de dados.');
+            alert('Erro ao atualizar flashcard. Verifique se as colunas tags/attachments existem no banco e se o upload esta configurado.');
         } finally {
             setIsSaving(false);
         }
@@ -616,6 +719,7 @@ const DeckDetails: React.FC = () => {
         setShowEditModal(false);
         setCardToEdit(null);
         setEditFormData({});
+        resetAttachmentsState();
     };
 
     const handleRichChange = (field: string, html: string, json: any) => {
@@ -1383,6 +1487,60 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                     </>
                                 )}
+
+                                {/* Attachments */}
+                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <ImageIcon className="w-4 h-4 text-indigo-600" aria-hidden />
+                                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                            Imagens (opcional)
+                                        </label>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => handleAttachmentSelect(e.target.files)}
+                                            className="text-sm text-gray-700 dark:text-gray-200"
+                                        />
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Ate {MAX_ATTACHMENTS} imagens, {MAX_ATTACHMENT_SIZE_MB}MB cada. Aceita apenas formatos de imagem.
+                                        </p>
+                                    </div>
+
+                                    {(visibleAttachments.length > 0 || newAttachments.length > 0) && (
+                                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                            {visibleAttachments.map((url: string) => (
+                                                <div key={url} className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                                    <img src={url} alt="Anexo" className="w-full h-24 object-cover" loading="lazy" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveAttachment(url)}
+                                                        className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded"
+                                                    >
+                                                        Remover
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {newAttachments.map((item) => (
+                                                <div key={item.preview} className="relative rounded-lg overflow-hidden border border-dashed border-indigo-300">
+                                                    <img src={item.preview} alt={item.name} className="w-full h-24 object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveNewAttachment(item.preview)}
+                                                        className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 py-1 rounded"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] px-2 py-1 truncate">
+                                                        {item.name}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Tags Input - Common for all card types */}
                                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">

@@ -6,7 +6,7 @@ import { applySm2 } from '../services/srsAlgorithm';
 import { updateLastStudied } from '../services/deckService';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData } from '../types';
-import { renderHTML } from '../utils/textUtils';
+import { renderHTML } from '@/utils/textUtils';
 import { Home } from 'lucide-react';
 import { render as renderKatex } from 'katex';
 import 'katex/contrib/mhchem';

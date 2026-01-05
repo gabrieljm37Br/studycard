@@ -1,6 +1,6 @@
 const ALLOWED_TAGS = new Set([
-    'b', 'strong', 'i', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'a', 'code', 'pre', 'sub', 'sup', 'mark',
-    // Tags para fórmulas matemáticas (KaTeX)
+    'b', 'strong', 'i', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'a', 'code', 'pre', 'sub', 'sup', 'mark', 'img',
+    // Tags para formulas matematicas (KaTeX)
     'annotation', 'math', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'mtext', 'semantics',
 ]);
 
@@ -8,14 +8,15 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
     a: new Set(['href', 'title', 'target', 'rel']),
     span: new Set(['style', 'data-color', 'class', 'data-latex', 'data-type']),
     mark: new Set(['style', 'data-color']),
-    // Atributos para elementos matemáticos
+    img: new Set(['src', 'alt', 'title', 'width', 'height', 'loading']),
+    // Atributos para elementos matematicos
     math: new Set(['xmlns']),
     annotation: new Set(['encoding']),
 };
 
 /**
  * Sanitiza HTML removendo tags perigosas e atributos inline on*.
- * Mantém apenas tags/atributos da allowlist e força rel/target seguros em links.
+ * Mantem apenas tags/atributos da allowlist e forcando rel/target seguros em links.
  */
 export const sanitizeHTML = (html: string | null | undefined): string => {
     if (!html) return '';
@@ -35,7 +36,7 @@ export const sanitizeHTML = (html: string | null | undefined): string => {
             continue;
         }
 
-        // Remover atributos on* e não permitidos
+        // Remover atributos on* e nao permitidos
         for (const attr of Array.from(el.attributes)) {
             const name = attr.name.toLowerCase();
             if (name.startsWith('on')) {
@@ -60,7 +61,7 @@ export const sanitizeHTML = (html: string | null | undefined): string => {
 };
 
 /**
- * Helper para dangerouslySetInnerHTML com sanitização defensiva.
+ * Helper para dangerouslySetInnerHTML com sanitizacao defensiva.
  */
 export const renderHTML = (text: string | null | undefined) => {
     return { __html: sanitizeHTML(text) };

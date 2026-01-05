@@ -42,6 +42,7 @@ export interface QACard {
   id: string;
   question: string;
   answer: string;
+  attachments?: string[];
   explanation?: string;
   feedback: FeedbackStatus;
   deckId: string;
@@ -59,6 +60,7 @@ export interface TrueFalseCard {
   statement: string;
   isTrue: boolean;
   explanation: string;
+  attachments?: string[];
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;
@@ -76,6 +78,7 @@ export interface MultipleChoiceCard {
   options: string[];
   correctAnswerIndex: number; // 0-based index
   explanation: string;
+  attachments?: string[];
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;
@@ -92,6 +95,7 @@ export interface PracticalExampleCard {
   problem: string;
   question: string;
   solution: string;
+  attachments?: string[];
   sources: WebSource[];
   explanation?: string;
   feedback: FeedbackStatus;
@@ -109,6 +113,7 @@ export interface FillInTheBlankCard {
   question: string; // The sentence with blanks
   answer: string;   // The correct answer
   explanation?: string;
+  attachments?: string[];
   feedback: FeedbackStatus;
   deckId: string;
   next_review?: string;
@@ -124,6 +129,7 @@ export interface DictionaryCard {
   id: string;
   term: string;
   definition: string;
+  attachments?: string[];
   explanation?: string;
   feedback: FeedbackStatus;
   deckId: string;

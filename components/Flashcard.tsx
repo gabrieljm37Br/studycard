@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { renderHTML } from '../utils/textUtils';
+import { renderHTML } from '@/utils/textUtils';
 import { CardMode } from '../types';
 import type { FlashcardData, QACard, TrueFalseCard, MultipleChoiceCard, PracticalExampleCard, WebSource } from '../types';
 
