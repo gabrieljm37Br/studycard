@@ -650,6 +650,10 @@ const DeckDetails: React.FC = () => {
         });
     }, [filteredFlashcards, showEditModal, selectedCards]);
 
+    const handleGoHome = () => {
+        navigate('/home');
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md sticky top-0 z-10">
@@ -686,7 +690,7 @@ const DeckDetails: React.FC = () => {
 
                         <div className="flex items-center justify-center lg:justify-end gap-2 md:gap-3 flex-wrap">
                             <button
-                                onClick={handleBackHome}
+                                onClick={handleGoHome}
                                 className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
                                 title="Voltar para Home"
                                 aria-label="Voltar para Home"
