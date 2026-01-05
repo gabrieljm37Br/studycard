@@ -686,7 +686,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             const summary = await flushSessionResults();
             navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
                 state: {
-                    message: `SessÃ£o do simulado concluÃ­da! âœ… ${summary.correct} corretas, âŒ ${summary.incorrect} incorretas`
+                    message: `Sessão do simulado concluída! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
                 }
             });
             return;
@@ -720,14 +720,14 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
                 navigate('/dashboard', {
                     state: {
-                        message: `SessÃ£o concluÃ­da! âœ… ${summary.correct} corretas, âŒ ${summary.incorrect} incorretas`,
+                        message: `SessÃ£o concluÃ­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
                         newBadges: newBadges
                     }
                 });
             } else {
                 navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
                     state: {
-                        message: `SessÃ£o do simulado concluÃ­da! âœ… ${summary.correct} corretas, âŒ ${summary.incorrect} incorretas`
+                        message: `Sessão do simulado concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
                     }
                 });
             }
@@ -755,7 +755,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             const summary = await flushSessionResults();
             navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
                 state: {
-                    message: `SessÃ£o do simulado concluÃ­da! âœ… ${summary.correct} corretas, âŒ ${summary.incorrect} incorretas`
+                    message: `Sessão do simulado concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
                 }
             });
             return;
@@ -786,14 +786,14 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
                 navigate('/dashboard', {
                     state: {
-                        message: `SessÃ£o concluÃ­da! âœ… ${summary.correct} corretas, âŒ ${summary.incorrect} incorretas`,
+                        message: `Sessão concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
                         newBadges: newBadges
                     }
                 });
             } else {
                 navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
                     state: {
-                        message: `SessÃ£o do simulado concluÃ­da! âœ… ${summary.correct} corretas, âŒ ${summary.incorrect} incorretas`
+                        message: `Sessão do simulado concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
                     }
                 });
             }
@@ -824,7 +824,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     if (flashcards.length === 0) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-100 dark:bg-gray-900 p-4">
-                <div className="text-6xl">âœ…</div>
+                <div className="text-6xl">🗸</div>
                 <p className="text-xl text-gray-600 dark:text-gray-400 font-medium text-center">
                     Tudo em dia! Nenhum flashcard para revisar agora.
                 </p>
@@ -899,7 +899,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-700 rounded-lg text-sm font-semibold cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-md"
                     title="Embaralhar cards"
                 >
-                    <span aria-hidden>ðŸ”€</span>
+                    <span aria-hidden>🔀</span>
                     <span>Embaralhar</span>
                 </button>
             </div>
@@ -916,7 +916,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                         onClick={() => navigate(`/deck/${deckId}`)}
                         className="mb-4 inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200 font-semibold text-sm transition-colors"
                     >
-                        <span aria-hidden>â†</span>
+                        <span aria-hidden>🢢</span>
                         <span>Voltar para "{deckName}"</span>
                     </button>
                 )}
@@ -1009,15 +1009,15 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                     : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                <span className="text-xl">ðŸ“</span>
-                                <span>AnotaÃ§Ãµes</span>
+                                <span className="text-xl">🗒</span>
+                                <span>Anotações</span>
                                 {hasNote && (
                                     <span className="ml-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
                                         â—
                                     </span>
                                 )}
                                 <span className="ml-auto text-sm">
-                                    {showNotesPanel ? 'â–²' : 'â–¼'}
+                                    {showNotesPanel ? '▲' : '▼'}
                                 </span>
                             </button>
                         </div>
@@ -1027,7 +1027,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                             <div className="mb-8 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-6 animate-slide-down">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                                        <span>ðŸ“</span> Suas AnotaÃ§Ãµes
+                                        <span>✏</span> Suas Anotações
                                     </h3>
                                     <span className={`text-sm font-medium ${currentNote.length > 1000
                                         ? 'text-red-600 dark:text-red-400'
@@ -1044,7 +1044,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             setCurrentNote(e.target.value);
                                         }
                                     }}
-                                    placeholder="Digite suas anotaÃ§Ãµes sobre este flashcard... (mÃ¡ximo 1000 caracteres)"
+                                    placeholder="Digite suas anotações sobre este flashcard... (mÃ¡ximo 1000 caracteres)"
                                     rows={6}
                                     className="w-full p-4 border-2 border-amber-200 dark:border-amber-700 rounded-lg text-base outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors bg-white dark:bg-gray-800 dark:text-white resize-y"
                                 />
@@ -1081,7 +1081,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
                                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 flex items-start gap-2">
                                     <span>ðŸ’¡</span>
-                                    <span>Suas anotaÃ§Ãµes sÃ£o privadas e vinculadas a este flashcard especÃ­fico.</span>
+                                    <span>Suas anotações são privadas e vinculadas a este flashcard especÃ­fico.</span>
                                 </p>
                             </div>
                         )}
@@ -1111,7 +1111,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                             }`}
                                     >
-                                        <span>âœ“</span> Verdadeiro
+                                        <span>✓</span> Verdadeiro
                                     </button>
                                     <button
                                         onClick={() => setSelectedOption(1)}
@@ -1120,7 +1120,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                             }`}
                                     >
-                                        <span>âœ—</span> Falso
+                                        <span>✗</span> Falso
                                     </button>
                                 </div>
                             )}
@@ -1190,7 +1190,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
                                             {currentCard.mode === CardMode.PracticalExample && (currentCard as any).explanation && (
                                                 <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
-                                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ExplicaÃ§Ã£o</p>
+                                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Explicação</p>
                                                     <p
                                                         className="text-gray-700 dark:text-gray-300 leading-relaxed"
                                                         dangerouslySetInnerHTML={renderHTML((currentCard as any).explanation)}
@@ -1219,7 +1219,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             onClick={() => handleSelfEvaluation('correct')}
                                             className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-none rounded-xl text-lg font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-3 group transform active:scale-[0.98]"
                                         >
-                                            <span className="text-2xl">âœ…</span>
+                                            <span className="text-2xl">🗸</span>
                                             <span>Acertei</span>
                                             <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">+10 XP</span>
                                         </button>
@@ -1237,7 +1237,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             onClick={() => handleSelfEvaluation('incorrect')}
                                             className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white border-none rounded-xl text-lg font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-3 group transform active:scale-[0.98]"
                                         >
-                                            <span className="text-2xl">âŒ</span>
+                                            <span className="text-2xl">x</span>
                                             <span>Errei</span>
                                             <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">0 XP</span>
                                         </button>
@@ -1252,7 +1252,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                         }`}>
                                         <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${result === 'correct' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
                                             }`}>
-                                            {result === 'correct' ? 'âœ… Correto!' : 'âŒ Incorreto'}
+                                            {result === 'correct' ? '🗸 Correto!' : '❌ Incorreto'}
                                         </h3>
 
                                         <div className="space-y-4">
@@ -1272,7 +1272,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             ) && (
                                                     <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
                                                         <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                            ExplicaÃ§Ã£o
+                                                            Explicação
                                                         </p>
                                                         <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={renderHTML((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation ? currentCard.explanation : "Veja a solucao acima.")} />
                                                     </div>
@@ -1292,7 +1292,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                         className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-xl text-lg font-bold cursor-pointer hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2 group"
                                     >
                                         {currentIndex < flashcards.length - 1 ? (
-                                            <>PrÃ³ximo Flashcard <span className="group-hover:translate-x-1 transition-transform">â†’</span></>
+                                            <>Próximo Flashcard <span className="group-hover:translate-x-1 transition-transform">➜</span></>
                                         ) : (
                                             'Finalizar SessÃ£o'
                                         )}
