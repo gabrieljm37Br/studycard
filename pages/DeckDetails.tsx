@@ -626,8 +626,8 @@ const DeckDetails: React.FC = () => {
     };
 
     const handleBackHome = () => {
-        // Voltar sempre para a p├â┬ígina inicial
-        navigate('/home');
+        // Voltar sempre para a página inicial
+        navigate('/dashboard', { state: { deckId } });
     };
 
     useEffect(() => {
