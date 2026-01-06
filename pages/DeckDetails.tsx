@@ -57,6 +57,7 @@ const DeckDetails: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [newAttachments, setNewAttachments] = useState<LocalAttachment[]>([]);
     const [removedAttachments, setRemovedAttachments] = useState<Set<string>>(new Set());
+    const [isUnmarkingEditFlag, setIsUnmarkingEditFlag] = useState(false);
 
     // CSV Import State
     const [showCSVImport, setShowCSVImport] = useState(false);
@@ -169,6 +170,7 @@ const DeckDetails: React.FC = () => {
                     attachments: card.attachments || [],
                     isTrue: card.isTrue ?? card.is_true,
                     correctAnswerIndex: card.correctAnswerIndex ?? card.correct_answer_index,
+                    needsEdit: (card as any).needsEdit ?? (card as any).needs_edit ?? false,
                 };
 
                 return camelCard.mode === CardMode.Dictionary
@@ -508,6 +510,7 @@ const DeckDetails: React.FC = () => {
         // Add tags (common for all card types)
         formData.tags = (card as any).tags ? (card as any).tags.join(', ') : '';
         formData.attachments = (card as any).attachments || [];
+        formData.needsEdit = (card as any).needsEdit ?? false;
 
         setEditFormData(formData);
         setNewAttachments([]);
@@ -712,6 +715,30 @@ const DeckDetails: React.FC = () => {
             alert('Erro ao atualizar flashcard. Verifique se as colunas tags/attachments existem no banco e se o upload esta configurado.');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleUnmarkForEdit = async () => {
+        if (!cardToEdit || !user) return;
+
+        try {
+            setIsUnmarkingEditFlag(true);
+            const { error } = await supabase
+                .from('flashcards')
+                .update({ needs_edit: false })
+                .eq('id', cardToEdit.id)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            setFlashcards(prev => prev.map(fc => (fc.id === cardToEdit.id ? { ...fc, needsEdit: false } : fc)));
+            setCardToEdit(prev => (prev ? { ...prev, needsEdit: false } : prev));
+            setEditFormData((prev: any) => ({ ...prev, needsEdit: false }));
+        } catch (error) {
+            console.error('Erro ao desmarcar flashcard para edição:', error);
+            alert('Erro ao desmarcar este flashcard. Tente novamente.');
+        } finally {
+            setIsUnmarkingEditFlag(false);
         }
     };
 
@@ -1076,6 +1103,12 @@ const DeckDetails: React.FC = () => {
                                                 <div className="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-xs font-semibold mb-3">
                                                     {getCardTypeLabel(card.mode)}
                                                 </div>
+
+                                                {card.needsEdit && (
+                                                    <div className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-400 text-sm font-semibold mb-3">
+                                                        <span className="text-lg leading-none">⚠ Precisa de ajustes</span>
+                                                    </div>
+                                                )}
 
                                                 <div className="mb-4">
                                                     <strong className="block text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
@@ -1568,6 +1601,15 @@ const DeckDetails: React.FC = () => {
                                 >
                                     Cancelar
                                 </button>
+                                {cardToEdit?.needsEdit && (
+                                    <button
+                                        onClick={handleUnmarkForEdit}
+                                        disabled={isUnmarkingEditFlag || isSaving}
+                                        className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        {isUnmarkingEditFlag ? 'Atualizando...' : 'Remover marcação'}
+                                    </button>
+                                )}
                                 <button
                                     onClick={handleSaveEdit}
                                     disabled={isSaving}

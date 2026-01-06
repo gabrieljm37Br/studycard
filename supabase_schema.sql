@@ -80,6 +80,9 @@ CREATE TABLE flashcards (
   
   -- Sources
   sources JSONB DEFAULT '[]'::jsonb,
+
+  -- Mark for edit flag
+  needs_edit BOOLEAN DEFAULT FALSE,
   
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

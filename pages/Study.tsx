@@ -43,6 +43,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const [isSavingNote, setIsSavingNote] = useState(false);
     const [hasNote, setHasNote] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isMarkingForEdit, setIsMarkingForEdit] = useState(false);
     const cardContainerRef = useRef<HTMLDivElement | null>(null);
     const currentCard = flashcards[currentIndex];
 
@@ -113,6 +114,32 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         }
     };
 
+    const toggleMarkForEdit = async () => {
+        const card = flashcards[currentIndex];
+        if (!card || !user) return;
+        const nextValue = !card.needsEdit;
+
+        try {
+            setIsMarkingForEdit(true);
+            const { error } = await supabase
+                .from('flashcards')
+                .update({ needs_edit: nextValue })
+                .eq('id', card.id)
+                .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            setFlashcards(prev =>
+                prev.map((fc, idx) => (idx === currentIndex || fc.id === card.id ? { ...fc, needsEdit: nextValue } : fc)),
+            );
+        } catch (error) {
+            console.error('Erro ao marcar/desmarcar flashcard para edição:', error);
+            alert('Erro ao marcar ou desmarcar este flashcard. Tente novamente.');
+        } finally {
+            setIsMarkingForEdit(false);
+        }
+    };
+
     // Load note when flashcard changes
     useEffect(() => {
         if (flashcards.length > 0 && currentIndex >= 0) {
@@ -161,6 +188,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             isTrue: raw.isTrue ?? raw.is_true,
             correctAnswerIndex: raw.correctAnswerIndex ?? raw.correct_answer_index,
             deckId: raw.deckId ?? raw.deck_id,
+            needsEdit: raw.needsEdit ?? raw.needs_edit ?? false,
         };
 
         if (card.mode === CardMode.Dictionary) {
@@ -955,15 +983,9 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
                 {/* Flashcard */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
-                    {showResult && (
-                        <div className="flex justify-end gap-3 mb-4">
-                            <button
-                                onClick={handleDeleteCurrentCard}
-                                disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors border border-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {isDeleting ? 'Excluindo...' : 'Excluir'}
-                            </button>
+                    {currentCard.needsEdit && (
+                        <div className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-400 text-sm font-semibold mb-4">
+                            <span className="text-lg">⚠ Precisa de ajustes</span>
                         </div>
                     )}
                     <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 leading-relaxed">
@@ -1166,6 +1188,26 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 {
                     showResult && (
                         <div className="animate-slide-up">
+                            <div className="flex justify-end gap-3 mb-4">
+                                <button
+                                    onClick={toggleMarkForEdit}
+                                    disabled={isMarkingForEdit}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${currentCard.needsEdit
+                                        ? 'bg-amber-100 border-amber-500 text-amber-800 hover:bg-amber-200'
+                                        : 'bg-amber-50 border-amber-400 text-amber-700 hover:bg-amber-100'
+                                        }`}
+                                >
+                                    <span>⚠</span>
+                                    {isMarkingForEdit ? 'Atualizando...' : currentCard.needsEdit ? 'Desmarcar' : 'Marcar card'}
+                                </button>
+                                <button
+                                    onClick={handleDeleteCurrentCard}
+                                    disabled={isDeleting}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors border border-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {isDeleting ? 'Excluindo...' : 'Excluir'}
+                                </button>
+                            </div>
                             {/* Q&A Self-Evaluation */}
                             {currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.Dictionary ? (
                                 <div>
@@ -1309,3 +1351,5 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 };
 
 export default Study;
+
+
