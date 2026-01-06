@@ -6,6 +6,7 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import Link from '@tiptap/extension-link';
 import Highlight from '@tiptap/extension-highlight';
+import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Mathematics from '@tiptap/extension-mathematics';
@@ -17,6 +18,7 @@ type FlashcardWysiwygEditorProps = {
     onChangeJson?: (value: any) => void;
     onChangeHtml?: (value: string) => void;
     placeholder?: string;
+    onImageUpload?: (file: File) => Promise<string>;
 };
 
 const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
@@ -25,6 +27,7 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
     onChangeJson,
     onChangeHtml,
     placeholder,
+    onImageUpload,
 }) => {
     const textColors = ['#111827', '#1d4ed8', '#047857', '#b45309', '#dc2626', '#6d28d9'];
     const highlights = [
@@ -45,6 +48,12 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                 StarterKit.configure({
                     bold: { HTMLAttributes: { class: 'font-bold' } },
                     italic: { HTMLAttributes: { class: 'italic' } },
+                }),
+                Image.configure({
+                    HTMLAttributes: {
+                        class: 'max-w-full h-auto rounded-md my-2',
+                        loading: 'lazy',
+                    },
                 }),
                 Underline,
                 Subscript,
@@ -148,6 +157,8 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
 
     const buttonBase =
         'px-2 py-1 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 transition-colors';
+    const fileInputId = React.useMemo(() => `upload-img-${Math.random().toString(36).slice(2)}`, []);
+    const [isUploadingImage, setIsUploadingImage] = React.useState(false);
 
     const Dropdown: React.FC<{
         label: string;
@@ -189,6 +200,20 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
             {label}
         </button>
     );
+
+    const handleSelectImage = async (file?: File) => {
+        if (!file || !onImageUpload) return;
+        try {
+            setIsUploadingImage(true);
+            const url = await onImageUpload(file);
+            editor.chain().focus().setImage({ src: url, alt: file.name }).run();
+        } catch (error) {
+            console.error('Erro ao fazer upload da imagem:', error);
+            alert('Erro ao fazer upload da imagem. Tente novamente.');
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
 
     return (
         <div className="space-y-2">
@@ -251,7 +276,29 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
                         }
                     }}
                 />
+                {onImageUpload && (
+                    <label
+                        htmlFor={fileInputId}
+                        className={`${buttonBase} cursor-pointer ${isUploadingImage ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                    >
+                        {isUploadingImage ? 'Enviando...' : 'Imagem'}
+                    </label>
+                )}
             </div>
+            {onImageUpload && (
+                <input
+                    id={fileInputId}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        handleSelectImage(file);
+                        e.target.value = '';
+                    }}
+                />
+            )}
             <div className="tiptap">
                 <style>{`
                     .tiptap ul { list-style-type: disc; padding-left: 1.5rem; }

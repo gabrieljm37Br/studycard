@@ -632,6 +632,7 @@ const DeckDetails: React.FC = () => {
                 solutionJson,
                 termJson,
                 definitionJson,
+                needsEdit,
                 ...updatePayload
             } = editFormData as any;
 
@@ -655,6 +656,11 @@ const DeckDetails: React.FC = () => {
                 updatePayload.answer = editFormData.definition;
                 delete updatePayload.term;
                 delete updatePayload.definition;
+            }
+            // Normalize flag to snake_case for DB
+            if (needsEdit !== undefined) {
+                updatePayload.needs_edit = needsEdit;
+                delete updatePayload.needsEdit;
             }
             // Align payload keys with DB column names
             if (editFormData.mode === CardMode.TrueFalse && updatePayload.isTrue !== undefined) {
@@ -755,6 +761,13 @@ const DeckDetails: React.FC = () => {
             [field]: html,
             [`${field}Json`]: json,
         }));
+    };
+
+    const handleEditorImageUpload = async (file: File) => {
+        if (!user?.id) {
+            throw new Error('Usuário não autenticado para upload de imagem.');
+        }
+        return uploadFlashcardImage(file, user.id, cardToEdit?.id);
     };
 
     const handleBackHome = () => {
@@ -1287,6 +1300,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.question || ''}
                                                 onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
@@ -1299,6 +1313,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.answer || ''}
                                                 onChangeJson={(json) => handleRichChange('answer', editFormData.answer || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('answer', html, editFormData.answerJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a resposta..."
                                             />
                                         </div>
@@ -1317,6 +1332,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.statement || ''}
                                                 onChangeJson={(json) => handleRichChange('statement', editFormData.statement || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('statement', html, editFormData.statementJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a afirmacao..."
                                             />
                                         </div>
@@ -1340,6 +1356,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.explanation || ''}
                                                 onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite uma explicacao..."
                                             />
                                         </div>
@@ -1358,6 +1375,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.question || ''}
                                                 onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
@@ -1401,6 +1419,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.explanation || ''}
                                                 onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite uma explicacao..."
                                             />
                                         </div>
@@ -1419,6 +1438,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.problem || ''}
                                                 onChangeJson={(json) => handleRichChange('problem', editFormData.problem || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('problem', html, editFormData.problemJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite o problema..."
                                             />
                                         </div>
@@ -1431,6 +1451,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.question || ''}
                                                 onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a pergunta..."
                                             />
                                         </div>
@@ -1443,6 +1464,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.solution || ''}
                                                 onChangeJson={(json) => handleRichChange('solution', editFormData.solution || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('solution', html, editFormData.solutionJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a solucao..."
                                             />
                                         </div>
@@ -1461,6 +1483,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.question || ''}
                                                 onChangeJson={(json) => handleRichChange('question', editFormData.question || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('question', html, editFormData.questionJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a pergunta com lacunas..."
                                             />
                                         </div>
@@ -1473,6 +1496,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.answer || ''}
                                                 onChangeJson={(json) => handleRichChange('answer', editFormData.answer || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('answer', html, editFormData.answerJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a resposta..."
                                             />
                                         </div>
@@ -1485,6 +1509,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.explanation || ''}
                                                 onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Opcional: detalhe a resposta ou dÃª contexto..."
                                             />
                                         </div>
@@ -1503,6 +1528,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.term || ''}
                                                 onChangeJson={(json) => handleRichChange('term', editFormData.term || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('term', html, editFormData.termJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite o termo..."
                                             />
                                         </div>
@@ -1515,6 +1541,7 @@ const DeckDetails: React.FC = () => {
                                                 valueHtml={editFormData.definition || ''}
                                                 onChangeJson={(json) => handleRichChange('definition', editFormData.definition || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('definition', html, editFormData.definitionJson)}
+                                                onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a definicao..."
                                             />
                                         </div>
@@ -1657,7 +1684,6 @@ const DeckDetails: React.FC = () => {
 };
 
 export default DeckDetails;
-
 
 
 
