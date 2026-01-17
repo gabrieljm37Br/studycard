@@ -16,6 +16,7 @@ import Topicogram from './pages/Topicogram';
 import { hasSupabaseEnv, supabaseEnvError } from './services/supabaseClient';
 import Home from './pages/Home';
 import SimulatedStudy from './pages/SimulatedStudy';
+import AppLayout from './components/AppLayout';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, loading } = useAuth();
@@ -66,102 +67,26 @@ const AppRouter: React.FC = () => {
                     <Routes>
                         <Route path="/login" element={<Login />} />
                         <Route
-                            path="/dashboard"
                             element={
                                 <ProtectedRoute>
-                                    <Dashboard />
+                                    <AppLayout />
                                 </ProtectedRoute>
                             }
-                        />
-                        <Route
-                            path="/generator"
-                            element={
-                                <ProtectedRoute>
-                                    <Generator />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/study"
-                            element={
-                                <ProtectedRoute>
-                                    <Study />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/simulation-study"
-                            element={
-                                <ProtectedRoute>
-                                    <SimulatedStudy />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/deck/:deckId"
-                            element={
-                                <ProtectedRoute>
-                                    <DeckDetails />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/help"
-                            element={
-                                <ProtectedRoute>
-                                    <Help />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/calendar"
-                            element={
-                                <ProtectedRoute>
-                                    <StudyCalendar />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/statistics"
-                            element={
-                                <ProtectedRoute>
-                                    <Statistics />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/simulations"
-                            element={
-                                <ProtectedRoute>
-                                    <SimulatedMode />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/simulation/:id"
-                            element={
-                                <ProtectedRoute>
-                                    <SimulationDetails />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/topicogram"
-                            element={
-                                <ProtectedRoute>
-                                    <Topicogram />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/home"
-                            element={
-                                <ProtectedRoute>
-                                    <Home />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route path="/" element={<Navigate to="/home" replace />} />
+                        >
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/generator" element={<Generator />} />
+                            <Route path="/study" element={<Study />} />
+                            <Route path="/simulation-study" element={<SimulatedStudy />} />
+                            <Route path="/deck/:deckId" element={<DeckDetails />} />
+                            <Route path="/help" element={<Help />} />
+                            <Route path="/calendar" element={<StudyCalendar />} />
+                            <Route path="/statistics" element={<Statistics />} />
+                            <Route path="/simulations" element={<SimulatedMode />} />
+                            <Route path="/simulation/:id" element={<SimulationDetails />} />
+                            <Route path="/topicogram" element={<Topicogram />} />
+                            <Route path="/home" element={<Home />} />
+                            <Route path="/" element={<Navigate to="/home" replace />} />
+                        </Route>
                     </Routes>
                 </BrowserRouter>
             </AuthProvider>
