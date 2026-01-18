@@ -74,33 +74,7 @@ const Help: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
             {/* Header */}
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white p-4 md:p-6 shadow-md sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate('/home')}
-                            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                            title="Ir para Home"
-                        >
-                            <Home className="h-6 w-6" />
-                        </button>
-                        <div className="flex items-center gap-3">
-                            <img src="/logo_studycard_sf.svg" alt="StudyCard" className="h-10 w-10 rounded-md bg-white/10 p-1" />
-                            <h1 className="text-2xl font-bold">📖 Central de Ajuda</h1>
-                        </div>
-                    </div>
-
-                    {/* Mobile menu toggle */}
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="md:hidden p-2 hover:bg-white/20 rounded-lg transition-colors"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
-            </header>
+            
 
             <div className="max-w-7xl mx-auto flex relative">
                 {/* Sidebar */}
@@ -2129,3 +2103,4 @@ USE AS TAGS:`}
 };
 
 export default Help;
+

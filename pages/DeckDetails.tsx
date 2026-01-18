@@ -1,4 +1,4 @@
-Ôªøimport React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { CardMode } from '../types';
@@ -264,7 +264,7 @@ const DeckDetails: React.FC = () => {
                 throw error;
             }
 
-            console.log('Flashcard exclu‚îú√¢‚î¨¬°do com sucesso:', data);
+            console.log('Flashcard exclu+‚-°do com sucesso:', data);
             await loadFlashcards(); // Reload list
         } catch (error: any) {
             console.error('Error deleting flashcard:', error);
@@ -290,7 +290,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks dispon‚îú√¢‚î¨¬°veis.');
+            alert('Erro ao carregar decks dispon+‚-°veis.');
         }
     };
 
@@ -393,7 +393,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks dispon‚îú√¢‚î¨¬°veis.');
+            alert('Erro ao carregar decks dispon+‚-°veis.');
         }
     };
 
@@ -592,32 +592,32 @@ const DeckDetails: React.FC = () => {
             // Validate required fields
             if (editFormData.mode === CardMode.QA) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta s√£o obrigat√≥rias');
+                    alert('Pergunta e resposta s„o obrigatÛrias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.TrueFalse) {
                 if (!editFormData.statement?.trim()) {
-                    alert('Afirma√ß√£o √© obrigat√≥ria');
+                    alert('AfirmaÁ„o È obrigatÛria');
                     return;
                 }
             } else if (editFormData.mode === CardMode.MultipleChoice) {
                 if (!editFormData.question?.trim() || editFormData.options.some((opt: string) => !opt?.trim())) {
-                    alert('Pergunta e todas as op√ß√µes s√£o obrigat√≥rias');
+                    alert('Pergunta e todas as opÁıes s„o obrigatÛrias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.PracticalExample) {
                 if (!editFormData.problem?.trim() || !editFormData.question?.trim() || !editFormData.solution?.trim()) {
-                    alert('Problema, pergunta e solu√ß√£o s√£o obrigat√≥rios');
+                    alert('Problema, pergunta e soluÁ„o s„o obrigatÛrios');
                     return;
                 }
             } else if (editFormData.mode === CardMode.FillInTheBlank) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta s√£o obrigat√≥rias');
+                    alert('Pergunta e resposta s„o obrigatÛrias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.Dictionary) {
                 if (!editFormData.term?.trim() || !editFormData.definition?.trim()) {
-                    alert('Termo e defini√ß√£o s√£o obrigat√≥rios');
+                    alert('Termo e definiÁ„o s„o obrigatÛrios');
                     return;
                 }
             }
@@ -741,7 +741,7 @@ const DeckDetails: React.FC = () => {
             setCardToEdit(prev => (prev ? { ...prev, needsEdit: false } : prev));
             setEditFormData((prev: any) => ({ ...prev, needsEdit: false }));
         } catch (error) {
-            console.error('Erro ao desmarcar flashcard para edi√ß√£o:', error);
+            console.error('Erro ao desmarcar flashcard para ediÁ„o:', error);
             alert('Erro ao desmarcar este flashcard. Tente novamente.');
         } finally {
             setIsUnmarkingEditFlag(false);
@@ -765,13 +765,13 @@ const DeckDetails: React.FC = () => {
 
     const handleEditorImageUpload = async (file: File) => {
         if (!user?.id) {
-            throw new Error('Usu√°rio n√£o autenticado para upload de imagem.');
+            throw new Error('Usu·rio n„o autenticado para upload de imagem.');
         }
         return uploadFlashcardImage(file, user.id, cardToEdit?.id);
     };
 
     const handleBackHome = () => {
-        // Voltar sempre para a p√°gina inicial
+        // Voltar sempre para a p·gina inicial
         navigate('/dashboard', { state: { deckId } });
     };
 
@@ -800,76 +800,7 @@ const DeckDetails: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="space-y-1 text-center lg:text-left">
-                            <p className="text-xs uppercase tracking-widest text-white/70">Deck</p>
-                            {isEditingName ? (
-                                <input
-                                    type="text"
-                                    value={tempDeckName}
-                                    onChange={(e) => setTempDeckName(e.target.value)}
-                                    onBlur={handleUpdateDeckName}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleUpdateDeckName();
-                                        if (e.key === 'Escape') {
-                                            setIsEditingName(false);
-                                            setTempDeckName(deckName);
-                                        }
-                                    }}
-                                    className="text-3xl md:text-4xl font-bold bg-white/20 text-white border border-white/30 rounded px-2 py-1 outline-none w-full max-w-md"
-                                    autoFocus
-                                />
-                            ) : (
-                                <h1
-                                    className="text-3xl md:text-4xl font-bold leading-tight truncate max-w-full lg:max-w-md cursor-pointer hover:opacity-85 transition-opacity"
-                                    onClick={handleBackHome}
-                                    title="Clique para ir para a Home"
-                                >
-                                    {deckName || 'Carregando...'}
-                                </h1>
-                            )}
-                        </div>
-
-                        <div className="flex items-center justify-center lg:justify-end gap-2 md:gap-3 flex-wrap">
-                            <button
-                                onClick={handleGoHome}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Voltar para Home"
-                                aria-label="Voltar para Home"
-                            >
-                                <Home className="w-5 h-5" />
-                                <span className="hidden md:inline text-sm font-semibold">Home</span>
-                            </button>
-                            <button
-                                onClick={() => navigate('/dashboard')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Meus Decks"
-                                aria-label="Meus Decks"
-                            >
-                                <Folder className="w-5 h-5" />
-                                <span className="hidden md:inline text-sm font-semibold">Meus Decks</span>
-                            </button>
-
-                            <button
-                                onClick={() => navigate('/help')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                                title="Central de Ajuda"
-                                aria-label="Abrir central de ajuda"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            
 
 
 
@@ -971,10 +902,10 @@ const DeckDetails: React.FC = () => {
                                             <option value="all">Todas as modalidades</option>
                                             <option value={CardMode.QA}>Pergunta &amp; Resposta</option>
                                             <option value={CardMode.TrueFalse}>Verdadeiro ou Falso</option>
-                                            <option value={CardMode.MultipleChoice}>M√∫ltipla Escolha</option>
-                                            <option value={CardMode.PracticalExample}>Exemplo Pr√°tico</option>
+                                            <option value={CardMode.MultipleChoice}>M˙ltipla Escolha</option>
+                                            <option value={CardMode.PracticalExample}>Exemplo Pr·tico</option>
                                             <option value={CardMode.FillInTheBlank}>Lacunas</option>
-                                            <option value={CardMode.Dictionary}>Dicion√°rio</option>
+                                            <option value={CardMode.Dictionary}>Dicion·rio</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1119,7 +1050,7 @@ const DeckDetails: React.FC = () => {
 
                                                 {card.needsEdit && (
                                                     <div className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-400 text-sm font-semibold mb-3">
-                                                        <span className="text-lg leading-none">‚ö† Precisa de ajustes</span>
+                                                        <span className="text-lg leading-none">? Precisa de ajustes</span>
                                                     </div>
                                                 )}
 
@@ -1156,7 +1087,7 @@ const DeckDetails: React.FC = () => {
                                                     />
                                                     {card.explanation && (
                                                         <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                                            <span className="font-semibold block">Explica√ß√£o</span>
+                                                            <span className="font-semibold block">ExplicaÁ„o</span>
                                                             <div dangerouslySetInnerHTML={renderHTML(card.explanation)} />
                                                         </div>
                                                     )}
@@ -1208,7 +1139,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon‚îú√¢‚î¨¬°vel.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon+‚-°vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -1248,7 +1179,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon‚îú√¢‚î¨¬°vel.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon+‚-°vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -1325,7 +1256,7 @@ const DeckDetails: React.FC = () => {
                                     <>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Afirma√ß√£o *
+                                                AfirmaÁ„o *
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.statementJson}
@@ -1344,12 +1275,12 @@ const DeckDetails: React.FC = () => {
                                                 className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                             />
                                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                Esta afirma√ß√£o e verdadeira
+                                                Esta afirmaÁ„o e verdadeira
                                             </label>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explica√ß√£o
+                                                ExplicaÁ„o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
@@ -1382,7 +1313,7 @@ const DeckDetails: React.FC = () => {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Op‚îú¬∫‚îú√Åes *
+                                                Op+∫+¡es *
                                             </label>
                                             {editFormData.options?.map((option: string, index: number) => (
                                                 <div key={index} className="flex items-center gap-3 mb-2">
@@ -1402,17 +1333,17 @@ const DeckDetails: React.FC = () => {
                                                             handleEditChange('options', newOptions);
                                                         }}
                                                         className="flex-1 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                        placeholder={`Op‚îú¬∫‚îú√Åes ${String.fromCharCode(65 + index)}`}
+                                                        placeholder={`Op+∫+¡es ${String.fromCharCode(65 + index)}`}
                                                     />
                                                 </div>
                                             ))}
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                Selecione o circulo da op‚îú¬∫‚îú√∫o correta
+                                                Selecione o circulo da op+∫+˙o correta
                                             </p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explica√ß√£o
+                                                ExplicaÁ„o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
@@ -1457,7 +1388,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Solu√ß√£o *
+                                                SoluÁ„o *
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.solutionJson}
@@ -1502,7 +1433,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Explica√ß√£o
+                                                ExplicaÁ„o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
@@ -1510,7 +1441,7 @@ const DeckDetails: React.FC = () => {
                                                 onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
                                                 onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
                                                 onImageUpload={handleEditorImageUpload}
-                                                placeholder="Opcional: detalhe a resposta ou d√É¬™ contexto..."
+                                                placeholder="Opcional: detalhe a resposta ou d√™ contexto..."
                                             />
                                         </div>
                                     </>
@@ -1534,7 +1465,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Defini√ß√£o *
+                                                DefiniÁ„o *
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.definitionJson}
@@ -1611,11 +1542,11 @@ const DeckDetails: React.FC = () => {
                                         type="text"
                                         value={editFormData.tags || ""}
                                         onChange={(e) => handleEditChange("tags", e.target.value)}
-                                        placeholder="Ex: matematica, algebra (separadas por v√≠rgula)"
+                                        placeholder="Ex: matematica, algebra (separadas por vÌrgula)"
                                         className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Adicione tags separadas por v√≠rgula para organizar seus flashcards
+                                        Adicione tags separadas por vÌrgula para organizar seus flashcards
                                     </p>
                                 </div>
                             </div>
@@ -1634,7 +1565,7 @@ const DeckDetails: React.FC = () => {
                                         disabled={isUnmarkingEditFlag || isSaving}
                                         className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
-                                        {isUnmarkingEditFlag ? 'Atualizando...' : 'Remover marca√ß√£o'}
+                                        {isUnmarkingEditFlag ? 'Atualizando...' : 'Remover marcaÁ„o'}
                                     </button>
                                 )}
                                 <button
@@ -1648,7 +1579,7 @@ const DeckDetails: React.FC = () => {
                                             Salvando...
                                         </>
                                     ) : (
-                                        'Salvar Altera√ß√µes'
+                                        'Salvar AlteraÁıes'
                                     )}
                                 </button>
                             </div>
@@ -1684,6 +1615,7 @@ const DeckDetails: React.FC = () => {
 };
 
 export default DeckDetails;
+
 
 
 

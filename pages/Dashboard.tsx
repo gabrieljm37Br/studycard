@@ -1,6 +1,5 @@
-Ôªøimport React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Deck } from '../types';
@@ -24,14 +23,12 @@ interface Badge {
 }
 
 const Dashboard: React.FC = () => {
-    const { user, signOut } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [decks, setDecks] = useState<Deck[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [badges, setBadges] = useState<Badge[]>([]);
     const [loading, setLoading] = useState(true);
     const [newDeckName, setNewDeckName] = useState('');
@@ -277,7 +274,7 @@ const Dashboard: React.FC = () => {
             });
         } catch (err) {
             console.error('Error loading deck stats on demand:', err);
-            setStatsError('N√£o foi poss√≠vel carregar as estat√≠sticas.');
+            setStatsError('N„o foi possÌvel carregar as estatÌsticas.');
         } finally {
             setStatsLoading(false);
         }
@@ -342,7 +339,7 @@ const Dashboard: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (err) {
             console.error('Error loading available decks:', err);
-            alert('Erro ao carregar decks dispon√≠veis para mover.');
+            alert('Erro ao carregar decks disponÌveis para mover.');
         }
     };
 
@@ -395,128 +392,23 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const handleSignOut = async () => {
-        await signOut();
-        navigate('/login');
-    };
-
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
     const filteredDecks = normalizedSearchTerm
         ? decks.filter(deck => deck.name.toLowerCase().includes(normalizedSearchTerm))
         : decks;
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
-                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="space-y-1 text-center lg:text-left">
-                            <p className="text-xs uppercase tracking-widest text-white/70">Dashboard</p>
-                            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Meus Decks</h1>
-                        </div>
-
-                        <div className="flex items-center justify-center lg:justify-end gap-3">
-                            <button
-                                onClick={() => navigate('/home')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Voltar para Home"
-                                aria-label="Voltar para Home"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7A1 1 0 003 10h1v6a1 1 0 001 1h4v-4h2v4h4a1 1 0 001-1v-6h1a1 1 0 00.707-1.707l-7-7z" />
-                                </svg>
-                                <span className="hidden md:inline text-sm font-semibold">Home</span>
-                            </button>
-
-                            <button
-                                onClick={() => setIsSearchOpen(prev => !prev)}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                                title="Pesquisar decks"
-                                aria-label="Pesquisar decks"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M12.9 14.32a6 6 0 111.414-1.414l3.387 3.387a1 1 0 01-1.414 1.414L12.9 14.32zM14 9a5 5 0 11-10 0 5 5 0 0110 0z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                                title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-                                aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-                            >
-                                {theme === 'dark' ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 14.95l.707-.707a1 1 0 10-1.414-1.414l-.707.707a1 1 0 001.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
-                                    </svg>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                                    </svg>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={() => navigate('/help')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95"
-                                title="Central de Ajuda"
-                                aria-label="Abrir central de ajuda"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-
-                            <button
-                                onClick={handleSignOut}
-                                className="px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors"
-                            >
-                                Sair
-                            </button>
-                        </div>
-                    </div>
-
-                    {isSearchOpen && (
-                        <div className="mt-4 flex flex-col sm:flex-row items-center gap-3 bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
-                            <div className="flex items-center gap-2 w-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M12.9 14.32a6 6 0 111.414-1.414l3.387 3.387a1 1 0 01-1.414 1.414L12.9 14.32zM14 9a5 5 0 11-10 0 5 5 0 0110 0z" clipRule="evenodd" />
-                                </svg>
-                                <input
-                                    type="search"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Pesquisar decks criados..."
-                                    className="flex-1 bg-white/15 text-white placeholder-white/60 border border-white/25 rounded-xl px-4 py-2 focus:bg-white/20 focus:outline-none"
-                                />
-                            </div>
-                            <div className="flex gap-2 w-full sm:w-auto">
-                                <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="flex-1 sm:flex-none px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-white text-sm font-semibold transition-colors"
-                                >
-                                    Limpar
-                                </button>
-                                <button
-                                    onClick={() => setIsSearchOpen(false)}
-                                    className="flex-1 sm:flex-none px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-xl text-sm font-semibold transition-all active:scale-95"
-                                >
-                                    Fechar
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </header>
+            
 
             {successMessage && (
                 <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-in">
-                    <span className="text-xl">üéâ</span>
+                    <span className="text-xl">??</span>
                     <span className="font-semibold">{successMessage}</span>
                     <button
                         onClick={() => setSuccessMessage(null)}
                         className="bg-white/20 hover:bg-white/30 border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer text-white text-base transition-colors"
                     >
-                        √ó
+                        ◊
                     </button>
                 </div>
             )}
@@ -617,7 +509,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <span aria-hidden>üìë</span>
+                                        <span aria-hidden>??</span>
                                         <span>Flashcards</span>
                                     </button>
                                     <button
@@ -637,7 +529,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200 cursor-pointer font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     >
-                                        Estat√≠sticas
+                                        EstatÌsticas
                                     </button>
                                 </div>
 
@@ -682,17 +574,17 @@ const Dashboard: React.FC = () => {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Estat√≠sticas do Deck</h2>
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">EstatÌsticas do Deck</h2>
                             <button
                                 onClick={() => setStatsModalOpen(false)}
                                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
-                                √ó
+                                ◊
                             </button>
                         </div>
 
                         {statsLoading && (
-                            <div className="py-6 text-center text-gray-500 dark:text-gray-300">Carregando estat√≠sticas...</div>
+                            <div className="py-6 text-center text-gray-500 dark:text-gray-300">Carregando estatÌsticas...</div>
                         )}
 
                         {statsError && (
@@ -711,13 +603,13 @@ const Dashboard: React.FC = () => {
                                     <span className="font-bold">{statsData.flashcards}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>% estudados (‚â• 1 vez)</span>
+                                    <span>% estudados (= 1 vez)</span>
                                     <span className="font-bold">
                                         {statsData.studiedPercent === null ? '-' : `${statsData.studiedPercent}%`}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>% acerto (√∫ltimo estudo)</span>
+                                    <span>% acerto (˙ltimo estudo)</span>
                                     <span className="font-bold">
                                         {statsData.accuracyPercent === null ? '-' : `${statsData.accuracyPercent}%`}
                                     </span>
@@ -731,7 +623,7 @@ const Dashboard: React.FC = () => {
             {showNewBadgeModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl text-center max-w-md w-full animate-pop-in shadow-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="text-6xl mb-5 animate-bounce">üéâ</div>
+                        <div className="text-6xl mb-5 animate-bounce">??</div>
                         <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">Nova Conquista Desbloqueada!</h2>
                         {newBadges.map(badge => (
                             <div key={badge.id} className="mb-5">
@@ -744,7 +636,7 @@ const Dashboard: React.FC = () => {
                             onClick={() => setShowNewBadgeModal(false)}
                             className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg text-base font-semibold cursor-pointer mt-5 hover:shadow-lg hover:scale-105 transition-all"
                         >
-                            Incr√≠vel!
+                            IncrÌvel!
                         </button>
                     </div>
                 </div>
@@ -765,7 +657,7 @@ const Dashboard: React.FC = () => {
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                     }`}
                             >
-                                <span className="text-xl">üè†</span>
+                                <span className="text-xl">??</span>
                                 <span className="font-medium text-gray-700 dark:text-gray-200">Raiz (Meus Decks)</span>
                                 {deckToMove.parentId === null && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                             </button>
@@ -779,7 +671,7 @@ const Dashboard: React.FC = () => {
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                         }`}
                                 >
-                                    <span className="text-xl">üìÅ</span>
+                                    <span className="text-xl">??</span>
                                     <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                     {deckToMove.parentId === deck.id && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                                 </button>
@@ -842,3 +734,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+

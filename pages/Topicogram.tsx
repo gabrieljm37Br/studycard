@@ -63,46 +63,7 @@ const Topicogram: React.FC = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-200">
             {/* Header */}
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
-                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-center gap-3 md:gap-4 text-center md:text-left">
-                            <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
-                                <TrendingUp className="w-8 h-8" />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-xs uppercase tracking-widest text-white/80">Linha do Tempo</p>
-                                <h1 className="text-3xl font-bold leading-tight">Linha do Tempo</h1>
-                                <p className="text-white/80 text-sm">Sua jornada de estudos em ordem cronológica.</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                            <button
-                                onClick={() => navigate('/home')}
-                                className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-700 hover:shadow-lg rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                <Home className="w-4 h-4" />
-                                <span>Voltar</span>
-                            </button>
-                            <button
-                                onClick={() => navigate('/help')}
-                                className="w-full sm:w-auto p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                                title="Central de Ajuda"
-                                aria-label="Abrir central de ajuda"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                                <span className="hidden sm:inline">Ajuda</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            
 
             {/* Main Content */}
             <div className="max-w-5xl mx-auto px-4 py-8">
@@ -244,3 +205,4 @@ const Topicogram: React.FC = () => {
 };
 
 export default Topicogram;
+

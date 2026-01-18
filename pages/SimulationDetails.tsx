@@ -1,10 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import type { Simulation, SimulationItem, Deck } from '../types';
 import { CardMode } from '../types';
-import { Home, PlusCircle, Library } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 
 const SimulationDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -128,7 +128,7 @@ const SimulationDetails: React.FC = () => {
     };
 
     const handleRemoveItem = async (itemId: string) => {
-        if (!confirm('Remover esta questão do simulado?')) return;
+        if (!confirm('Remover esta questÆo do simulado?')) return;
 
         try {
             const { error } = await supabase
@@ -142,7 +142,7 @@ const SimulationDetails: React.FC = () => {
             setItems(prev => prev.filter(item => item.id !== itemId));
         } catch (error) {
             console.error('Error removing item:', error);
-            alert('Erro ao remover questão.');
+            alert('Erro ao remover questÆo.');
         }
     };
 
@@ -260,59 +260,36 @@ const SimulationDetails: React.FC = () => {
     }
 
     if (!simulation) {
-        return <div className="min-h-screen flex items-center justify-center text-gray-500">Simulado não encontrado.</div>;
+        return <div className="min-h-screen flex items-center justify-center text-gray-500">Simulado nÆo encontrado.</div>;
     }
 
     const filteredDecks = availableDecks.filter(deck =>
         deck.name.toLowerCase().includes(deckSearch.trim().toLowerCase())
     );
 
+    const summaryBox = (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 md:p-5 shadow-sm mb-6">
+            <p className="text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400">Simulado</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{simulation.title}</h1>
+            <div className="text-sm text-gray-600 dark:text-gray-300 flex flex-wrap gap-2 mt-1">
+                <span>Criado em {new Date(simulation.created_at).toLocaleDateString()}</span>
+                <span>•</span>
+                <span>{items.length} questões</span>
+                {lastSessionInfo && (
+                    <>
+                        <span>•</span>
+                        <span>
+                            Última sessão: {new Date(lastSessionInfo.date).toLocaleDateString()} - {lastSessionInfo.accuracy ?? '-'}% de acerto
+                        </span>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
-                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                        <div className="space-y-3 text-center lg:text-left">
-                            <p className="text-xs uppercase tracking-widest text-white/70">Simulado</p>
-                            <h1 className="text-3xl md:text-4xl font-bold leading-tight truncate max-w-full lg:max-w-2xl">
-                                {simulation.title}
-                            </h1>
-                            <div className="text-base md:text-lg text-white/90 flex flex-wrap items-center justify-center lg:justify-start gap-3 font-medium">
-                                <span className="whitespace-nowrap">Criado em {new Date(simulation.created_at).toLocaleDateString()}</span>
-                                <span className="opacity-40">|</span>
-                                <span className="whitespace-nowrap">{items.length} questões</span>
-                                {lastSessionInfo && (
-                                    <>
-                                        <span className="opacity-40">|</span>
-                                        <span className="text-white font-semibold whitespace-nowrap">
-                                            Última sessão: {new Date(lastSessionInfo.date).toLocaleDateString()} - <span className="text-white font-extrabold">{lastSessionInfo.accuracy}% de acerto</span>
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-center lg:justify-end gap-2 md:gap-3 flex-wrap">
-                            <button
-                                onClick={() => navigate('/home')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Voltar para Home"
-                            >
-                                <Home className="w-5 h-5" />
-                                <span className="hidden md:inline text-sm font-semibold">Home</span>
-                            </button>
-                            <button
-                                onClick={() => navigate('/simulations')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Modo Simulado"
-                            >
-                                <Library className="w-5 h-5" />
-                                <span className="hidden md:inline text-sm font-semibold">Simulados</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {summaryBox}
 
             <div className="max-w-4xl mx-auto px-4 mt-8">
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-4 flex items-center justify-center gap-3 flex-wrap">
@@ -327,7 +304,7 @@ const SimulationDetails: React.FC = () => {
                         onClick={() => navigate('/simulation-study', { state: { simulationId: simulation.id } })}
                         className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap min-w-[150px] flex items-center justify-center gap-2"
                     >
-                        ▶ Iniciar Simulado
+                        ? Iniciar Simulado
                     </button>
                 </div>
             </div>
@@ -335,11 +312,11 @@ const SimulationDetails: React.FC = () => {
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Questions List */}
                 <div className="space-y-4">
-                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 ml-1">Questões</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 ml-1">Questäes</h2>
 
                     {items.length === 0 ? (
                         <div className="text-center p-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-500">
-                            Este simulado não possui questões.
+                            Este simulado nÆo possui questäes.
                         </div>
                     ) : (
                         items.map((item, index) => (
@@ -353,7 +330,7 @@ const SimulationDetails: React.FC = () => {
                                             <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 mb-2 uppercase tracking-wide">
                                                 {item.flashcard?.mode === 'qa' ? 'Pergunta e Resposta' :
                                                     item.flashcard?.mode === 'true_false' ? 'Verdadeiro ou Falso' :
-                                                        item.flashcard?.mode === 'multiple_choice' ? 'Múltipla Escolha' : item.flashcard?.mode}
+                                                        item.flashcard?.mode === 'multiple_choice' ? 'M£ltipla Escolha' : item.flashcard?.mode}
                                             </span>
                                             <p className="text-gray-800 dark:text-gray-200 font-medium line-clamp-2">
                                                 {(() => {
@@ -377,9 +354,9 @@ const SimulationDetails: React.FC = () => {
                                         <button
                                             onClick={() => handleRemoveItem(item.id)}
                                             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                            title="Remover questão"
+                                            title="Remover questÆo"
                                         >
-                                            🗑️
+                                            ???
                                         </button>
                                     </div>
                                 </div>
@@ -510,4 +487,3 @@ const SimulationDetails: React.FC = () => {
 };
 
 export default SimulationDetails;
-

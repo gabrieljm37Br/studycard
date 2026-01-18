@@ -33,6 +33,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
     const [loading, setLoading] = useState(true);
     const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
+    const [hasUpdatedStreakToday, setHasUpdatedStreakToday] = useState(false);
     const sessionRecordsRef = useRef<Map<string, { result: 'correct' | 'incorrect'; xpEarned: number }>>(new Map());
     const [timerActive, setTimerActive] = useState(false);
 
@@ -493,12 +494,47 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         return { correct, incorrect };
     };
 
-    const recordSessionResult = (cardId: string, resultValue: 'correct' | 'incorrect', xpEarned: number) => {
+    const recordSessionResult = async (cardId: string, resultValue: 'correct' | 'incorrect', xpEarned: number) => {
         sessionRecordsRef.current.set(cardId, { result: resultValue, xpEarned });
         setSessionStats(computeSessionStats());
+
+        if (!user) return;
+
+        const card = flashcards.find(fc => fc.id === cardId);
+        const effectiveDeckId = (card as any)?.deckId ?? deckId;
+        if (!effectiveDeckId) return;
+
+        try {
+            await supabase.from('study_sessions').insert({
+                user_id: user.id,
+                flashcard_id: cardId,
+                deck_id: effectiveDeckId,
+                result: resultValue,
+                xp_earned: xpEarned
+            });
+
+            if (xpEarned > 0) {
+                const { data: profile } = await supabase.from('profiles').select('xp, level').eq('id', user.id).single();
+                if (profile) {
+                    const newXp = profile.xp + xpEarned;
+                    const newLevel = Math.floor(newXp / 100) + 1;
+                    await supabase.from('profiles').update({ xp: newXp, level: newLevel }).eq('id', user.id);
+                }
+            }
+
+            if (!isSimulatedStudy) {
+                await updateLastStudied(effectiveDeckId);
+                if (!hasUpdatedStreakToday) {
+                    await updateStreak();
+                    setHasUpdatedStreakToday(true);
+                }
+            }
+        } catch (error) {
+            console.error('Error recording study result:', error);
+        }
     };
 
-    const saveStudySession = (sessionResult: 'correct' | 'incorrect', customXp?: number) => {
+    const saveStudySession = async (sessionResult: 'correct' | 'incorrect', customXp?: number) => {
         const card = flashcards[currentIndex];
 
         // For Q&A self-evaluation, use custom XP; otherwise use result-based XP
@@ -509,21 +545,15 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             xpEarned = sessionResult === 'correct' ? 10 : 0;
         }
 
-        recordSessionResult(card.id, sessionResult, xpEarned);
+        await recordSessionResult(card.id, sessionResult, xpEarned);
     };
 
     const flushSessionResults = async () => {
-        if (!user) return { correct: 0, incorrect: 0 };
-
         const entries = Array.from(sessionRecordsRef.current.entries());
         const summary = computeSessionStats();
-        if (entries.length === 0) return summary;
 
-        // Simulated mode: store in dedicated tables, no XP/streak updates
-        if (isSimulatedStudy) {
-            if (!simulationId) {
-                return summary;
-            }
+        // Persist simulated session metadata (study_sessions already escritos card a card)
+        if (isSimulatedStudy && simulationId && entries.length > 0 && user) {
             try {
                 const accuracy = flashcards.length > 0 ? Math.round((summary.correct / flashcards.length) * 100) : 0;
                 const { data: simSession, error: simSessionError } = await supabase
@@ -556,67 +586,11 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 }
             } catch (error) {
                 console.error('Error saving simulated session summary:', error);
-            } finally {
-                sessionRecordsRef.current.clear();
-                setSessionStats({ correct: 0, incorrect: 0 });
             }
-            return summary;
         }
 
-        const payload = entries
-            .map(([cardId, info]) => {
-                const card = flashcards.find(fc => fc.id === cardId);
-                const effectiveDeckId = (card as any)?.deckId ?? deckId;
-                if (!effectiveDeckId) return null;
-                return {
-                    user_id: user.id,
-                    flashcard_id: cardId,
-                    deck_id: effectiveDeckId,
-                    result: info.result,
-                    xp_earned: info.xpEarned
-                };
-            })
-            .filter(Boolean) as {
-                user_id: string;
-                flashcard_id: string;
-                deck_id: string;
-                result: 'correct' | 'incorrect';
-                xp_earned: number;
-            }[];
-
-        if (payload.length === 0) return summary;
-
-        try {
-            await supabase.from('study_sessions').insert(payload);
-
-            const totalXp = payload.reduce((sum, item) => sum + (item.xp_earned || 0), 0);
-            if (totalXp > 0) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('xp, level')
-                    .eq('id', user.id)
-                    .single();
-
-                if (profile) {
-                    const newXp = profile.xp + totalXp;
-                    const newLevel = Math.floor(newXp / 100) + 1;
-
-                    await supabase
-                        .from('profiles')
-                        .update({ xp: newXp, level: newLevel })
-                        .eq('id', user.id);
-                }
-            }
-
-            if (deckId) {
-                await updateLastStudied(deckId);
-            }
-        } catch (error) {
-            console.error('Error saving study session summary:', error);
-        } finally {
-            sessionRecordsRef.current.clear();
-            setSessionStats({ correct: 0, incorrect: 0 });
-        }
+        sessionRecordsRef.current.clear();
+        setSessionStats({ correct: 0, incorrect: 0 });
         return summary;
     };
 
@@ -698,7 +672,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         await applySrsAndUpdate(card, quality, evaluation === 'almost' ? FeedbackStatus.Almost : undefined);
 
         // Save session with custom XP and explicit result
-        saveStudySession(evaluation === 'correct' || evaluation === 'almost' ? 'correct' : 'incorrect', xpEarned);
+        await saveStudySession(evaluation === 'correct' || evaluation === 'almost' ? 'correct' : 'incorrect', xpEarned);
 
         // Modo simulado: nÃ£o reencola erros, apenas avanÃ§a a fila uma vez
         if (isSimulatedStudy) {
@@ -873,53 +847,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         : Math.min(100, Math.round((answeredCount / flashcards.length) * 100));
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-            {/* Header */}
-            <header className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-md">
-                <div className="max-w-6xl mx-auto w-full px-4 py-6 md:px-6 md:py-8">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="space-y-1 text-center md:text-left">
-                            <p className="text-xs uppercase tracking-widest text-white/70">Estudos</p>
-                            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Modo Estudo</h1>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-center md:justify-end gap-2">
-                            <button
-                                onClick={() => navigate('/help')}
-                                className="p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Central de Ajuda"
-                                aria-label="Abrir central de ajuda"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </button>
-                            <button
-                                onClick={() => navigate('/dashboard')}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                                title="Meus Decks"
-                                aria-label="Ir para Meus Decks"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 3l8 4-8 4-8-4 8-4z" />
-                                    <path d="M4 11l8 4 8-4" />
-                                    <path d="M4 15l8 4 8-4" />
-                                </svg>
-                                <span className="hidden sm:inline">Meus Decks</span>
-                            </button>
-                            <button
-                                onClick={() => navigate('/home')}
-                                className="px-4 py-2 bg-white/15 hover:bg-white/25 border border-white/25 rounded-lg text-white cursor-pointer text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
-                            >
-                                <Home className="w-4 h-4" />
-                                <span className="hidden sm:inline">Voltar</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
 
             <div className="max-w-6xl mx-auto px-4 pt-4 flex justify-center">
                 <button
