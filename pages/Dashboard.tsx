@@ -274,7 +274,7 @@ const Dashboard: React.FC = () => {
             });
         } catch (err) {
             console.error('Error loading deck stats on demand:', err);
-            setStatsError('Não foi possível carregar as estatísticas.');
+            setStatsError('NÃ£o foi possÃ­vel carregar as estatÃ­sticas.');
         } finally {
             setStatsLoading(false);
         }
@@ -339,7 +339,7 @@ const Dashboard: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (err) {
             console.error('Error loading available decks:', err);
-            alert('Erro ao carregar decks disponíveis para mover.');
+            alert('Erro ao carregar decks disponï¿½veis para mover.');
         }
     };
 
@@ -408,7 +408,7 @@ const Dashboard: React.FC = () => {
                         onClick={() => setSuccessMessage(null)}
                         className="bg-white/20 hover:bg-white/30 border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer text-white text-base transition-colors"
                     >
-                        ×
+                        ï¿½
                     </button>
                 </div>
             )}
@@ -529,7 +529,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200 cursor-pointer font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     >
-                                        Estatísticas
+                                        EstatÃ­sticas
                                     </button>
                                 </div>
 
@@ -574,17 +574,17 @@ const Dashboard: React.FC = () => {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-700">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Estatísticas do Deck</h2>
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">EstatÃ­sticas do Deck</h2>
                             <button
                                 onClick={() => setStatsModalOpen(false)}
                                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
-                                ×
+                                ï¿½
                             </button>
                         </div>
 
                         {statsLoading && (
-                            <div className="py-6 text-center text-gray-500 dark:text-gray-300">Carregando estatísticas...</div>
+                            <div className="py-6 text-center text-gray-500 dark:text-gray-300">Carregando estatÃ­sticas...</div>
                         )}
 
                         {statsError && (
@@ -609,7 +609,7 @@ const Dashboard: React.FC = () => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>% acerto (último estudo)</span>
+                                    <span>% acerto (ï¿½ltimo estudo)</span>
                                     <span className="font-bold">
                                         {statsData.accuracyPercent === null ? '-' : `${statsData.accuracyPercent}%`}
                                     </span>
@@ -636,7 +636,7 @@ const Dashboard: React.FC = () => {
                             onClick={() => setShowNewBadgeModal(false)}
                             className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg text-base font-semibold cursor-pointer mt-5 hover:shadow-lg hover:scale-105 transition-all"
                         >
-                            Incrível!
+                            Incrï¿½vel!
                         </button>
                     </div>
                 </div>
