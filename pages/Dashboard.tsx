@@ -61,6 +61,9 @@ const Dashboard: React.FC = () => {
     const [deckToRename, setDeckToRename] = useState<Deck | null>(null);
     const [renameDeckName, setRenameDeckName] = useState('');
     const [isRenamingDeck, setIsRenamingDeck] = useState(false);
+
+    const sortDecks = (list: Deck[]) =>
+        [...list].sort((a, b) => a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' }));
     useEffect(() => {
         if (user) {
             loadProfile();
@@ -183,7 +186,8 @@ const Dashboard: React.FC = () => {
             let query = supabase
                 .from('decks')
                 .select('id, name, parent_id, updated_at')
-                .eq('user_id', user!.id);
+                .eq('user_id', user!.id)
+                .order('name', { ascending: true });
 
             if (currentParentId) {
                 query = query.eq('parent_id', currentParentId);
@@ -199,7 +203,7 @@ const Dashboard: React.FC = () => {
                 name: deck.name,
                 parentId: deck.parent_id ?? null,
             }));
-            setDecks(mappedDecks);
+            setDecks(sortDecks(mappedDecks));
         } catch (err) {
             console.error('Error loading decks:', err);
         } finally {
@@ -334,9 +338,15 @@ const Dashboard: React.FC = () => {
                 .from('decks')
                 .select('*')
                 .eq('user_id', user!.id)
-                .neq('id', deck.id);
+                .neq('id', deck.id)
+                .order('name', { ascending: true });
             if (error) throw error;
-            setAvailableDecks(data || []);
+            const mappedAvailableDecks: Deck[] = (data || []).map((d: any) => ({
+                id: d.id,
+                name: d.name,
+                parentId: d.parent_id ?? null,
+            }));
+            setAvailableDecks(sortDecks(mappedAvailableDecks));
         } catch (err) {
             console.error('Error loading available decks:', err);
             alert('Erro ao carregar decks dispon�veis para mover.');
@@ -509,7 +519,7 @@ const Dashboard: React.FC = () => {
                                         }}
                                         className="flex-1 min-w-[120px] py-2.5 px-4 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <span aria-hidden>??</span>
+                                        <span aria-hidden>🃏</span>
                                         <span>Flashcards</span>
                                     </button>
                                     <button
