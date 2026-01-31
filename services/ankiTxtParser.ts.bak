@@ -12,8 +12,6 @@ export interface ParsedAnkiCard {
     correctAnswerIndex?: number;
     isTrue?: boolean;
     tags?: string[];
-    term?: string;
-    definition?: string;
 }
 
 function normalizeWhitespace(text: string, preserveLineBreaks: boolean = false): string {
@@ -49,14 +47,9 @@ function embedLatex(text: string): string {
     // Inline: $...$
     const dollarCount = (output.match(/\$/g) || []).length;
     if (dollarCount >= 2 && dollarCount % 2 === 0) {
-        output = output.replace(/\$(.+?)\$/gs, (_match, expr) => {
-            // Ajuste: Escapar sequências de 2 ou mais underscores para evitar erro de subscrito
-            // Ex: "___" vira "\_\_\_"
-            const safeExpr = expr.replace(/(__+)/g, (match) => {
-                return match.split('').map(() => '\\_').join('');
-            });
-            return `<span data-latex="${escapeLatexAttr(safeExpr.trim())}"></span>`;
-        });
+        output = output.replace(/\$(.+?)\$/gs, (_match, expr) =>
+            `<span data-latex="${escapeLatexAttr(expr.trim())}"></span>`
+        );
     }
 
     return output;
@@ -65,24 +58,23 @@ function embedLatex(text: string): string {
 // Keyword patterns (accent tolerant)
 const keywordPatterns = {
     pergunta: '(?:Pergunta:)',
-    perguntaLatex: '(?:Pergunta\\s+Latex:|Pergunta\\s+LaTeX:)',
+    perguntaLatex: '(?:Pergunta\s+Latex:|Pergunta\s+LaTeX:)',
     resposta: '(?:Resposta:)',
-    respostaLatex: '(?:Resposta\\s+Latex:|Resposta\\s+LaTeX:)',
-    explicacao: '(?:Explicacao:|Explicação:|Explicaç\\u00E3o:)',
-    questao: '(?:Questao:|Questão:|Quest\\u00E3o:)',
-    questaoLatex: '(?:Questao\\s+Latex:|Questao\\s+LaTeX:|Questão\\s+Latex:|Questão\\s+LaTeX:|Quest\\u00E3o\\s+Latex:)',
-    dicionario: '(?:Dicionario:|Dicionário:|Dicion\\u00E1rio:|Termo:)',
-    significado: '(?:Significado:|Definicao:|Definição:|Definiç\\u00E3o:)',
+    respostaLatex: '(?:Resposta\s+Latex:|Resposta\s+LaTeX:)',
+    explicacao: '(?:Explicacao:|Explica��o:)',
+    questao: '(?:Questao:|Quest�o:)',
+    questaoLatex: '(?:Questao\s+Latex:|Questao\s+LaTeX:|Quest�o\s+Latex:|Quest�o\s+LaTeX:)',
+    dicionario: '(?:Dicionario:|Dicion�rio:)',
+    significado: '(?:Significado:)',
     certoErrado: '(?:Certo ou Errado:)',
-    situacao: '(?:Situacao[- ]?Problema:|Situação[- ]?Problema:|Situaç\\u00E3o[- ]?Problema:)',
+    situacao: '(?:Situacao[- ]?Problema:|Situacao[- ]?Problema:|Situa��o[- ]?Problema:)',
     problema: '(?:Problema:)',
-    hipotese: '(?:Hipotese:|Hipótese:|Hip\\u00F3tese:)',
+    hipotese: '(?:Hipotese:|Hipotese:|Hip�tese:)',
     tags: '(?:Tags:|Etiquetas:)',
     lacuna: '(?:Lacuna:|Lacunas:|Lacuna:)',
-    opcaoLatex: '(?:Opcao\\s+Latex:|Opcao\\s+LaTeX:|Opção\\s+Latex:|Opção\\s+LaTeX:|Opç\\u00E3o\\s+Latex:)',
-    // New patterns for structure robustness
-    opcoes: '(?:Opcoes:|Opções:|Opç\\u00F5es:)'
+    opcaoLatex: '(?:Opcao\s+Latex:|Opcao\s+LaTeX:|Op��o\s+Latex:|Op��o\s+LaTeX:)'
 };
+
 
 const startKeywordPatterns = [
     { type: 'certo_errado', pattern: keywordPatterns.certoErrado },
@@ -150,8 +142,7 @@ function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
 }
 
 function parseQuestaoCard(blockText: string): ParsedAnkiCard {
-    // Adicionado suporte para "Opcoes:" explícito
-    const questionPattern = new RegExp(`(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})\\s*([\\s\\S]*?)(?=(?:${keywordPatterns.opcoes}|${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})|$)`, 'i');
+    const questionPattern = new RegExp(`(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})\\s*([\\s\\S]*?)(?=(?:${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})|$)`, 'i');
     const questionMatch = blockText.match(questionPattern);
     const isQuestionLatex = new RegExp(keywordPatterns.questaoLatex, 'i').test(blockText);
     const isAnswerLatex = new RegExp(keywordPatterns.respostaLatex, 'i').test(blockText);
@@ -169,20 +160,7 @@ function parseQuestaoCard(blockText: string): ParsedAnkiCard {
     let questionText = '';
     let correctAnswerIndex = 0;
 
-    // Verificar se há bloco explícito de opções (Opcoes: ...)
-    const opcoesExplictRaw = extractFieldByPattern(blockText, keywordPatterns.opcoes, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
-
-    if (opcoesExplictRaw) {
-        // Se temos bloco Opcoes, parsear linhas A) ...
-        const lines = opcoesExplictRaw.split('\n');
-        const optionRegex = /^([a-z]\)|\d+\.)\s*(.+)/i;
-        options = lines
-            .filter(line => optionRegex.test(line.trim()))
-            .map(line => line.replace(/^([a-z]\)|\d+\.)\s*/i, '').trim());
-
-        questionText = front;
-    } else if (front) {
-        // Tentar extrair do front (estilo legado: pergunta e opções misturadas)
+    if (front) {
         const lines = front.split('\n');
         const optionRegex = /^([a-z]\)|\d+\.)\s*(.+)/i;
         const firstOptionIndex = lines.findIndex(line => optionRegex.test(line.trim()));
@@ -281,12 +259,9 @@ function parseDicionarioCard(blockText: string): ParsedAnkiCard {
     const tags = tagsField ? tagsField.split(/[,;]/).map(tag => tag.trim()).filter(tag => tag.length > 0) : undefined;
     return {
         type: CardMode.Dictionary,
-        // Dicionário Map: front -> term, back -> definition
         front: embedLatex(frontRaw),
         back: embedLatex(backRaw),
         explanation: explanationRaw ? embedLatex(explanationRaw) : undefined,
-        term: embedLatex(frontRaw),
-        definition: embedLatex(backRaw),
         tags
     };
 }
@@ -332,9 +307,7 @@ function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnki
 
 function detectCardType(blockText: string): { type: string; keyword: string } | null {
     const trimmed = blockText.trim();
-    // Limpar BOM e caracteres invisíveis ou quotes inteligentes
-    // \uFEFF = BOM, \u201C/\u201D = Smart double quotes, \u2018/\u2019 = Smart single quotes
-    const normalizedStart = trimmed.replace(/^[\uFEFF"'\u201C\u201D\u2018\u2019\s]+/, '');
+    const normalizedStart = trimmed.replace(/^[\uFEFF"'â€œâ€â€˜â€™\s]+/, '');
 
     for (const { type, pattern } of startKeywordPatterns) {
         const regex = new RegExp(`^(?:${pattern})`, 'i');
@@ -347,8 +320,7 @@ function detectCardType(blockText: string): { type: string; keyword: string } | 
 
 function splitIntoBlocks(content: string): string[] {
     const pattern = startKeywordPatterns.map(k => `(?:${k.pattern})`).join('|');
-    // Regex para split (lookahead positivas para palavras chaves)
-    const regex = new RegExp(`(?=[\\s"'\u201C\u201D\u2018\u2019]*(?:${pattern}))`, 'gi');
+    const regex = new RegExp(`(?=[\\s"'â€œâ€â€˜â€™]*(?:${pattern}))`, 'gi');
     const blocks = content.split(regex);
 
     return blocks
@@ -403,16 +375,18 @@ export function parseAnkiTxtFile(content: string): ParsedAnkiCard[] {
 
 export function validateAnkiTxtContent(content: string): { valid: boolean; error?: string } {
     if (!content || content.trim().length === 0) {
-        return { valid: false, error: 'O arquivo TXT está vazio' };
+        return { valid: false, error: 'O arquivo TXT estÃ¡ vazio' };
     }
 
     const blocks = splitIntoBlocks(content);
     if (blocks.length === 0) {
         return {
             valid: false,
-            error: 'Nenhum flashcard válido encontrado. Certifique-se de que o arquivo contém cards com palavras-chave reconhecidas (Pergunta:, Questão:, Dicionário:, Certo ou Errado:, Lacuna:, etc.)'
+            error: 'Nenhum flashcard vÃ¡lido encontrado. Certifique-se de que o arquivo contÃ©m cards com palavras-chave reconhecidas (Pergunta:, Certo ou Errado:, etc.)'
         };
     }
 
     return { valid: true };
 }
+
+
