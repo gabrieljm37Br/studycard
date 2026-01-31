@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { renderHTML } from '@/utils/textUtils';
+import { MathContent } from './MathContent';
 import { CardMode } from '../types';
 import type { FlashcardData, QACard, TrueFalseCard, MultipleChoiceCard, PracticalExampleCard, WebSource } from '../types';
 
@@ -35,14 +35,14 @@ const QACardView: React.FC<{ card: QACard }> = ({ card }) => (
     <div className="absolute inset-0 flex h-full w-full flex-col rounded-xl p-6 text-center [backface-visibility:hidden] bg-white text-slate-900 border-2 border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
       <p className="flex-shrink-0 text-xs font-semibold uppercase text-cyan-500 dark:text-cyan-400">Pergunta e Resposta</p>
       <div className="flex-grow my-2 overflow-y-auto flex items-center justify-center p-2">
-        <h3 className="text-xl font-bold" dangerouslySetInnerHTML={renderHTML(card.question)} />
+        <MathContent tag="h3" className="text-xl font-bold" content={card.question} />
       </div>
       <p className="mt-auto flex-shrink-0 text-sm text-slate-500 dark:text-slate-400">Clique para virar</p>
     </div>
     {/* Back */}
     <div className="absolute inset-0 flex h-full w-full flex-col rounded-xl bg-slate-100 p-6 text-slate-800 [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-y-auto">
       <div className="flex-grow w-full flex flex-col justify-center items-center">
-        <p className="text-md whitespace-pre-wrap text-center" dangerouslySetInnerHTML={renderHTML(card.answer)} />
+        <MathContent tag="p" className="text-md whitespace-pre-wrap text-center" content={card.answer} />
       </div>
       <SourcesView sources={card.sources} />
     </div>
@@ -55,7 +55,7 @@ const TrueFalseCardView: React.FC<{ card: TrueFalseCard }> = ({ card }) => (
     <div className="absolute inset-0 flex h-full w-full flex-col rounded-xl p-6 text-center [backface-visibility:hidden] bg-white text-slate-900 border-2 border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
       <p className="flex-shrink-0 text-xs font-semibold uppercase text-cyan-500 dark:text-cyan-400">Verdadeiro ou Falso</p>
       <div className="flex-grow my-2 overflow-y-auto flex items-center justify-center p-2">
-        <h3 className="text-xl font-bold" dangerouslySetInnerHTML={renderHTML(card.statement)} />
+        <MathContent tag="h3" className="text-xl font-bold" content={card.statement} />
       </div>
       <p className="mt-auto flex-shrink-0 text-sm text-slate-500 dark:text-slate-400">Clique para ver a resposta</p>
     </div>
@@ -65,7 +65,7 @@ const TrueFalseCardView: React.FC<{ card: TrueFalseCard }> = ({ card }) => (
         <h3 className={`text-2xl font-bold ${card.isTrue ? 'text-green-600' : 'text-red-600'}`}>
           {card.isTrue ? 'Verdadeiro' : 'Falso'}
         </h3>
-        <p className="mt-4 text-md whitespace-pre-wrap" dangerouslySetInnerHTML={renderHTML(card.explanation)} />
+        <MathContent tag="p" className="mt-4 text-md whitespace-pre-wrap" content={card.explanation || ''} />
       </div>
       <SourcesView sources={card.sources} />
     </div>
@@ -78,7 +78,7 @@ const MultipleChoiceCardView: React.FC<{ card: MultipleChoiceCard }> = ({ card }
     <div className="absolute inset-0 flex h-full w-full flex-col rounded-xl p-6 text-center [backface-visibility:hidden] border-2 bg-white text-slate-900 border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
       <p className="flex-shrink-0 text-xs font-semibold uppercase text-cyan-500 dark:text-cyan-400">Múltipla Escolha</p>
       <div className="flex-grow my-2 overflow-y-auto text-left">
-        <h3 className="text-lg font-bold text-center" dangerouslySetInnerHTML={renderHTML(card.question)} />
+        <MathContent tag="h3" className="text-lg font-bold text-center" content={card.question} />
         <ul className="mt-4 w-full space-y-2">
           {card.options.map((option, index) => (
             <li key={index} className="rounded-md bg-slate-100 dark:bg-slate-700 p-2 text-sm">
@@ -92,7 +92,7 @@ const MultipleChoiceCardView: React.FC<{ card: MultipleChoiceCard }> = ({ card }
     {/* Back */}
     <div className="absolute inset-0 h-full w-full rounded-xl bg-slate-100 p-6 text-slate-800 [transform:rotateY(180deg)] [backface-visibility:hidden] overflow-y-auto flex flex-col">
       <div className="flex-grow">
-        <h3 className="text-lg font-bold text-slate-900" dangerouslySetInnerHTML={renderHTML(card.question)} />
+        <MathContent tag="h3" className="text-lg font-bold text-slate-900" content={card.question} />
         <ul className="mt-4 space-y-2">
           {card.options.map((option, index) => (
             <li key={index} className={`p-2 rounded-md text-sm ${index === card.correctAnswerIndex
@@ -105,7 +105,7 @@ const MultipleChoiceCardView: React.FC<{ card: MultipleChoiceCard }> = ({ card }
         </ul>
         <div className="mt-4 pt-4 border-t border-slate-300">
           <h4 className="font-bold text-slate-600">Explicação:</h4>
-          <p className="text-md whitespace-pre-wrap" dangerouslySetInnerHTML={renderHTML(card.explanation)} />
+          <MathContent tag="p" className="text-md whitespace-pre-wrap" content={card.explanation || ''} />
         </div>
       </div>
       <SourcesView sources={card.sources} />
@@ -122,7 +122,7 @@ const PracticalExampleCardView: React.FC<{ card: PracticalExampleCard, phase: nu
       <div className="absolute inset-0 flex h-full w-full flex-col rounded-xl p-6 text-center bg-white text-slate-900 border-2 border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
         <p className="flex-shrink-0 text-xs font-semibold uppercase text-cyan-500 dark:text-cyan-400">Exemplo Prático (1/3)</p>
         <div className="flex-grow my-2 overflow-y-auto flex items-center justify-center p-2">
-          <h3 className="text-xl font-bold" dangerouslySetInnerHTML={renderHTML(card.problem)} />
+          <MathContent tag="h3" className="text-xl font-bold" content={card.problem} />
         </div>
         <p className="mt-auto flex-shrink-0 text-sm text-slate-500 dark:text-slate-400">Clique para ver a pergunta</p>
       </div>
@@ -135,7 +135,7 @@ const PracticalExampleCardView: React.FC<{ card: PracticalExampleCard, phase: nu
       <div className="absolute inset-0 flex h-full w-full flex-col rounded-xl p-6 text-center bg-white text-slate-900 border-2 border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700">
         <p className="flex-shrink-0 text-xs font-semibold uppercase text-cyan-500 dark:text-cyan-400">Pergunta (2/3)</p>
         <div className="flex-grow my-2 overflow-y-auto flex items-center justify-center p-2">
-          <h3 className="text-xl font-bold" dangerouslySetInnerHTML={renderHTML(card.question)} />
+          <MathContent tag="h3" className="text-xl font-bold" content={card.question} />
         </div>
         <p className="mt-auto flex-shrink-0 text-sm text-slate-500 dark:text-slate-400">Clique para ver a solução</p>
       </div>
@@ -149,7 +149,7 @@ const PracticalExampleCardView: React.FC<{ card: PracticalExampleCard, phase: nu
       <div className="flex-grow w-full overflow-y-auto">
         <div className="text-left">
           <h4 className="font-bold text-slate-600 mb-2">Solução:</h4>
-          <p className="text-md whitespace-pre-wrap" dangerouslySetInnerHTML={renderHTML(card.solution)} />
+          <MathContent tag="p" className="text-md whitespace-pre-wrap" content={card.solution} />
         </div>
         {card.sources && card.sources.length > 0 && (
           <div className="mt-4 pt-2 border-t border-slate-300 w-full">

@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { applySm2 } from '../services/srsAlgorithm';
-import { useMathRender } from '@/hooks/useMathRender';
+import { MathContent } from '../components/MathContent';
 import { updateLastStudied } from '../services/deckService';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData } from '../types';
@@ -52,7 +52,8 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         // placeholder effect retained for future timers
     }, []);
 
-    useMathRender(cardContainerRef, [currentCard, currentIndex, showResult, flashcards.length]);
+    // Hook removido: useMathRender substituÃ­do por <MathContent />
+
 
     const handleDeleteCurrentCard = async () => {
         const card = flashcards[currentIndex];
@@ -790,7 +791,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         setShowResult(false);
         setResult(null);
     };
- 
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
@@ -844,7 +845,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
             {/* Pomodoro Timer Floating Component */}
             {/* Main Content */}
-            <div ref={cardContainerRef} className="max-w-3xl mx-auto px-4 py-8 md:py-12">
+            <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
                 {deckId && deckName && (
                     <button
                         onClick={() => navigate(`/deck/${deckId}`)}
@@ -898,28 +899,25 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                         {currentCard.mode === CardMode.Dictionary && (
                             <div className="flex flex-col gap-2">
                                 <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 dark:text-indigo-300 uppercase tracking-wide">
-                                    <span className="text-sm">ðŸ“–</span>
+                                    <span className="text-sm">📖</span>
                                     <span>DicionÃ¡rio</span>
                                 </div>
-                                <div
-                                    className="text-2xl font-bold text-gray-900 dark:text-gray-100"
-                                    dangerouslySetInnerHTML={renderHTML(currentCard.term || '(sem termo)')}
-                                />
+                                <MathContent tag="div" className="text-2xl font-bold text-gray-900 dark:text-gray-100" content={currentCard.term || '(sem termo)'} />
                             </div>
                         )}
-                        {currentCard.mode === CardMode.QA && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
-                        {currentCard.mode === CardMode.TrueFalse && <span dangerouslySetInnerHTML={renderHTML(currentCard.statement)} />}
-                        {currentCard.mode === CardMode.MultipleChoice && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
-                        {currentCard.mode === CardMode.FillInTheBlank && <span dangerouslySetInnerHTML={renderHTML(currentCard.question)} />}
+                        {currentCard.mode === CardMode.QA && <MathContent tag="span" content={currentCard.question} />}
+                        {currentCard.mode === CardMode.TrueFalse && <MathContent tag="span" content={currentCard.statement} />}
+                        {currentCard.mode === CardMode.MultipleChoice && <MathContent tag="span" content={currentCard.question} />}
+                        {currentCard.mode === CardMode.FillInTheBlank && <MathContent tag="span" content={currentCard.question} />}
                         {currentCard.mode === CardMode.PracticalExample && (
                             <div className="space-y-4">
                                 <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border-l-4 border-indigo-500">
                                     <span className="font-bold text-indigo-700 dark:text-indigo-300 block mb-1">Problema:</span>
-                                    <span className="text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={renderHTML(currentCard.problem)} />
+                                    <MathContent tag="span" className="text-gray-700 dark:text-gray-300" content={currentCard.problem} />
                                 </div>
                                 <div>
                                     <span className="font-bold text-gray-900 dark:text-white block mb-2">Pergunta:</span>
-                                    <span className="text-gray-700 dark:text-gray-300" dangerouslySetInnerHTML={renderHTML(currentCard.question)} />
+                                    <MathContent tag="span" className="text-gray-700 dark:text-gray-300" content={currentCard.question} />
                                 </div>
                             </div>
                         )}
@@ -1070,7 +1068,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                                 }`}>
                                                 {String.fromCharCode(65 + index)}
                                             </span>
-                                            <span dangerouslySetInnerHTML={renderHTML(option)} />
+                                            <MathContent tag="span" content={option} />
                                         </button>
                                     ))}
                                 </div>
@@ -1124,24 +1122,26 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
                                         <div className="space-y-4">
                                             <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
-                                                <p
+                                                <MathContent
+                                                    tag="p"
                                                     className="text-lg text-gray-800 dark:text-gray-200 font-medium leading-relaxed"
-                                                    dangerouslySetInnerHTML={renderHTML(
+                                                    content={
                                                         currentCard.mode === CardMode.QA
                                                             ? currentCard.answer
                                                             : currentCard.mode === CardMode.Dictionary
                                                                 ? (currentCard as any).definition || ''
                                                                 : (currentCard as any).solution || ''
-                                                    )}
+                                                    }
                                                 />
                                             </div>
 
                                             {currentCard.mode === CardMode.PracticalExample && (currentCard as any).explanation && (
                                                 <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
                                                     <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Explicação</p>
-                                                    <p
+                                                    <MathContent
+                                                        tag="p"
                                                         className="text-gray-700 dark:text-gray-300 leading-relaxed"
-                                                        dangerouslySetInnerHTML={renderHTML((currentCard as any).explanation)}
+                                                        content={(currentCard as any).explanation}
                                                     />
                                                 </div>
                                             )}
@@ -1210,8 +1210,8 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                                 </p>
                                                 <p className="text-lg text-gray-800 dark:text-gray-200 font-medium">
                                                     {currentCard.mode === CardMode.TrueFalse && (currentCard.isTrue ? 'Verdadeiro' : 'Falso')}
-                                                    {currentCard.mode === CardMode.MultipleChoice && <span dangerouslySetInnerHTML={renderHTML(currentCard.options[currentCard.correctAnswerIndex])} />}
-                                                    {currentCard.mode === CardMode.FillInTheBlank && <span dangerouslySetInnerHTML={renderHTML(currentCard.answer)} />}
+                                                    {currentCard.mode === CardMode.MultipleChoice && <MathContent tag="span" content={currentCard.options[currentCard.correctAnswerIndex]} />}
+                                                    {currentCard.mode === CardMode.FillInTheBlank && <MathContent tag="span" content={currentCard.answer} />}
                                                 </p>
                                             </div>
 
@@ -1222,7 +1222,11 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                                         <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                                                             Explicação
                                                         </p>
-                                                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={renderHTML((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation ? currentCard.explanation : "Veja a solucao acima.")} />
+                                                        <MathContent
+                                                            tag="p"
+                                                            className="text-gray-700 dark:text-gray-300 leading-relaxed"
+                                                            content={(currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation ? currentCard.explanation : "Veja a solucao acima."}
+                                                        />
                                                     </div>
                                                 )}
 
