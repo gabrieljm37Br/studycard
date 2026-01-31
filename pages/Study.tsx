@@ -3,12 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { applySm2 } from '../services/srsAlgorithm';
+import { useMathRender } from '@/hooks/useMathRender';
 import { updateLastStudied } from '../services/deckService';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData } from '../types';
 import { renderHTML } from '@/utils/textUtils';
 import { Home } from 'lucide-react';
-import { render as renderKatex } from 'katex';
 import 'katex/contrib/mhchem';
 import StudyTimerBar from '../components/StudyTimerBar';
 
@@ -52,28 +52,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         // placeholder effect retained for future timers
     }, []);
 
-    useEffect(() => {
-        const container = cardContainerRef.current;
-        if (!container) return;
-
-        const rafId = requestAnimationFrame(() => {
-            const latexNodes = container.querySelectorAll<HTMLElement>('span[data-latex], span[data-type="inline-math"], span[data-type="block-math"]');
-            latexNodes.forEach(node => {
-                const latex = node.getAttribute('data-latex') || node.textContent || '';
-                if (!latex) return;
-                try {
-                    renderKatex(latex, node, {
-                        throwOnError: false,
-                        displayMode: node.getAttribute('data-type') === 'block-math',
-                    });
-                } catch (error) {
-                    console.error('Erro ao renderizar LaTeX no estudo:', error);
-                }
-            });
-        });
-
-        return () => cancelAnimationFrame(rafId);
-    }, [currentCard, currentIndex, flashcards, showResult]);
+    useMathRender(cardContainerRef, [currentCard, currentIndex, showResult, flashcards.length]);
 
     const handleDeleteCurrentCard = async () => {
         const card = flashcards[currentIndex];

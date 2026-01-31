@@ -15,6 +15,24 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 };
 
 /**
+ * Garante que spans com data-latex recebam data-type esperado pelo editor/math renderer.
+ * - span data-latex sem data-type => data-type="inline-math"
+ * - preserva block-math se já existir
+ */
+export const ensureMathDataType = (html: string | null | undefined): string => {
+    if (!html) return '';
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const spans = doc.querySelectorAll('span[data-latex]');
+    spans.forEach(span => {
+        if (!span.getAttribute('data-type')) {
+            span.setAttribute('data-type', 'inline-math');
+        }
+    });
+    return doc.body.innerHTML;
+};
+
+/**
  * Sanitiza HTML removendo tags perigosas e atributos inline on*.
  * Mantem apenas tags/atributos da allowlist e forcando rel/target seguros em links.
  */
@@ -64,5 +82,7 @@ export const sanitizeHTML = (html: string | null | undefined): string => {
  * Helper para dangerouslySetInnerHTML com sanitizacao defensiva.
  */
 export const renderHTML = (text: string | null | undefined) => {
-    return { __html: sanitizeHTML(text) };
+    // Garantir data-type para math antes de sanitizar
+    const normalized = ensureMathDataType(text || '');
+    return { __html: sanitizeHTML(normalized) };
 };

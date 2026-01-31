@@ -10,7 +10,7 @@ import Image from '@tiptap/extension-image';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Mathematics from '@tiptap/extension-mathematics';
-import { sanitizeHTML } from '@/utils/textUtils';
+import { sanitizeHTML, ensureMathDataType } from '@/utils/textUtils';
 
 type FlashcardWysiwygEditorProps = {
     valueJson?: any;
@@ -146,7 +146,7 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
             return;
         }
         if (valueHtml !== undefined) {
-            const sanitized = sanitizeHTML(valueHtml);
+            const sanitized = sanitizeHTML(ensureMathDataType(valueHtml));
             if (sanitized !== editor.getHTML()) {
                 editor.commands.setContent(sanitized);
             }

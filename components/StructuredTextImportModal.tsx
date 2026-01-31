@@ -1,8 +1,12 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabaseClient';
 import { CardMode, FeedbackStatus } from '../types';
 import { parseAnkiTxtFile, validateAnkiTxtContent, type ParsedAnkiCard } from '../services/ankiTxtParser';
+import { render as renderKatex } from 'katex';
+import 'katex/contrib/mhchem';
+import { renderHTML } from '@/utils/textUtils';
+import { renderMathInElement } from '@/utils/mathRender';
 
 interface StructuredTextImportModalProps {
     isOpen: boolean;
@@ -27,6 +31,7 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
     const [isImporting, setIsImporting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<'paste' | 'preview'>('paste');
+    const previewRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (isOpen && user) {
@@ -39,6 +44,15 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
             setSelectedDeckId(preselectedDeckId);
         }
     }, [preselectedDeckId]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        if (step !== 'preview') return;
+        const container = previewRef.current;
+        if (!container) return;
+        const raf = requestAnimationFrame(() => renderMathInElement(container));
+        return () => cancelAnimationFrame(raf);
+    }, [parsedCards, step, isOpen, selectedDeckId, newDeckName]);
 
     const loadDecks = async () => {
         if (!user) return;
@@ -80,14 +94,14 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
 
         const validation = validateAnkiTxtContent(rawText);
         if (!validation.valid) {
-            setError(validation.error || 'Texto inv\u00e1lido');
+            setError(validation.error || 'Texto inválido');
             setParsedCards([]);
             return;
         }
 
         const cards = parseAnkiTxtFile(rawText);
         if (cards.length === 0) {
-            setError('Nenhum flashcard v\u00e1lido encontrado');
+            setError('Nenhum flashcard válido encontrado');
             setParsedCards([]);
             return;
         }
@@ -290,10 +304,10 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
                                     onChange={(e) => setRawText(e.target.value)}
                                     rows={10}
                                     className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                    placeholder="Exemplo:\nPergunta: ...\nResposta: ...\nExplicacao: ...\nTags: ..."
+                                    placeholder="Exemplo:\nPergunta: Qual é a derivada de $x^2$?\nResposta: $2x$\nExplicacao: $$\\frac{d}{dx}x^n = nx^{n-1}$$\nTags: calculo, derivadas\n\nTambém aceita Pergunta LaTeX: ... / Resposta LaTeX: ..."
                                 />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                    Use o mesmo padrao aceito pelo importador TXT (Pergunta:, Resposta:, Certo ou Errado:, Dicionario:, Situacao Problema:, etc.).
+                                    Use o mesmo padrao do importador TXT (Pergunta:, Resposta:, Certo ou Errado:, Dicionario:, Situacao Problema:, etc.). Para fórmulas, envolva em $...$ (inline) ou $$...$$ (bloco) ou use campos Pergunta/Resposta LaTeX.
                                 </p>
                             </div>
                             <div className="flex justify-end">
@@ -372,7 +386,7 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
                                 )}
                             </div>
 
-                            <div>
+                            <div ref={previewRef}>
                                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Preview dos flashcards</h3>
                                 <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                                     {parsedCards.map((card, index) => (
@@ -390,22 +404,24 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
                                             </div>
                                             <div className="text-sm text-gray-700 dark:text-gray-200">
                                                 <div className="font-semibold mb-1">Frente</div>
-                                                <div className="line-clamp-2 whitespace-pre-wrap">{card.front}</div>
+                                                <div className="line-clamp-2 whitespace-pre-wrap" dangerouslySetInnerHTML={renderHTML(card.front)} />
                                             </div>
                                             <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                                                 <div className="font-semibold mb-1">
                                                     {card.type === CardMode.TrueFalse ? 'Resposta esperada' : 'Verso'}
                                                 </div>
-                                                <div className="line-clamp-2 whitespace-pre-wrap">{renderCardBack(card)}</div>
+                                                <div className="line-clamp-2 whitespace-pre-wrap" dangerouslySetInnerHTML={renderHTML(renderCardBack(card))} />
                                             </div>
                                             {card.options && card.options.length > 0 && (
                                                 <div className="mt-3 text-sm text-gray-700 dark:text-gray-200">
                                                     <div className="font-semibold mb-1">Alternativas</div>
                                                     <ul className="list-disc list-inside space-y-1">
                                                         {card.options.map((opt, idx) => (
-                                                            <li key={idx} className={idx === card.correctAnswerIndex ? 'font-semibold text-green-700 dark:text-green-300' : ''}>
-                                                                {opt}
-                                                            </li>
+                                                            <li
+                                                                key={idx}
+                                                                className={idx === card.correctAnswerIndex ? 'font-semibold text-green-700 dark:text-green-300' : ''}
+                                                                dangerouslySetInnerHTML={renderHTML(opt)}
+                                                            />
                                                         ))}
                                                     </ul>
                                                 </div>
@@ -462,4 +478,3 @@ const StructuredTextImportModal: React.FC<StructuredTextImportModalProps> = ({
 };
 
 export default StructuredTextImportModal;
-
