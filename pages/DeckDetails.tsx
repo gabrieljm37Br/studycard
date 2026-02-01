@@ -7,11 +7,12 @@ import CSVImportModal from '../components/CSVImportModal';
 import AnkiTxtImportModal from '../components/AnkiTxtImportModal';
 import FlashcardWysiwygEditor from '../components/FlashcardWysiwygEditor';
 import { sanitizeHTML, renderHTML } from '@/utils/textUtils';
-import { Home, BookOpenCheck, Library, Folder, BookX, Image as ImageIcon } from 'lucide-react';
+import { Home, BookOpenCheck, Library, Folder, BookX, Image as ImageIcon, BarChart2 } from 'lucide-react';
 import { render as renderKatex } from 'katex';
 import 'katex/contrib/mhchem';
 import { useRef } from 'react';
 import { uploadFlashcardImage } from '../services/storageService';
+import { DeckMetricsModal } from '../components/DeckMetricsModal';
 
 type LocalAttachment = {
     file: File;
@@ -62,6 +63,7 @@ const DeckDetails: React.FC = () => {
     // CSV Import State
     const [showCSVImport, setShowCSVImport] = useState(false);
     const [showAnkiImport, setShowAnkiImport] = useState(false);
+    const [showMetricsModal, setShowMetricsModal] = useState(false);
 
     // Filters
     const [modeFilter, setModeFilter] = useState<CardMode | 'all'>('all');
@@ -800,7 +802,7 @@ const DeckDetails: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-            
+
 
 
 
@@ -829,6 +831,13 @@ const DeckDetails: React.FC = () => {
                                 Ver subdecks
                             </button>
                         )}
+                        <button
+                            onClick={() => setShowMetricsModal(true)}
+                            className="px-4 py-2 bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 dark:hover:bg-gray-600 hover:shadow-md transition-all whitespace-nowrap min-w-[160px] flex items-center justify-center gap-2"
+                        >
+                            <BarChart2 className="w-4 h-4" />
+                            Meus Resultados
+                        </button>
                     </div>
                 </div>
 
@@ -1618,6 +1627,13 @@ const DeckDetails: React.FC = () => {
                     alert(`${count} flashcards importados com sucesso do TXT do Anki!`);
                 }}
                 preselectedDeckId={deckId}
+            />
+            {/* Metrics Modal */}
+            <DeckMetricsModal
+                isOpen={showMetricsModal}
+                onClose={() => setShowMetricsModal(false)}
+                deckName={deckName}
+                deckId={deckId!}
             />
         </div>
     );

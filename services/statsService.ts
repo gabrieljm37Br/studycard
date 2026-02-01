@@ -28,6 +28,23 @@ export interface OverviewStats {
   retention: number;
 }
 
+export interface DeckRecursiveMetrics {
+  total_cards: number;
+  counts: {
+    unseen: number;
+    learning: number;
+    reviewing: number;
+    almost: number;
+  };
+  study_history: {
+    date: string;
+    count: number;
+    correct_count: number;
+  }[];
+  total_reviews: number;
+  total_correct: number;
+}
+
 const mapMaturity = (dbStatus: string): CardMaturitySlice['status'] => {
   switch (dbStatus) {
     case 'Novos':
@@ -93,4 +110,12 @@ export const fetchOverview = async (userId: string): Promise<OverviewStats> => {
     totalStudied,
     retention,
   };
+};
+
+export const fetchDeckRecursiveMetrics = async (deckId: string): Promise<DeckRecursiveMetrics> => {
+  const { data, error } = await supabase.rpc('get_deck_recursive_metrics', { p_deck_id: deckId });
+
+  if (error) throw error;
+
+  return data as DeckRecursiveMetrics;
 };
