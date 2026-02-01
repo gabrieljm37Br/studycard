@@ -12,7 +12,8 @@ import {
     Sun,
     Moon,
     LogOut,
-    PanelsTopLeft
+    PanelsTopLeft,
+    X
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -68,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
             <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-800">
                 <button
                     onClick={() => setIsCollapsed(prev => !prev)}
-                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors hidden md:inline-flex"
                     aria-label={isCollapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
                 >
                     <PanelsTopLeft className="h-5 w-5" />
@@ -78,6 +79,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
                         <p className="text-xs uppercase tracking-[0.18em] text-gray-400">StudyCard</p>
                         <p className="text-sm font-semibold text-white">Navegação</p>
                     </div>
+                )}
+                {isMobileOpen && (
+                    <button
+                        onClick={onMobileClose}
+                        className="ml-auto p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors md:hidden"
+                        aria-label="Fechar menu lateral"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
                 )}
             </div>
 
