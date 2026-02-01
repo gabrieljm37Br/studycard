@@ -1,7 +1,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flame, Gauge, Search, Sparkles, Trophy, Zap } from 'lucide-react';
+import { Flame, Gauge, Search, Sparkles, Trophy, Zap, Target } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePageHeader } from '../contexts/PageHeaderContext';
 import { fetchProfileOverview, fetchTodayStats, searchDecks, DeckSearchResult } from '../services/dashboardHeaderService';
@@ -233,10 +233,10 @@ const Topbar: React.FC = () => {
                     </div>
                     <div className="min-w-[220px] snap-start">
                         <StatCard
-                            label="Acur?cia do dia"
+                            label="Acurácia do dia"
                             value={loadingToday ? '...' : `${accuracyToday}%`}
                             helper={todayError ? todayError : studiedToday > 0 ? `${studiedToday} resp.` : 'Ainda sem estudos hoje'}
-                            icon={<TargetIcon />}
+                            icon={<Target className="h-5 w-5" />}
                             accent="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
                         />
                     </div>
@@ -297,10 +297,10 @@ const Topbar: React.FC = () => {
                         helper={todayError || undefined}
                     />
                     <StatCard
-                        label="Acur?cia do dia"
+                        label="Acurácia do dia"
                         value={loadingToday ? '...' : `${accuracyToday}%`}
                         helper={todayError ? todayError : studiedToday > 0 ? `${studiedToday} resp.` : 'Ainda sem estudos hoje'}
-                        icon={<TargetIcon />}
+                        icon={<Target className="h-5 w-5" />}
                         accent="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
                     />
                     <StatCard
@@ -322,7 +322,5 @@ const Topbar: React.FC = () => {
         </div>
     );
 };
-
-const TargetIcon: React.FC = () => <span className="inline-flex items-center justify-center">??</span>;
 
 export default Topbar;
