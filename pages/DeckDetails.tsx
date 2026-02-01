@@ -264,7 +264,7 @@ const DeckDetails: React.FC = () => {
                 throw error;
             }
 
-            console.log('Flashcard exclu+‚-°do com sucesso:', data);
+            console.log('Flashcard exclu√≠do com sucesso:', data);
             await loadFlashcards(); // Reload list
         } catch (error: any) {
             console.error('Error deleting flashcard:', error);
@@ -290,7 +290,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks dispon+‚-°veis.');
+            alert('Erro ao carregar decks dispon√≠veis.');
         }
     };
 
@@ -393,7 +393,7 @@ const DeckDetails: React.FC = () => {
             setAvailableDecks(data || []);
         } catch (error) {
             console.error('Error loading available decks:', error);
-            alert('Erro ao carregar decks dispon+‚-°veis.');
+            alert('Erro ao carregar decks dispon√≠veis.');
         }
     };
 
@@ -424,10 +424,10 @@ const DeckDetails: React.FC = () => {
         switch (mode) {
             case CardMode.QA: return 'Pergunta & Resposta';
             case CardMode.TrueFalse: return 'Verdadeiro ou Falso';
-            case CardMode.MultipleChoice: return 'Multipla Escolha';
-            case CardMode.PracticalExample: return 'Exemplo Pratico';
+            case CardMode.MultipleChoice: return 'M√∫ltipla Escolha';
+            case CardMode.PracticalExample: return 'Exemplo Pr√°tico';
             case CardMode.FillInTheBlank: return 'Lacunas';
-            case CardMode.Dictionary: return 'Dicionario';
+            case CardMode.Dictionary: return 'Dicion√°rio';
             default: return mode;
         }
     };
@@ -592,32 +592,32 @@ const DeckDetails: React.FC = () => {
             // Validate required fields
             if (editFormData.mode === CardMode.QA) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta s„o obrigatÛrias');
+                    alert('Pergunta e resposta s√£o obrigat√≥rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.TrueFalse) {
                 if (!editFormData.statement?.trim()) {
-                    alert('AfirmaÁ„o È obrigatÛria');
+                    alert('Afirma√ß√£o √© obrigat√≥ria');
                     return;
                 }
             } else if (editFormData.mode === CardMode.MultipleChoice) {
                 if (!editFormData.question?.trim() || editFormData.options.some((opt: string) => !opt?.trim())) {
-                    alert('Pergunta e todas as opÁıes s„o obrigatÛrias');
+                    alert('Pergunta e todas as op√ß√µes s√£o obrigat√≥rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.PracticalExample) {
                 if (!editFormData.problem?.trim() || !editFormData.question?.trim() || !editFormData.solution?.trim()) {
-                    alert('Problema, pergunta e soluÁ„o s„o obrigatÛrios');
+                    alert('Problema, pergunta e solu√ß√£o s√£o obrigat√≥rios');
                     return;
                 }
             } else if (editFormData.mode === CardMode.FillInTheBlank) {
                 if (!editFormData.question?.trim() || !editFormData.answer?.trim()) {
-                    alert('Pergunta e resposta s„o obrigatÛrias');
+                    alert('Pergunta e resposta s√£o obrigat√≥rias');
                     return;
                 }
             } else if (editFormData.mode === CardMode.Dictionary) {
                 if (!editFormData.term?.trim() || !editFormData.definition?.trim()) {
-                    alert('Termo e definiÁ„o s„o obrigatÛrios');
+                    alert('Termo e defini√ß√£o s√£o obrigat√≥rios');
                     return;
                 }
             }
@@ -741,7 +741,7 @@ const DeckDetails: React.FC = () => {
             setCardToEdit(prev => (prev ? { ...prev, needsEdit: false } : prev));
             setEditFormData((prev: any) => ({ ...prev, needsEdit: false }));
         } catch (error) {
-            console.error('Erro ao desmarcar flashcard para ediÁ„o:', error);
+            console.error('Erro ao desmarcar flashcard para edi√ß√£o:', error);
             alert('Erro ao desmarcar este flashcard. Tente novamente.');
         } finally {
             setIsUnmarkingEditFlag(false);
@@ -765,13 +765,13 @@ const DeckDetails: React.FC = () => {
 
     const handleEditorImageUpload = async (file: File) => {
         if (!user?.id) {
-            throw new Error('Usu·rio n„o autenticado para upload de imagem.');
+            throw new Error('Usu√°rio n√£o autenticado para upload de imagem.');
         }
         return uploadFlashcardImage(file, user.id, cardToEdit?.id);
     };
 
     const handleBackHome = () => {
-        // Voltar sempre para a p·gina inicial
+        // Voltar sempre para a pÔøΩgina inicial
         navigate('/dashboard', { state: { deckId } });
     };
 
@@ -902,10 +902,10 @@ const DeckDetails: React.FC = () => {
                                             <option value="all">Todas as modalidades</option>
                                             <option value={CardMode.QA}>Pergunta &amp; Resposta</option>
                                             <option value={CardMode.TrueFalse}>Verdadeiro ou Falso</option>
-                                            <option value={CardMode.MultipleChoice}>M˙ltipla Escolha</option>
-                                            <option value={CardMode.PracticalExample}>Exemplo Pr·tico</option>
+                                            <option value={CardMode.MultipleChoice}>M√∫ltipla Escolha</option>
+                                            <option value={CardMode.PracticalExample}>Exemplo Pr√°tico</option>
                                             <option value={CardMode.FillInTheBlank}>Lacunas</option>
-                                            <option value={CardMode.Dictionary}>Dicion·rio</option>
+                                            <option value={CardMode.Dictionary}>Dicion√°rio</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1009,7 +1009,7 @@ const DeckDetails: React.FC = () => {
                                 disabled={filteredFlashcards.length === 0}
                                 className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
                             >
-                                {allVisibleSelected ? 'Desselecionar visiveis' : 'Selecionar visiveis'}
+                                {allVisibleSelected ? 'Desselecionar vis√≠veis' : 'Selecionar vis√≠veis'}
                             </button>
                             <span className="text-sm text-gray-500 dark:text-gray-400">
                                 Mostrando {filteredFlashcards.length} de {flashcards.length} flashcard{flashcards.length > 1 ? 's' : ''}
@@ -1087,7 +1087,7 @@ const DeckDetails: React.FC = () => {
                                                     />
                                                     {card.explanation && (
                                                         <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                                            <span className="font-semibold block">ExplicaÁ„o</span>
+                                                            <span className="font-semibold block">Explica√ß√£o</span>
                                                             <div dangerouslySetInnerHTML={renderHTML(card.explanation)} />
                                                         </div>
                                                     )}
@@ -1139,7 +1139,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon+‚-°vel.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon√≠vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -1179,7 +1179,7 @@ const DeckDetails: React.FC = () => {
 
                             <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
                                 {availableDecks.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon+‚-°vel.</p>
+                                    <p className="text-gray-500 text-center py-4">Nenhum outro deck dispon√≠vel.</p>
                                 ) : (
                                     availableDecks.map(deck => (
                                         <button
@@ -1214,9 +1214,18 @@ const DeckDetails: React.FC = () => {
                 showEditModal && cardToEdit && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-2xl w-full shadow-2xl border border-gray-100 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">
-                                Editar Flashcard - {getCardTypeLabel(cardToEdit.mode)}
-                            </h2>
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                                    Editar Flashcard - {getCardTypeLabel(cardToEdit.mode)}
+                                </h2>
+                                <button
+                                    onClick={handleCancelEdit}
+                                    className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors font-semibold"
+                                    aria-label="Fechar edi??o"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
 
                             <div className="space-y-4">
                                 {/* Q&A Mode Fields */}
@@ -1256,7 +1265,7 @@ const DeckDetails: React.FC = () => {
                                     <>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                AfirmaÁ„o *
+                                                Afirma√ß√£o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.statementJson}
@@ -1275,12 +1284,12 @@ const DeckDetails: React.FC = () => {
                                                 className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                             />
                                             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                Esta afirmaÁ„o e verdadeira
+                                                Esta afirma√ß√£o √© verdadeira
                                             </label>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                ExplicaÁ„o
+                                                Explica√ß√£o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
@@ -1313,7 +1322,7 @@ const DeckDetails: React.FC = () => {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                Op+∫+¡es *
+                                                Op√ß√µes *
                                             </label>
                                             {editFormData.options?.map((option: string, index: number) => (
                                                 <div key={index} className="flex items-center gap-3 mb-2">
@@ -1333,17 +1342,17 @@ const DeckDetails: React.FC = () => {
                                                             handleEditChange('options', newOptions);
                                                         }}
                                                         className="flex-1 p-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                                                        placeholder={`Op+∫+¡es ${String.fromCharCode(65 + index)}`}
+                                                        placeholder={`Op√ß√µes ${String.fromCharCode(65 + index)}`}
                                                     />
                                                 </div>
                                             ))}
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                Selecione o circulo da op+∫+˙o correta
+                                                Selecione o circulo da op√ß√£o correta
                                             </p>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                ExplicaÁ„o
+                                                Explica√ß√£o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
@@ -1388,7 +1397,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                SoluÁ„o *
+                                                Solu√ß√£o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.solutionJson}
@@ -1433,7 +1442,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                ExplicaÁ„o
+                                                Explica√ß√£o
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.explanationJson}
@@ -1465,7 +1474,7 @@ const DeckDetails: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                DefiniÁ„o *
+                                                Defini√ß√£o *
                                             </label>
                                             <FlashcardWysiwygEditor
                                                 valueJson={editFormData.definitionJson}
@@ -1542,11 +1551,11 @@ const DeckDetails: React.FC = () => {
                                         type="text"
                                         value={editFormData.tags || ""}
                                         onChange={(e) => handleEditChange("tags", e.target.value)}
-                                        placeholder="Ex: matematica, algebra (separadas por vÌrgula)"
+                                        placeholder="Ex: matematica, algebra (separadas por v√≠rgula)"
                                         className="w-full p-3 border-2 border-gray-200 dark:border-gray-600 rounded-lg text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                                     />
                                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        Adicione tags separadas por vÌrgula para organizar seus flashcards
+                                        Adicione tags separadas por v√≠rgula para organizar seus flashcards
                                     </p>
                                 </div>
                             </div>
@@ -1565,7 +1574,7 @@ const DeckDetails: React.FC = () => {
                                         disabled={isUnmarkingEditFlag || isSaving}
                                         className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
-                                        {isUnmarkingEditFlag ? 'Atualizando...' : 'Remover marcaÁ„o'}
+                                        {isUnmarkingEditFlag ? 'Atualizando...' : 'Remover marca√ß√£o'}
                                     </button>
                                 )}
                                 <button
@@ -1579,7 +1588,7 @@ const DeckDetails: React.FC = () => {
                                             Salvando...
                                         </>
                                     ) : (
-                                        'Salvar AlteraÁıes'
+                                        'Salvar Altera√ß√µes'
                                     )}
                                 </button>
                             </div>
