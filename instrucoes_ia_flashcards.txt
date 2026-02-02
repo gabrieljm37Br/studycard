@@ -1,0 +1,91 @@
+# GUIA DE GERAÇÃO DE TEXTO ESTRUTURADO PARA FLASHCARDS (IA)
+
+Este documento descreve o padrão técnico que uma IA deve seguir para gerar flashcards compatíveis com o recurso 'Colar texto estruturado' do aplicativo StudyCard.
+
+## 1. Princípios Gerais
+- Cada flashcard deve começar com uma **Palavra-Chave de Início** reconhecida.
+- Os campos são identificados por prefixos terminados em colon `:`.
+- O parser suporta múltiplos flashcards no mesmo texto, bastando separá-los por uma ou mais linhas em branco.
+- **LaTeX**: Fórmulas matemáticas devem ser envolvidas em `$...$` para inline ou `$$...$$` para blocos, OU utilizar as palavras-chave específicas terminadas em `LaTeX:`.
+
+---
+
+## 2. Tipos de Flashcards e Modelos
+
+### A. Pergunta e Resposta (Q&A)
+Modelo básico para conceitos diretos.
+- **Início**: `Pergunta:` ou `Pergunta LaTeX:`
+- **Resposta**: `Resposta:` ou `Resposta LaTeX:`
+- **Opcional**: `Explicacao:` e `Tags:`
+
+### B. Verdadeiro ou Falso
+Avaliação de afirmações.
+- **Início**: `Certo ou Errado:`
+- **Resposta**: Deve conter palavras como "Certo", "Errado", "Verdadeiro" ou "Falso".
+- **Opcional**: `Explicacao:` (recomendado para justificar o erro) e `Tags:`
+
+### C. Múltipla Escolha
+Questões com alternativas.
+- **Início**: `Questao:` ou `Questão LaTeX:`
+- **Opções**:
+    - **Opções em Bloco**: Use `Opcoes:` e liste as alternativas como `A) ...`, `B) ...`.
+    - **Opções Individuais**: Use `Opcao LaTeX:` repetidamente para cada alternativa.
+- **Resposta**: Letra da alternativa correta (ex: `Resposta: B`) ou o texto exato da opção.
+- **Opcional**: `Explicacao:` e `Tags:`
+
+### D. Exemplo Prático / Situação Problema
+Aplicação de conhecimento em cenários.
+- **Início**: `Situacao Problema:`
+- **Pergunta**: `Pergunta:`
+- **Resposta**: `Resposta:` (a solução do problema)
+- **Opcional**: `Explicacao:` e `Tags:`
+
+### E. Lacunas (Fill in the Blank)
+Complete a frase.
+- **Início**: `Lacuna:`
+- **Formato**: Use `____` (quatro sublinhados) no texto para indicar onde o usuário deve completar.
+- **Resposta**: O texto que preenche a lacuna.
+
+### F. Dicionário / Glossário
+Definição de termos simples.
+- **Início**: `Dicionario:` ou `Termo:`
+- **Significado**: `Significado:` ou `Definicao:`
+
+---
+
+## 3. Diretrizes para LaTeX
+- **Texto Misto**: Use `Questao:` normal e envolva a fórmula.
+    *Ex: O valor de $\sqrt{x}$ é...*
+- **Matemática Pura**: Use `Questao LaTeX:` para que todo o campo seja renderizado como fórmula.
+    *Atenção: Espaços em texto normal são ignorados dentro de blocos LaTeX puros (use \text{ } se necessário).*
+
+---
+
+## 4. Exemplos Reais para Copiar e Colar
+
+### Exemplo 1: Q&A com LaTeX
+Pergunta: Qual a fórmula da área do círculo?
+Resposta: $A = \pi \cdot r^2$
+Explicacao: Onde $r$ é o raio.
+Tags: geometria, matematica
+
+### Exemplo 2: Múltipla Escolha com LaTeX
+Questão LaTeX: Calcule o limite: \lim_{x \to \infty} \frac{1}{x}
+Opcao LaTeX: 0
+Opcao LaTeX: 1
+Opcao LaTeX: \infty
+Opcao LaTeX: -1
+Resposta: A
+Explicacao: À medida que $x$ cresce, a fração tende a zero.
+Tags: calculo
+
+### Exemplo 3: Certo ou Errado
+Certo ou Errado: A capital do Brasil é São Paulo.
+Resposta: Errado
+Explicacao: A capital do Brasil é Brasília desde 1960.
+Tags: geografia
+
+### Exemplo 4: Lacuna
+Lacuna: O processo de transformar luz em energia química nas plantas é a ____.
+Resposta: Fotossíntese
+Tags: biologia
