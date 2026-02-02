@@ -118,7 +118,7 @@ function wrapLatexSpan(text: string, display: boolean = false): string {
 function parsePerguntaCard(blockText: string): ParsedAnkiCard {
     const isFrontLatex = new RegExp(keywordPatterns.perguntaLatex, 'i').test(blockText);
     const isBackLatex = new RegExp(keywordPatterns.respostaLatex, 'i').test(blockText);
-    const frontRaw = extractFieldByPattern(blockText, `(?:${keywordPatterns.pergunta}|${keywordPatterns.perguntaLatex})`, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const frontRaw = extractFieldByPattern(blockText, `(?:${keywordPatterns.pergunta}|${keywordPatterns.perguntaLatex})`, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
     const backRaw = extractFieldByPattern(blockText, `(?:${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})`, [keywordPatterns.explicacao, keywordPatterns.tags]);
     const explanationRaw = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
     const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
@@ -133,7 +133,7 @@ function parsePerguntaCard(blockText: string): ParsedAnkiCard {
 }
 
 function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
-    const frontRaw = extractFieldByPattern(blockText, keywordPatterns.certoErrado, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const frontRaw = extractFieldByPattern(blockText, keywordPatterns.certoErrado, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
     const backRaw = extractFieldByPattern(blockText, `(?:${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})`, [keywordPatterns.explicacao, keywordPatterns.tags]);
     const explanationRaw = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
     const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
@@ -150,8 +150,8 @@ function parseCertoOuErradoCard(blockText: string): ParsedAnkiCard {
 }
 
 function parseQuestaoCard(blockText: string): ParsedAnkiCard {
-    // Adicionado suporte para "Opcoes:" explícito
-    const questionPattern = new RegExp(`(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})\\s*([\\s\\S]*?)(?=(?:${keywordPatterns.opcoes}|${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})|$)`, 'i');
+    // Adicionado suporte para "Opcao LaTeX:" no lookahead para evitar captura excessiva
+    const questionPattern = new RegExp(`(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})\\s*([\\s\\S]*?)(?=(?:${keywordPatterns.opcoes}|${keywordPatterns.opcaoLatex}|${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})|$)`, 'i');
     const questionMatch = blockText.match(questionPattern);
     const isQuestionLatex = new RegExp(keywordPatterns.questaoLatex, 'i').test(blockText);
     const isAnswerLatex = new RegExp(keywordPatterns.respostaLatex, 'i').test(blockText);
@@ -292,7 +292,7 @@ function parseDicionarioCard(blockText: string): ParsedAnkiCard {
 }
 
 function parseLacunaCard(blockText: string): ParsedAnkiCard {
-    const frontRaw = extractFieldByPattern(blockText, keywordPatterns.lacuna, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const frontRaw = extractFieldByPattern(blockText, keywordPatterns.lacuna, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
     const backRaw = extractFieldByPattern(blockText, `(?:${keywordPatterns.resposta}|${keywordPatterns.respostaLatex})`, [keywordPatterns.explicacao, keywordPatterns.tags]);
     const explanationRaw = extractFieldByPattern(blockText, keywordPatterns.explicacao, [keywordPatterns.tags]);
     const tagsField = extractFieldByPattern(blockText, keywordPatterns.tags);
@@ -309,8 +309,8 @@ function parseLacunaCard(blockText: string): ParsedAnkiCard {
 function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnkiCard {
     const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.problema, keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
     const question =
-        extractFieldByPattern(blockText, keywordPatterns.problema, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]) ||
-        extractFieldByPattern(blockText, `(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})`, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
+        extractFieldByPattern(blockText, keywordPatterns.problema, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]) ||
+        extractFieldByPattern(blockText, `(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})`, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
     const problemText = normalizeWhitespace(situation, true);
     const questionText = normalizeWhitespace(question, true);
     const front = [problemText, questionText].filter(Boolean).join('\n\n') || problemText;
