@@ -497,6 +497,7 @@ const DeckDetails: React.FC = () => {
                 formData.problem = card.problem;
                 formData.question = card.question;
                 formData.solution = card.solution;
+                formData.explanation = card.explanation || '';
                 break;
             case CardMode.FillInTheBlank:
                 formData.question = card.question;
@@ -1415,6 +1416,19 @@ const DeckDetails: React.FC = () => {
                                                 onChangeHtml={(html) => handleRichChange('solution', html, editFormData.solutionJson)}
                                                 onImageUpload={handleEditorImageUpload}
                                                 placeholder="Digite a solucao..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Explicação
+                                            </label>
+                                            <FlashcardWysiwygEditor
+                                                valueJson={editFormData.explanationJson}
+                                                valueHtml={editFormData.explanation || ''}
+                                                onChangeJson={(json) => handleRichChange('explanation', editFormData.explanation || '', json)}
+                                                onChangeHtml={(html) => handleRichChange('explanation', html, editFormData.explanationJson)}
+                                                onImageUpload={handleEditorImageUpload}
+                                                placeholder="Digite uma explicacao..."
                                             />
                                         </div>
                                     </>
