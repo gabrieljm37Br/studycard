@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
@@ -33,7 +33,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
     const [loading, setLoading] = useState(true);
     const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
-    const [hasUpdatedStreakToday, setHasUpdatedStreakToday] = useState(false);
     const sessionRecordsRef = useRef<Map<string, { result: 'correct' | 'incorrect'; xpEarned: number }>>(new Map());
     const [timerActive, setTimerActive] = useState(false);
 
@@ -493,21 +492,11 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 xp_earned: xpEarned
             });
 
-            if (xpEarned > 0) {
-                const { data: profile } = await supabase.from('profiles').select('xp, level').eq('id', user.id).single();
-                if (profile) {
-                    const newXp = profile.xp + xpEarned;
-                    const newLevel = Math.floor(newXp / 100) + 1;
-                    await supabase.from('profiles').update({ xp: newXp, level: newLevel }).eq('id', user.id);
-                }
-            }
+            // XP, level, streak e badges são calculados e atualizados
+            // atomicamente no PostgreSQL pela trigger trg_study_session_gamification
 
             if (!isSimulatedStudy) {
                 await updateLastStudied(effectiveDeckId);
-                if (!hasUpdatedStreakToday) {
-                    await updateStreak();
-                    setHasUpdatedStreakToday(true);
-                }
             }
         } catch (error) {
             console.error('Error recording study result:', error);
@@ -574,68 +563,18 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         return summary;
     };
 
-    const updateStreak = async () => {
-        const today = new Date().toISOString().split('T')[0];
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('streak_current, streak_last_study_date')
-            .eq('id', user!.id)
-            .single();
-
-        if (!profile) return;
-
-        const lastDate = profile.streak_last_study_date;
-        let newStreak = profile.streak_current;
-
-        if (lastDate === today) {
-            return; // Already studied today
-        }
-
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        if (lastDate === yesterdayStr) {
-            newStreak += 1;
-        } else {
-            newStreak = 1;
-        }
-
-        await supabase.from('profiles').update({
-            streak_current: newStreak,
-            streak_last_study_date: today
-        }).eq('id', user!.id);
-    };
-
     const checkBadges = async () => {
-        // Get user stats
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single();
-        const { count: cardsStudied } = await supabase.from('study_sessions').select('*', { count: 'exact', head: true }).eq('user_id', user!.id);
-
-        // Get all badges
-        const { data: allBadges } = await supabase.from('badges').select('*');
-        // Get user badges
-        const { data: userBadges } = await supabase.from('user_badges').select('badge_id').eq('user_id', user!.id);
-
-        const userBadgeIds = new Set(userBadges?.map(b => b.badge_id));
-        const newBadges = [];
-
-        for (const badge of (allBadges || [])) {
-            if (userBadgeIds.has(badge.id)) continue;
-
-            let earned = false;
-            if (badge.condition_type === 'study_sessions' && (cardsStudied || 0) >= badge.condition_value) earned = true;
-            if (badge.condition_type === 'level' && profile.level >= badge.condition_value) earned = true;
-            if (badge.condition_type === 'streak' && profile.streak_current >= badge.condition_value) earned = true;
-
-            if (earned) {
-                await supabase.from('user_badges').insert({ user_id: user!.id, badge_id: badge.id });
-                newBadges.push(badge);
+        try {
+            const { data: newBadges, error } = await supabase.rpc('sync_user_badges', { p_user_id: user!.id });
+            if (error) {
+                console.error('Error syncing badges via RPC:', error);
+                return [];
             }
+            return (newBadges || []).filter((b: any) => b.is_new);
+        } catch (err) {
+            console.error('Error checking badges:', err);
+            return [];
         }
-
-        return newBadges;
     };
 
     const handleSelfEvaluation = async (evaluation: 'correct' | 'almost' | 'incorrect') => {

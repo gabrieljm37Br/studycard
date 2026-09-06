@@ -1,342 +1,85 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { supabase } from './supabaseClient';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData, WebSource } from '../types';
 
-// The types from the API will be slightly different (no id or mode)
-type ApiFlashcard = Omit<FlashcardData, 'id' | 'mode' | 'feedback' | 'sources'>;
-
-const getPromptAndSchema = (mode: CardMode) => {
-  switch (mode) {
-    case CardMode.TrueFalse:
-      return {
-        prompt: `Com base nas informações do texto a seguir, gere entre 10 a 30 afirmações de verdadeiro ou falso. Cada item deve ter uma afirmação, um booleano indicando se é verdadeira e uma breve explicação didática.
-
-IMPORTANTE: Gere NO MÍNIMO 10 flashcards e NO MÁXIMO 30 flashcards. Extraia os conceitos mais relevantes.
-
-Texto:
-"""
-{text}
-"""
-
-Gere uma lista JSON com múltiplos flashcards.`,
-        schema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              statement: { type: Type.STRING, description: "A afirmação a ser avaliada." },
-              isTrue: { type: Type.BOOLEAN, description: "Verdadeiro se a afirmação estiver correta, falso caso contrário." },
-              explanation: { type: Type.STRING, description: "Uma breve explicação do porquê a afirmação é verdadeira ou falsa." }
-            },
-            required: ["statement", "isTrue", "explanation"]
-          }
-        }
-      };
-    case CardMode.MultipleChoice:
-      return {
-        prompt: `Com base nas informações do texto a seguir, gere entre 10 a 30 perguntas de múltipla escolha. Cada pergunta deve ter um enunciado, uma lista de opções de resposta, o índice da resposta correta e uma breve explicação didática. Forneça 4 opções para cada pergunta.
-
-IMPORTANTE: Gere NO MÍNIMO 10 flashcards e NO MÁXIMO 30 flashcards. Extraia os conceitos mais relevantes.
-
-Texto:
-"""
-{text}
-"""
-
-Gere uma lista JSON com múltiplos flashcards.`,
-        schema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING, description: "O enunciado da pergunta." },
-              options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Uma lista de 4 opções de resposta." },
-              correctAnswerIndex: { type: Type.INTEGER, description: "O índice (base 0) da resposta correta na lista de opções." },
-              explanation: { type: Type.STRING, description: "Uma breve explicação da resposta correta." }
-            },
-            required: ["question", "options", "correctAnswerIndex", "explanation"]
-          }
-        }
-      };
-    case CardMode.FillInTheBlank:
-      return {
-        prompt: `Com base nas informações do texto a seguir, gere entre 10 a 30 frases com lacunas (espaços em branco) para preenchimento.
-Regras:
-1. Use ____ (quatro sublinhados) para representar a lacuna.
-2. A lacuna deve ser um conceito-chave, termo técnico, data ou nome próprio.
-3. Não use lacunas para preposições simples.
-4. Não use lacunas para números de normas e números de artigos de normas, pois não são relevantes para o conteúdo.
-5. Cada frase deve ter apenas uma lacuna.
-6. Forneça a resposta correta para a lacuna.
-7. Preserve ao máximo a redação original do texto.
-
-IMPORTANTE: Gere NO MÍNIMO 10 flashcards e NO MÁXIMO 30 flashcards.
-
-Texto:
-"""
-{text}
-"""
-
-Gere uma lista JSON com múltiplos flashcards.`,
-        schema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              sentence: { type: Type.STRING, description: "A frase com a lacuna (____)." },
-              correctAnswer: { type: Type.STRING, description: "A palavra ou expressão que preenche a lacuna." }
-            },
-            required: ["sentence", "correctAnswer"]
-          }
-        }
-      };
-    case CardMode.Dictionary:
-      return {
-        prompt: `Gere entre 10 e 30 flashcards de Dicionário (termo e definição) com base no texto a seguir.
-Cada item deve conter:
-1. "term": termo ou conjunto de termos conceituais.
-2. "definition": o conceito/definição clara e concisa.
-
-IMPORTANTE: Gere NO MÍNIMO 10 e NO MÁXIMO 30 itens. Extraia os conceitos mais relevantes do texto.
-
-Texto:
-"""
-{text}
-"""
-
-Responda com uma lista JSON contendo objetos com "term" e "definition".`,
-        schema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              term: { type: Type.STRING, description: "O termo ou conjunto de termos." },
-              definition: { type: Type.STRING, description: "A definição clara do termo." }
-            },
-            required: ["term", "definition"]
-          }
-        }
-      };
-    case CardMode.QA:
-    default:
-      return {
-        prompt: `Com base nas informações do texto a seguir, gere entre 10 a 30 flashcards de pergunta e resposta. Cada flashcard deve ter uma pergunta concisa e uma resposta clara. Extraia os conceitos, definições e fatos mais importantes.
-
-IMPORTANTE: Gere NO MÍNIMO 10 flashcards e NO MÁXIMO 30 flashcards. Cubra os principais conceitos do texto.
-
-Texto:
-"""
-{text}
-"""
-
-Gere uma lista JSON com múltiplos flashcards.`,
-        schema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING, description: "A pergunta ou o termo no flashcard." },
-              answer: { type: Type.STRING, description: "A resposta ou a definição no flashcard." }
-            },
-            required: ["question", "answer"]
-          }
-        }
-      };
-  }
-};
-
 /**
- * Extracts a JSON string from a larger text block, removing markdown fences and conversational text.
- * @param text The raw text from the API response.
- * @returns A string that is likely to be valid JSON.
- */
-const extractJson = (text: string): string => {
-  // Attempt to find a JSON block enclosed in markdown ```json ... ```
-  const markdownJsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-  if (markdownJsonMatch && markdownJsonMatch[1]) {
-    return markdownJsonMatch[1].trim();
-  }
-
-  // If not found in markdown, look for the first occurrence of `[` and the last `]`
-  const startIndex = text.indexOf('[');
-  const endIndex = text.lastIndexOf(']');
-  if (startIndex !== -1 && endIndex > startIndex) {
-    return text.substring(startIndex, endIndex + 1).trim();
-  }
-
-  // As a last resort, return the original text. It might be valid JSON on its own or it will fail parsing.
-  return text;
-};
-
-
-/**
- * Generates flashcards using web search for topic-based generation
+ * Generates flashcards using web search for topic-based generation via Supabase Edge Function
  */
 export const generateFlashcardsWithSearch = async (topic: string, mode: CardMode): Promise<FlashcardData[]> => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("A variável de ambiente GEMINI_API_KEY não está definida.");
+  const { data, error } = await supabase.functions.invoke('generate-flashcards', {
+    body: {
+      action: 'generateWithSearch',
+      topic,
+      mode,
+    },
+  });
+
+  if (error) {
+    console.error("Erro ao invocar generate-flashcards com busca:", error);
+    throw new Error(error.message || "Não foi possível gerar os flashcards com pesquisa.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  try {
-    const { prompt: promptTemplate, schema } = getPromptAndSchema(mode);
+  if (data?.error) {
+    throw new Error(data.error);
+  }
 
-    // Create a search-enhanced prompt
-    const searchPrompt = `Pesquise na web sobre o tópico: "${topic}"
+  const rawCards = data?.flashcards || [];
+  const sources: WebSource[] = data?.sources || [];
 
-Use as informações encontradas na pesquisa para criar flashcards educativos e didáticos de alta qualidade.
+  return rawCards.map((card: any) => {
+    const baseCard: any = {
+      ...card,
+      id: crypto.randomUUID(),
+      mode: mode,
+      feedback: FeedbackStatus.Unseen,
+      sources: sources,
+    };
 
-${promptTemplate.replace('{text}', `informações sobre ${topic} que você encontrou na pesquisa`)}`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
-      contents: searchPrompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: schema
-      }
-    });
-
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-    const sources: WebSource[] = groundingChunks
-      .map(chunk => chunk.web)
-      .filter((web): web is { uri: string; title: string; } => !!web && !!web.uri && !!web.title);
-
-    const jsonString = response.text.trim();
-    const parsedFlashcards: ApiFlashcard[] = JSON.parse(jsonString);
-
-    if (!Array.isArray(parsedFlashcards)) {
-      throw new Error("A resposta da API não é um array válido.");
+    if (mode === CardMode.FillInTheBlank) {
+      baseCard.question = card.sentence || card.question;
+      baseCard.answer = card.correctAnswer || card.answer;
     }
 
-    return parsedFlashcards.map((card) => {
-      if (mode === CardMode.FillInTheBlank) {
-        return {
-          ...(card as any),
-          id: crypto.randomUUID(),
-          mode: mode,
-          feedback: FeedbackStatus.Unseen,
-          sources: sources,
-          question: (card as any).sentence,
-          answer: (card as any).correctAnswer,
-        };
-      }
-      if (mode === CardMode.Dictionary) {
-        return {
-          ...(card as any),
-          id: crypto.randomUUID(),
-          mode: mode,
-          feedback: FeedbackStatus.Unseen,
-          sources: sources,
-          term: (card as any).term,
-          definition: (card as any).definition,
-        };
-      }
-      return {
-        ...(card as any),
-        id: crypto.randomUUID(),
-        mode: mode,
-        feedback: FeedbackStatus.Unseen,
-        sources: sources,
-      };
-    });
-
-  } catch (error) {
-    console.error("Erro ao gerar flashcards com pesquisa:", error);
-    if (error instanceof SyntaxError) {
-      throw new Error("A resposta da IA não estava no formato JSON esperado. Isso pode acontecer ocasionalmente. Por favor, tente gerar os flashcards novamente.");
+    if (mode === CardMode.Dictionary) {
+      baseCard.term = card.term;
+      baseCard.definition = card.definition;
     }
-    throw new Error("Não foi possível gerar os flashcards. Verifique o tópico fornecido e tente novamente.");
-  }
+
+    return baseCard;
+  });
 };
 
-
+/**
+ * Generates flashcards based on text content via Supabase Edge Function
+ */
 export const generateFlashcards = async (text: string, mode: CardMode): Promise<FlashcardData[]> => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("A variável de ambiente GEMINI_API_KEY não está definida.");
+  const { data, error } = await supabase.functions.invoke('generate-flashcards', {
+    body: {
+      action: 'generate',
+      text,
+      mode,
+    },
+  });
+
+  if (error) {
+    console.error("Erro ao invocar generate-flashcards:", error);
+    throw new Error(error.message || "Não foi possível gerar os flashcards.");
   }
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-  try {
-    if (mode === CardMode.PracticalExample) {
-      const prompt = `Analise o texto a seguir e use a pesquisa na web para encontrar aplicações práticas. Com base nisso, crie um conjunto de flashcards de 'exemplo prático' em três fases.
-Cada flashcard deve conter:
-1.  "problem": uma situação-problema ou um cenário do mundo real que requeira a aplicação prática das informações.
-2.  "question": uma pergunta direta sobre como resolver ou abordar a situação-problema apresentada.
-3.  "solution": a solução detalhada para o problema, respondendo diretamente à pergunta formulada.
-
-Texto:
-"""
-${text}
-"""
-
-Responda APENAS com o array JSON de flashcards. Não inclua nenhum texto introdutório, formatação markdown ou explicações adicionais.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
-      });
-
-      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
-      const sources: WebSource[] = groundingChunks
-        .map(chunk => chunk.web)
-        .filter((web): web is { uri: string; title: string; } => !!web && !!web.uri && !!web.title);
-
-      const rawText = response.text.trim();
-      const jsonString = extractJson(rawText);
-      const parsedFlashcards: Omit<ApiFlashcard, 'deckId'>[] = JSON.parse(jsonString);
-
-      if (!Array.isArray(parsedFlashcards)) {
-        throw new Error("A resposta da API não é um array válido.");
-      }
-
-      return parsedFlashcards.map((card) => ({
-        ...(card as any),
-        id: crypto.randomUUID(),
-        mode: mode,
-        feedback: FeedbackStatus.Unseen,
-        sources: sources,
-      }));
-
-    } else {
-      // Handle other modes with response schema
-      const { prompt: promptTemplate, schema } = getPromptAndSchema(mode);
-      const prompt = promptTemplate.replace('{text}', text);
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: schema
-        }
-      });
-
-      const jsonString = response.text.trim();
-      const parsedFlashcards: ApiFlashcard[] = JSON.parse(jsonString);
-
-      if (!Array.isArray(parsedFlashcards)) {
-        throw new Error("A resposta da API não é um array válido.");
-      }
-
-      return parsedFlashcards.map((card) => ({
-        ...(card as any),
-        id: crypto.randomUUID(),
-        mode: mode,
-        feedback: FeedbackStatus.Unseen,
-      }));
-    }
-  } catch (error) {
-    console.error("Erro ao gerar flashcards:", error);
-    if (error instanceof SyntaxError) {
-      throw new Error("A resposta da IA não estava no formato JSON esperado. Isso pode acontecer ocasionalmente. Por favor, tente gerar os flashcards novamente.");
-    }
-    throw new Error("Não foi possível gerar os flashcards. Verifique o texto fornecido e o modo selecionado, e tente novamente.");
+  if (data?.error) {
+    throw new Error(data.error);
   }
+
+  const rawCards = data?.flashcards || [];
+  const sources: WebSource[] = data?.sources || [];
+
+  return rawCards.map((card: any) => ({
+    ...card,
+    id: crypto.randomUUID(),
+    mode: mode,
+    feedback: FeedbackStatus.Unseen,
+    sources: sources.length > 0 ? sources : undefined,
+  }));
 };
 
 /**
@@ -414,128 +157,37 @@ export const parseCsvFile = (content: string): string[] => {
 };
 
 /**
- * Interprets a single record and classifies it into the appropriate flashcard mode
+ * Main function to interpret and classify flashcards from file records via Supabase Edge Function
  */
-const interpretRecord = async (record: string, ai: any): Promise<FlashcardData | null> => {
-  try {
-    const prompt = `Analise o seguinte registro e classifique-o em UMA das modalidades de flashcard.
+export const interpretAndClassifyFlashcards = async (records: string[]): Promise<FlashcardData[]> => {
+  const { data, error } = await supabase.functions.invoke('generate-flashcards', {
+    body: {
+      action: 'interpretRecords',
+      records,
+    },
+  });
 
-MODALIDADES DISPONÍVEIS:
+  if (error) {
+    console.error("Erro ao interpretar registros via Edge Function:", error);
+    throw new Error(error.message || "Erro ao classificar registros.");
+  }
 
-1. **qa** (Pergunta e Resposta)
-   - Pergunta direta seguida de resposta textual
-   - Exemplo: "O que é fotossíntese? | Processo de conversão de luz em energia"
+  if (data?.error) {
+    throw new Error(data.error);
+  }
 
-2. **true_false** (Verdadeiro ou Falso)
-   - Afirmação que pode ser julgada como verdadeira ou falsa
-   - Pode conter: "Certo/Errado", "V/F", "Verdadeiro/Falso"
-   - Exemplo: "A Terra é plana | Falso"
+  const rawCards = data?.flashcards || [];
 
-3. **multiple_choice** (Múltipla Escolha)
-   - Pergunta com alternativas A, B, C, D
-   - Gabarito indicando alternativa correta
-   - Exemplo: "Maior planeta? | A) Marte | B) Júpiter | C) Saturno | D) Netuno | Gabarito: B"
-
-4. **practical_example** (Exemplo Prático)
-   - Caso concreto, cenário descritivo
-   - Situação do mundo real seguida de pergunta analítica
-   - Exemplo: "João comprou um carro usado... | Como ele deve proceder?"
-
-5. **fill_in_the_blank** (Lacunas)
-   - Texto com espaços em branco: ____, (   ), [   ]
-   - Exemplo: "A ____ é o processo de evaporação | água"
-
-6. **dictionary** (Dicionário)
-   - Termo/conceito e sua definição
-   - Exemplo: "Polimorfismo | Capacidade de um objeto assumir muitas formas"
-
-REGISTRO A ANALISAR:
-"""
-${record}
-"""
-
-INSTRUÇÕES:
-1. Identifique a modalidade mais apropriada
-2. Extraia e estruture os dados conforme o formato da modalidade
-3. Limpe o conteúdo (remova formatação desnecessária)
-4. Retorne APENAS o JSON estruturado, sem texto adicional
-
-FORMATOS DE RETORNO:
-
-Para qa:
-{
-  "mode": "qa",
-  "question": "pergunta aqui",
-  "answer": "resposta aqui"
-}
-
-Para true_false:
-{
-  "mode": "true_false",
-  "statement": "afirmação aqui",
-  "isTrue": true ou false,
-  "explanation": "explicação breve"
-}
-
-Para multiple_choice:
-{
-  "mode": "multiple_choice",
-  "question": "pergunta aqui",
-  "options": ["opção A", "opção B", "opção C", "opção D"],
-  "correctAnswerIndex": 0-3,
-  "explanation": "explicação da resposta"
-}
-
-Para practical_example:
-{
-  "mode": "practical_example",
-  "problem": "descrição do caso/cenário",
-  "question": "pergunta sobre o caso",
-  "solution": "solução/resposta"
-}
-
-Para fill_in_the_blank:
-{
-  "mode": "fill_in_the_blank",
-  "sentence": "frase com ____",
-  "correctAnswer": "palavra que preenche a lacuna"
-}
-
-Para dictionary:
-{
-  "mode": "dictionary",
-  "term": "termo conceitual",
-  "definition": "definição clara do termo"
-}`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json"
-      }
-    });
-
-    const jsonString = response.text.trim();
-    const parsed = JSON.parse(jsonString);
-
-    // Validate and transform to FlashcardData format
-    const mode = parsed.mode as CardMode;
-
-    if (!mode || !Object.values(CardMode).includes(mode)) {
-      console.warn('Invalid mode returned by AI:', parsed.mode);
-      return null;
-    }
-
-    // Create flashcard based on mode
+  return rawCards.map((parsed: any) => {
     const baseCard = {
       id: crypto.randomUUID(),
-      mode: mode,
       feedback: FeedbackStatus.Unseen,
+      sources: [],
     };
 
-    switch (mode) {
+    switch (parsed.mode) {
       case CardMode.QA:
+      default:
         return {
           ...baseCard,
           mode: CardMode.QA,
@@ -587,40 +239,6 @@ Para dictionary:
           term: parsed.term || '',
           definition: parsed.definition || '',
         } as any;
-
-      default:
-        return null;
     }
-
-  } catch (error) {
-    console.error('Error interpreting record:', error);
-    return null;
-  }
-};
-
-/**
- * Main function to interpret and classify flashcards from file records
- */
-export const interpretAndClassifyFlashcards = async (records: string[]): Promise<FlashcardData[]> => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("A variável de ambiente GEMINI_API_KEY não está definida.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const flashcards: FlashcardData[] = [];
-
-  // Process records in batches to avoid rate limits
-  for (const record of records) {
-    if (!record.trim()) continue;
-
-    const flashcard = await interpretRecord(record, ai);
-    if (flashcard) {
-      flashcards.push(flashcard);
-    }
-
-    // Small delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  return flashcards;
+  });
 };
