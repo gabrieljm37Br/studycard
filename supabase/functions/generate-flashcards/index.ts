@@ -1,9 +1,18 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Limites estritos de segurança para prevenção de DoS e exaustão de custos (Denial of Wallet)
+const MAX_PAYLOAD_BYTES = 2 * 1024 * 1024; // 2 MB
+const MAX_TEXT_LENGTH = 50000; // ~10.000 palavras
+const MAX_TOPIC_LENGTH = 300;
+const MAX_RECORDS = 50; // Máximo de 50 registros por lote no interpretador
+const MAX_RECORD_LENGTH = 3000;
+const VALID_MODES = new Set(['qa', 'true_false', 'multiple_choice', 'practical_example', 'fill_in_the_blank', 'dictionary']);
 
 interface WebSource {
   uri: string;
@@ -172,21 +181,33 @@ Gere uma lista JSON com múltiplos flashcards.`,
   }
 };
 
-async function callGemini(apiKey: string, payload: any, model = "gemini-2.0-flash") {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+async function callGemini(apiKey: string, payload: any, model = "gemini-3.5-flash-lite") {
+  const modelsToTry = [model, "gemini-3.5-flash", "gemini-3.7-flash"];
+  let lastError: Error | null = null;
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.error('Gemini API Error:', res.status, errorText);
-    throw new Error(`Erro na API do Gemini (${res.status}): ${errorText}`);
+  for (const m of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.warn(`Gemini API Warning with model ${m}: ${res.status} - ${errorText}`);
+        lastError = new Error(`Erro na API do Gemini (${res.status}): ${errorText}`);
+        continue;
+      }
+
+      return await res.json();
+    } catch (err: any) {
+      lastError = err;
+    }
   }
 
-  return await res.json();
+  throw lastError || new Error('Falha ao comunicar com a API do Gemini em todos os modelos tentados.');
 }
 
 Deno.serve(async (req: Request) => {
@@ -194,7 +215,57 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Método HTTP não permitido. Utilize POST.' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
+    // 1. Limite de tamanho de carga (Prevenção de DoS de memória)
+    const contentLength = req.headers.get('content-length');
+    if (contentLength && parseInt(contentLength, 10) > MAX_PAYLOAD_BYTES) {
+      return new Response(
+        JSON.stringify({ error: 'Payload excede o limite máximo permitido de 2MB.' }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Autenticação obrigatória com Supabase Auth (Prevenção de acesso anônimo não autorizado)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso não autorizado: Cabeçalho Authorization ausente.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Configuração ausente: SUPABASE_URL ou SUPABASE_ANON_KEY não configurados no ambiente.');
+      return new Response(
+        JSON.stringify({ error: 'Configuração interna do servidor ausente.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado: Sessão de usuário inválida ou expirada. Faça login novamente.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. Verificação de chave de serviço da IA
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {
       return new Response(
@@ -203,17 +274,70 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { action, text, topic, mode = 'qa', records } = await req.json();
+    // 4. Validação de formato JSON
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Corpo da requisição JSON inválido.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
+    const { action, text, topic, mode = 'qa', records } = body || {};
+    const safeMode = VALID_MODES.has(mode) ? mode : 'qa';
+
+    // --------------------------------------------------------------------------
+    // Ação: Healthcheck Sintético (Smoke Test de Disponibilidade e Latência)
+    // --------------------------------------------------------------------------
+    if (action === 'healthcheck' || action === 'ping') {
+      return new Response(
+        JSON.stringify({
+          status: 'ok',
+          service: 'generate-flashcards',
+          timestamp: new Date().toISOString(),
+          geminiConfigured: Boolean(apiKey),
+          authenticatedUserId: user.id,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'test-model') {
+      const modelToTest = body.testModel || 'gemini-2.5-flash-lite';
+      const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToTest}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "ping" }] }]
+        })
+      });
+      const text = await testRes.text();
+      return new Response(JSON.stringify({ status: testRes.status, response: text }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // --------------------------------------------------------------------------
+    // Ação: Gerar a partir de texto
+    // --------------------------------------------------------------------------
     if (action === 'generate') {
-      if (!text || typeof text !== 'string') {
+      if (!text || typeof text !== 'string' || !text.trim()) {
         return new Response(
-          JSON.stringify({ error: 'Parâmetro "text" é obrigatório.' }),
+          JSON.stringify({ error: 'Parâmetro "text" é obrigatório e deve conter conteúdo textual válido.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      if (mode === 'practical_example') {
+      if (text.length > MAX_TEXT_LENGTH) {
+        return new Response(
+          JSON.stringify({ error: `Texto excede o limite máximo permitido de ${MAX_TEXT_LENGTH.toLocaleString()} caracteres.` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (safeMode === 'practical_example') {
         const prompt = `Analise o texto a seguir e use a pesquisa na web para encontrar aplicações práticas. Com base nisso, crie um conjunto de flashcards de 'exemplo prático' em três fases.
 Cada flashcard deve conter:
 1. "problem": uma situação-problema ou um cenário do mundo real que requeira a aplicação prática das informações.
@@ -247,7 +371,7 @@ Responda APENAS com o array JSON de flashcards. Não inclua nenhum texto introdu
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } else {
-        const { prompt: promptTemplate, schema } = getPromptAndSchema(mode);
+        const { prompt: promptTemplate, schema } = getPromptAndSchema(safeMode);
         const prompt = promptTemplate.replace('{text}', text);
 
         const geminiRes = await callGemini(apiKey, {
@@ -268,15 +392,25 @@ Responda APENAS com o array JSON de flashcards. Não inclua nenhum texto introdu
       }
     }
 
+    // --------------------------------------------------------------------------
+    // Ação: Gerar a partir de tópico com pesquisa na web
+    // --------------------------------------------------------------------------
     if (action === 'generateWithSearch') {
-      if (!topic || typeof topic !== 'string') {
+      if (!topic || typeof topic !== 'string' || !topic.trim()) {
         return new Response(
-          JSON.stringify({ error: 'Parâmetro "topic" é obrigatório.' }),
+          JSON.stringify({ error: 'Parâmetro "topic" é obrigatório e deve conter uma string válida.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const { prompt: promptTemplate, schema } = getPromptAndSchema(mode);
+      if (topic.length > MAX_TOPIC_LENGTH) {
+        return new Response(
+          JSON.stringify({ error: `Tópico excede o limite máximo permitido de ${MAX_TOPIC_LENGTH} caracteres.` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { prompt: promptTemplate, schema } = getPromptAndSchema(safeMode);
       const searchPrompt = `Pesquise na web sobre o tópico: "${topic}"
 
 Use as informações encontradas na pesquisa para criar flashcards educativos e didáticos de alta qualidade.
@@ -307,10 +441,20 @@ ${promptTemplate.replace('{text}', `informações sobre ${topic} que você encon
       );
     }
 
+    // --------------------------------------------------------------------------
+    // Ação: Interpretar e classificar registros de arquivos (com contenção de custos)
+    // --------------------------------------------------------------------------
     if (action === 'interpretRecords') {
       if (!Array.isArray(records) || records.length === 0) {
         return new Response(
           JSON.stringify({ error: 'Array de "records" inválido ou vazio.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (records.length > MAX_RECORDS) {
+        return new Response(
+          JSON.stringify({ error: `Número de registros excede o limite de segurança (${MAX_RECORDS} por lote). Por favor, reduza a seleção.` }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -332,8 +476,11 @@ Retorne APENAS um objeto JSON no formato correspondente:
 - dictionary: { "mode": "dictionary", "term": "...", "definition": "..." }`;
 
       const results = [];
-      for (const rec of records) {
-        if (!rec || !rec.trim()) continue;
+      for (const rawRec of records) {
+        if (!rawRec || typeof rawRec !== 'string') continue;
+        const rec = rawRec.trim().slice(0, MAX_RECORD_LENGTH);
+        if (!rec) continue;
+
         try {
           const prompt = promptTemplate.replace('{record}', rec);
           const geminiRes = await callGemini(apiKey, {
@@ -346,7 +493,7 @@ Retorne APENAS um objeto JSON no formato correspondente:
           const parsed = JSON.parse(extractJson(rawText));
           results.push(parsed);
         } catch (itemErr) {
-          console.error('Erro ao interpretar registro:', itemErr);
+          console.error('Erro ao interpretar registro individual:', itemErr);
         }
       }
 
@@ -357,14 +504,14 @@ Retorne APENAS um objeto JSON no formato correspondente:
     }
 
     return new Response(
-      JSON.stringify({ error: `Ação "${action}" desconhecida.` }),
+      JSON.stringify({ error: `Ação solicitada "${action}" é desconhecida ou inválida.` }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (err: any) {
     console.error('Edge function handler error:', err);
     return new Response(
-      JSON.stringify({ error: err.message || 'Erro interno na Edge Function.' }),
+      JSON.stringify({ error: err.message || 'Erro interno no processamento da Edge Function.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

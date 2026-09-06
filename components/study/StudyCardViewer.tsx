@@ -38,6 +38,56 @@ export const StudyCardViewer: React.FC<StudyCardViewerProps> = ({
     handleDeleteCurrentCard,
     isLastCard
 }) => {
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const activeElement = document.activeElement;
+            const isTyping = activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement;
+
+            if (e.code === 'Space') {
+                if (isTyping) return;
+                e.preventDefault();
+                if (!showResult) {
+                    evaluateAnswer();
+                } else if (result !== null) {
+                    handleNext();
+                }
+                return;
+            }
+
+            if (['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Numpad1', 'Numpad2', 'Numpad3', 'Numpad4', 'Numpad5'].includes(e.code)) {
+                if (isTyping) return;
+                const keyNum = parseInt(e.key, 10);
+                if (showResult && (card.mode === CardMode.QA || card.mode === CardMode.PracticalExample || card.mode === CardMode.Dictionary)) {
+                    e.preventDefault();
+                    if (keyNum === 1) {
+                        handleSelfEvaluation('incorrect');
+                    } else if (keyNum === 2 || keyNum === 3) {
+                        handleSelfEvaluation('almost');
+                    } else if (keyNum >= 4) {
+                        handleSelfEvaluation('correct');
+                    }
+                } else if (!showResult && card.mode === CardMode.MultipleChoice && card.options) {
+                    const optIndex = keyNum - 1;
+                    if (optIndex >= 0 && optIndex < card.options.length) {
+                        e.preventDefault();
+                        setSelectedOption(optIndex);
+                    }
+                } else if (!showResult && card.mode === CardMode.TrueFalse) {
+                    if (keyNum === 1) {
+                        e.preventDefault();
+                        setSelectedOption(0);
+                    } else if (keyNum === 2) {
+                        e.preventDefault();
+                        setSelectedOption(1);
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showResult, result, card, evaluateAnswer, handleNext, handleSelfEvaluation, setSelectedOption]);
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
             {card.needsEdit && (

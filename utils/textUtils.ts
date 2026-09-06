@@ -15,6 +15,81 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 };
 
 /**
+ * Validação rigorosa de URLs para links <a>.
+ * Bloqueia protocolos perigosos como javascript:, vbscript:, data:, etc.
+ */
+export const isSafeLinkUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    // Remove caracteres de controle ASCII e espaços invisíveis
+    const normalized = url.trim().replace(/[\x00-\x20\x7F-\x9F\u200B-\u200D\uFEFF]/g, '');
+
+    // Bloqueia expressamente javascript:, vbscript:, data:, etc.
+    if (/^(?:javascript|vbscript|data):/i.test(normalized)) {
+        return false;
+    }
+
+    // Permitir caminhos relativos seguros (/ ou #), impedindo protocol-relative (//)
+    if (normalized.startsWith('/') || normalized.startsWith('#')) {
+        return !normalized.startsWith('//');
+    }
+
+    // Permitir apenas protocolos HTTP, HTTPS e mailto
+    try {
+        const parsed = new URL(normalized, 'https://studycard.local');
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'mailto:';
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * Validação rigorosa de URLs para imagens <img>.
+ * Bloqueia javascript:, vbscript:, e data:image/svg+xml (vetor conhecido de XSS).
+ */
+export const isSafeImageUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    const normalized = url.trim().replace(/[\x00-\x20\x7F-\x9F\u200B-\u200D\uFEFF]/g, '');
+
+    if (/^(?:javascript|vbscript):/i.test(normalized)) {
+        return false;
+    }
+
+    // Permitir imagens estáticas em base64 (PNG, JPEG, WebP, GIF), EXCLUINDO SVG
+    if (/^data:image\/(?:png|jpeg|jpg|webp|gif);base64,[a-z0-9+/=]+$/i.test(normalized)) {
+        return true;
+    }
+
+    // Bloquear qualquer outro data: URI
+    if (/^data:/i.test(normalized)) {
+        return false;
+    }
+
+    if (normalized.startsWith('/') || normalized.startsWith('./')) {
+        return !normalized.startsWith('//');
+    }
+
+    try {
+        const parsed = new URL(normalized, 'https://studycard.local');
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+        return false;
+    }
+};
+
+/**
+ * Validação defensiva de estilos inline CSS.
+ * Bloqueia exfiltração via url(), expressões, scripts ou posicionamento malicioso.
+ */
+export const isSafeCssStyle = (style: string | null | undefined): boolean => {
+    if (!style) return true;
+    const lower = style.toLowerCase();
+    if (/(?:url\s*\(|expression\s*\(|javascript\s*:|@import|position\s*:|behavior\s*:|-moz-binding)/i.test(lower)) {
+        return false;
+    }
+    return true;
+};
+
+/**
  * Garante que spans com data-latex recebam data-type esperado pelo editor/math renderer.
  * Usa regex pura para evitar modificações inesperadas do DOMParser.
  * - span data-latex sem data-type => data-type="inline-math"
@@ -23,8 +98,6 @@ const ALLOWED_ATTRS: Record<string, Set<string>> = {
 export const ensureMathDataType = (html: string | null | undefined): string => {
     if (!html) return '';
 
-    // Adicionar data-type="inline-math" a spans que têm data-latex mas não têm data-type
-    // Regex procura: <span data-latex="..." mas NÃO seguido por data-type
     return html.replace(
         /<span\s+data-latex="([^"]*)"(?!\s+data-type)/gi,
         '<span data-latex="$1" data-type="inline-math"'
@@ -32,8 +105,8 @@ export const ensureMathDataType = (html: string | null | undefined): string => {
 };
 
 /**
- * Sanitiza HTML removendo tags perigosas e atributos inline on*.
- * Mantem apenas tags/atributos da allowlist e forcando rel/target seguros em links.
+ * Sanitiza HTML removendo tags perigosas, scripts, manipuladores on* e esquemas de URI inseguros.
+ * Mantem apenas tags/atributos da allowlist e forca rel/target seguros em links.
  */
 export const sanitizeHTML = (html: string | null | undefined): string => {
     if (!html) return '';
@@ -63,13 +136,33 @@ export const sanitizeHTML = (html: string | null | undefined): string => {
             const allowedAttrs = ALLOWED_ATTRS[tag];
             if (!allowedAttrs || !allowedAttrs.has(name)) {
                 el.removeAttribute(attr.name);
+                continue;
+            }
+
+            // Validação estrita de valores para atributos sensíveis
+            if (name === 'style' && !isSafeCssStyle(attr.value)) {
+                el.removeAttribute(attr.name);
             }
         }
 
-        // Ajustar links para abrir em nova aba com noopener
+        // Validação e ajuste de segurança para links <a>
         if (tag === 'a') {
+            const href = el.getAttribute('href');
+            if (!isSafeLinkUrl(href)) {
+                // Neutraliza o link caso a URL contenha javascript: ou outro protocolo não autorizado
+                el.removeAttribute('href');
+            }
             el.setAttribute('target', '_blank');
             el.setAttribute('rel', 'noopener noreferrer');
+        }
+
+        // Validação de segurança para imagens <img>
+        if (tag === 'img') {
+            const src = el.getAttribute('src');
+            if (!isSafeImageUrl(src)) {
+                nodesToRemove.push(el);
+                continue;
+            }
         }
     }
 
@@ -113,10 +206,7 @@ const processLatexDelimiters = (text: string): string => {
  * Processa delimitadores LaTeX antes de sanitizar para garantir renderização correta.
  */
 export const renderHTML = (text: string | null | undefined) => {
-    // Primeiro, processar delimitadores LaTeX ($...$ e $$...$$)
     const withLatexSpans = processLatexDelimiters(text || '');
-    // Garantir data-type para spans math existentes (usando regex, não DOMParser)
     const normalized = ensureMathDataType(withLatexSpans);
-    // Sanitizar HTML mantendo spans com data-latex
     return { __html: sanitizeHTML(normalized) };
 };

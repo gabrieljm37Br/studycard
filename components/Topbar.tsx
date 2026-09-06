@@ -1,6 +1,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Flame, Gauge, Search, Sparkles, Trophy, Zap, Target } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePageHeader } from '../contexts/PageHeaderContext';
@@ -31,6 +31,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, helper, icon, accent 
 const Topbar: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const { title, subtitle } = usePageHeader();
 
     const [loadingProfile, setLoadingProfile] = useState(true);
@@ -88,7 +89,7 @@ const Topbar: React.FC = () => {
         if (!user) return;
         loadProfile();
         loadToday();
-    }, [user, loadProfile, loadToday]);
+    }, [user, location.pathname, loadProfile, loadToday]);
 
     useEffect(() => {
         if (!user) return;

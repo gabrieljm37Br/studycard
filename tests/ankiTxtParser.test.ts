@@ -40,6 +40,34 @@ describe('ankiTxtParser', () => {
     expect(cards[0].definition).toContain('divisão celular');
   });
 
+  it('deve processar card de Questão de Múltipla Escolha', () => {
+    const text = `Questão: Quanto é 2 + 2?\nOpções:\nA) 3\nB) 4\nC) 5\nResposta: B\nExplicação: Soma básica.`;
+    const cards = parseAnkiTxtFile(text);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].type).toBe(CardMode.MultipleChoice);
+    expect(cards[0].options?.filter(Boolean)).toHaveLength(3);
+    expect(cards[0].correctAnswerIndex).toBe(1);
+    expect(cards[0].explanation).toContain('Soma básica');
+  });
+
+  it('deve processar card de Situação-Problema (Exemplo Prático)', () => {
+    const text = `Situação-Problema: Um carro viaja a 60 km/h por 2 horas.\nProblema: Qual a distância percorrida?\nResposta: 120 km\nExplicação: d = v * t`;
+    const cards = parseAnkiTxtFile(text);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].type).toBe(CardMode.PracticalExample);
+    expect(cards[0].problem).toContain('viaja a 60 km/h');
+    expect(cards[0].solution).toBe('120 km');
+  });
+
+  it('deve converter expressões LaTeX $..$ e $$..$$ em spans com data-latex', () => {
+    const text = `Pergunta: O que é a equação $$E = mc^2$$?\nResposta: Energia em repouso com $c$ sendo a velocidade da luz.`;
+    const cards = parseAnkiTxtFile(text);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].front).toContain('data-type="block-math"');
+    expect(cards[0].front).toContain('data-latex="E = mc^2"');
+    expect(cards[0].back).toContain('data-latex="c"');
+  });
+
   it('deve validar conteúdo do arquivo TXT do Anki', () => {
     expect(validateAnkiTxtContent('').valid).toBe(false);
     expect(validateAnkiTxtContent('Texto sem tags conhecidas').valid).toBe(false);

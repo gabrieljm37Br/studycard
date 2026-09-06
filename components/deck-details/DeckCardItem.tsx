@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardMode } from '../../types';
 import type { FlashcardData } from '../../types';
-import { renderHTML } from '@/utils/textUtils';
+import { MathContent } from '../MathContent';
 
 interface DeckCardItemProps {
     card: FlashcardData;
@@ -119,7 +119,7 @@ export const DeckCardItem: React.FC<DeckCardItemProps> = ({
             <div className="mb-3">
                 <div className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Frente / Pergunta</div>
                 <div className="text-gray-800 dark:text-gray-100 font-medium">
-                    {renderHTML(getQuestionHtml(card))}
+                    <MathContent tag="div" content={getQuestionHtml(card)} />
                 </div>
             </div>
 
@@ -127,7 +127,7 @@ export const DeckCardItem: React.FC<DeckCardItemProps> = ({
             <div className="mb-3">
                 <div className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">Verso / Resposta</div>
                 <div className="text-gray-600 dark:text-gray-300 text-sm">
-                    {renderHTML(getAnswerHtml(card))}
+                    <MathContent tag="div" content={getAnswerHtml(card)} />
                 </div>
             </div>
 

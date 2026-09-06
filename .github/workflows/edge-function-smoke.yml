@@ -1,0 +1,47 @@
+name: Edge Function Synthetic Smoke Test
+
+on:
+  schedule:
+    # Executa a cada 6 horas (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      full_inference:
+        description: 'Executar teste completo de inferência com Gemini AI'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  smoke-test:
+    name: Synthetic Smoke & SLA Monitor
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Synthetic Smoke Test
+        id: smoke_test
+        run: |
+          if [ "${{ github.event.inputs.full_inference }}" = "true" ]; then
+            npm run test:smoke -- --full
+          else
+            npm run test:smoke
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://ixpkbgmrqftmokdyydsl.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4cGtiZ21ycWZ0bW9rZHl5ZHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzY0NzcsImV4cCI6MjA3OTIxMjQ3N30._F-tbXOz8bliVMCIpvXYvugUjzBYVc6QoUe84TM-5nk' }}
+          TEST_USER_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+          SLA_HEALTHCHECK_MS: 3000
+          SLA_INFERENCE_MS: 12000

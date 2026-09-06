@@ -15,10 +15,12 @@ export function renderMathInElement(root: HTMLElement) {
         try {
             renderKatex(latex, node, {
                 throwOnError: false,
-                displayMode: node.getAttribute('data-type') === 'block-math'
+                displayMode: node.getAttribute('data-type') === 'block-math',
+                errorColor: '#dc2626'
             });
         } catch (err) {
             console.error('KaTeX render error:', err);
+            node.innerHTML = `<span class="katex-error text-red-600 dark:text-red-400 font-mono text-xs px-1.5 py-0.5 bg-red-50 dark:bg-red-950/20 rounded border border-red-200 dark:border-red-800" title="Erro de sintaxe LaTeX">${latex}</span>`;
         }
     });
 }

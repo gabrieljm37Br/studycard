@@ -1,0 +1,50 @@
+name: Lighthouse CI Performance Audit
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  lighthouse-audit:
+    name: Core Web Vitals & Performance Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run production build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://ixpkbgmrqftmokdyydsl.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4cGtiZ21ycWZ0bW9rZHl5ZHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzY0NzcsImV4cCI6MjA3OTIxMjQ3N30._F-tbXOz8bliVMCIpvXYvugUjzBYVc6QoUe84TM-5nk' }}
+
+      - name: Run Lighthouse CI
+        run: npx @lhci/cli autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://ixpkbgmrqftmokdyydsl.supabase.co' }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4cGtiZ21ycWZ0bW9rZHl5ZHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2MzY0NzcsImV4cCI6MjA3OTIxMjQ3N30._F-tbXOz8bliVMCIpvXYvugUjzBYVc6QoUe84TM-5nk' }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL || 'synthetic-monitor@studycard.app' }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD || 'SyntheticMonitorPass2026!' }}
+
+      - name: Upload Lighthouse Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/

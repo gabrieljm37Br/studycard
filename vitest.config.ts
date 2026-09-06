@@ -7,6 +7,22 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      include: ['services/**', 'hooks/**', 'utils/**'],
+      exclude: [
+        'services/supabaseClient.ts',
+        'hooks/useMathRender.ts',
+        'hooks/useDeckCards.ts',
+        'hooks/useFlashcardGenerator.ts',
+      ],
+      thresholds: {
+        lines: 80,
+      },
+    },
   },
   resolve: {
     alias: {

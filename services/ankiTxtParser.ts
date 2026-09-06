@@ -96,7 +96,7 @@ const startKeywordPatterns = [
     { type: 'lacuna', pattern: keywordPatterns.lacuna },
 ];
 
-function extractFieldByPattern(text: string, keywordPattern: string, endPatterns: string[] = []): string {
+function extractFieldByPattern(text: string, keywordPattern: string, endPatterns: string[] = [], preserveLineBreaks: boolean = false): string {
     const groupedEndPatterns = endPatterns.map(p => `(?:${p})`);
     const endPattern = groupedEndPatterns.length > 0 ? groupedEndPatterns.join('|') : '';
     const pattern = endPatterns.length > 0
@@ -105,7 +105,7 @@ function extractFieldByPattern(text: string, keywordPattern: string, endPatterns
 
     const regex = new RegExp(pattern, 'i');
     const match = text.match(regex);
-    return match ? normalizeWhitespace(match[1]) : '';
+    return match ? normalizeWhitespace(match[1], preserveLineBreaks) : '';
 }
 
 function wrapLatexSpan(text: string, display: boolean = false): string {
@@ -170,7 +170,7 @@ function parseQuestaoCard(blockText: string): ParsedAnkiCard {
     let correctAnswerIndex = 0;
 
     // Verificar se há bloco explícito de opções (Opcoes: ...)
-    const opcoesExplictRaw = extractFieldByPattern(blockText, keywordPatterns.opcoes, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const opcoesExplictRaw = extractFieldByPattern(blockText, keywordPatterns.opcoes, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.explicacao, keywordPatterns.tags], true);
 
     if (opcoesExplictRaw) {
         // Se temos bloco Opcoes, parsear linhas A) ...
@@ -307,10 +307,10 @@ function parseLacunaCard(blockText: string): ParsedAnkiCard {
 }
 
 function parsePracticalCard(blockText: string, startKeyword: string): ParsedAnkiCard {
-    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.problema, keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags]);
+    const situation = extractFieldByPattern(blockText, startKeyword, [keywordPatterns.problema, keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.explicacao, keywordPatterns.tags], true);
     const question =
-        extractFieldByPattern(blockText, keywordPatterns.problema, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]) ||
-        extractFieldByPattern(blockText, `(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})`, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags]);
+        extractFieldByPattern(blockText, keywordPatterns.problema, [keywordPatterns.questao, keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags], true) ||
+        extractFieldByPattern(blockText, `(?:${keywordPatterns.questao}|${keywordPatterns.questaoLatex})`, [keywordPatterns.resposta, keywordPatterns.respostaLatex, keywordPatterns.opcaoLatex, keywordPatterns.explicacao, keywordPatterns.tags], true);
     const problemText = normalizeWhitespace(situation, true);
     const questionText = normalizeWhitespace(question, true);
     const front = [problemText, questionText].filter(Boolean).join('\n\n') || problemText;

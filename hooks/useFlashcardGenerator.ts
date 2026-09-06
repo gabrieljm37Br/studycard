@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { generateFlashcards, generateFlashcardsWithSearch, parseTextFile, parseCsvFile, interpretAndClassifyFlashcards } from '../services/geminiService';
 import { CardMode } from '../types';
-import * as pdfjsLib from 'pdfjs-dist';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 
 interface UseFlashcardGeneratorParams {
     user: any;
@@ -69,6 +66,8 @@ export const useFlashcardGenerator = ({ user, initialDeckId }: UseFlashcardGener
             reader.onload = async (event) => {
                 if (!event.target?.result) return reject(new Error('Falha ao ler o arquivo.'));
                 try {
+                    const pdfjsLib = await import('pdfjs-dist');
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
                     const pdf = await pdfjsLib.getDocument(event.target.result as ArrayBuffer).promise;
                     let fullText = '';
                     for (let i = 1; i <= pdf.numPages; i++) {

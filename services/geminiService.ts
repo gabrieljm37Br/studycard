@@ -3,6 +3,24 @@ import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData, WebSource } from '../types';
 
 /**
+ * Extrai a mensagem de erro específica retornada pelo corpo JSON da Edge Function
+ */
+const extractEdgeFunctionError = async (error: any, fallback: string): Promise<string> => {
+  if (error) {
+    if (typeof error.context?.json === 'function') {
+      try {
+        const errorJson = await error.context.json();
+        if (errorJson?.error) return errorJson.error;
+      } catch {
+        // ignora se falhar parsing
+      }
+    }
+    if (error.message) return error.message;
+  }
+  return fallback;
+};
+
+/**
  * Generates flashcards using web search for topic-based generation via Supabase Edge Function
  */
 export const generateFlashcardsWithSearch = async (topic: string, mode: CardMode): Promise<FlashcardData[]> => {
@@ -15,8 +33,9 @@ export const generateFlashcardsWithSearch = async (topic: string, mode: CardMode
   });
 
   if (error) {
-    console.error("Erro ao invocar generate-flashcards com busca:", error);
-    throw new Error(error.message || "Não foi possível gerar os flashcards com pesquisa.");
+    const errorMsg = await extractEdgeFunctionError(error, "Não foi possível gerar os flashcards com pesquisa.");
+    console.error("Erro ao invocar generate-flashcards com busca:", errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (data?.error) {
@@ -62,8 +81,9 @@ export const generateFlashcards = async (text: string, mode: CardMode): Promise<
   });
 
   if (error) {
-    console.error("Erro ao invocar generate-flashcards:", error);
-    throw new Error(error.message || "Não foi possível gerar os flashcards.");
+    const errorMsg = await extractEdgeFunctionError(error, "Não foi possível gerar os flashcards.");
+    console.error("Erro ao invocar generate-flashcards:", errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (data?.error) {
@@ -168,8 +188,9 @@ export const interpretAndClassifyFlashcards = async (records: string[]): Promise
   });
 
   if (error) {
-    console.error("Erro ao interpretar registros via Edge Function:", error);
-    throw new Error(error.message || "Erro ao classificar registros.");
+    const errorMsg = await extractEdgeFunctionError(error, "Erro ao classificar registros.");
+    console.error("Erro ao interpretar registros via Edge Function:", errorMsg);
+    throw new Error(errorMsg);
   }
 
   if (data?.error) {

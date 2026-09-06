@@ -51,7 +51,7 @@ const Topicogram: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+            <div className="max-w-5xl mx-auto px-4 py-8 flex items-center justify-center min-h-[300px]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                     <p className="font-medium text-gray-600 dark:text-gray-400">Carregando Linha do Tempo...</p>
@@ -61,7 +61,7 @@ const Topicogram: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-200">
+        <div className="w-full">
             {/* Header */}
             
 

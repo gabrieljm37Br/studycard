@@ -19,7 +19,7 @@ Isso acontece porque as **funções SQL necessárias não foram criadas no Supab
 
 ### Passo 2: Executar o Script SQL
 
-1. Abra o arquivo: [`supabase/statistics_functions.sql`](file:///c:/Users/Gabriel/APP/studycard/studycard/supabase/statistics_functions.sql)
+1. Abra o arquivo: [`supabase/migrations/20250108000000_fix_bola_idor_and_search_path.sql`](file:///c:/Users/Gabriel/APP/studycard/studycard/supabase/migrations/20250108000000_fix_bola_idor_and_search_path.sql) (ou [`20250106000000_statistics_functions.sql`](file:///c:/Users/Gabriel/APP/studycard/studycard/supabase/migrations/20250106000000_statistics_functions.sql))
 2. **Copie TODO o conteúdo** do arquivo
 3. **Cole** no SQL Editor do Supabase
 4. Clique em **Run** (ou pressione `Ctrl+Enter`)
@@ -190,6 +190,6 @@ Se o erro persistir após executar o script:
 
 ---
 
-**Arquivo criado**: [`supabase/statistics_functions.sql`](file:///c:/Users/Gabriel/APP/studycard/studycard/supabase/statistics_functions.sql)
+**Arquivo de migração**: [`supabase/migrations/20250108000000_fix_bola_idor_and_search_path.sql`](file:///c:/Users/Gabriel/APP/studycard/studycard/supabase/migrations/20250108000000_fix_bola_idor_and_search_path.sql)
 
 **Arquivo modificado**: [`pages/Statistics.tsx`](file:///c:/Users/Gabriel/APP/studycard/studycard/pages/Statistics.tsx)

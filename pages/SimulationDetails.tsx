@@ -120,7 +120,6 @@ const SimulationDetails: React.FC = () => {
 
         } catch (error) {
             console.error('Error loading simulation details:', error);
-            alert('Erro ao carregar detalhes do simulado.');
             navigate('/simulations');
         } finally {
             setLoading(false);
