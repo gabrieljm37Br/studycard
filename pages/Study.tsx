@@ -51,7 +51,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         // placeholder effect retained for future timers
     }, []);
 
-    // Hook removido: useMathRender substituÃ­do por <MathContent />
+    // Hook removido: useMathRender substituído por <MathContent />
 
 
     const handleDeleteCurrentCard = async () => {
@@ -83,7 +83,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             setUserAnswer('');
 
             if (nextLength <= 0) {
-                alert('Flashcard excluÃ­do. NÃ£o hÃ¡ mais itens neste deck para estudar.');
+                alert('Flashcard excluído. Não há mais itens neste deck para estudar.');
                 navigate('/dashboard');
             }
         } catch (error) {
@@ -334,7 +334,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             }
         } catch (error) {
             console.error('Error saving note:', error);
-            alert('Erro ao salvar anotaÃ§Ã£o');
+            alert('Erro ao salvar anotação');
         } finally {
             setIsSavingNote(false);
         }
@@ -345,7 +345,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         const card = flashcards[currentIndex];
         let evaluation: 'correct' | 'incorrect' = 'incorrect';
 
-        // For Q&A, Exemplo PrÃ¡tico e DicionÃ¡rio, use self-evaluation
+        // For Q&A, Exemplo Prático e Dicionário, use self-evaluation
         if (card.mode === CardMode.QA || card.mode === CardMode.PracticalExample || card.mode === CardMode.Dictionary) {
             setShowResult(true);
             setResult(null); // No automatic result for Q&A
@@ -593,7 +593,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         // Save session with custom XP and explicit result
         await saveStudySession(evaluation === 'correct' || evaluation === 'almost' ? 'correct' : 'incorrect', xpEarned);
 
-        // Modo simulado: nÃ£o reencola erros, apenas avanÃ§a a fila uma vez
+        // Modo simulado: não reencola erros, apenas avança a fila uma vez
         if (isSimulatedStudy) {
             if (currentIndex < flashcards.length - 1) {
                 setCurrentIndex(currentIndex + 1);
@@ -615,8 +615,8 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
 
         // If failed (<3), keep studying within this session
         if (quality < 3) {
-            // MantÃ©m o ponteiro no mesmo Ã­ndice apÃ³s mover o card para o fim,
-            // evitando pular o prÃ³ximo card da fila.
+            // Mantém o ponteiro no mesmo índice após mover o card para o fim,
+            // evitando pular o próximo card da fila.
             setCurrentIndex(prev => (prev >= flashcards.length - 1 ? 0 : prev));
             setUserAnswer('');
             setSelectedOption(null);
@@ -636,19 +636,18 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
             // End of session
             const summary = await flushSessionResults();
             if (!isSimulatedStudy) {
-                await updateStreak();
                 const newBadges = await checkBadges();
 
                 navigate('/dashboard', {
                     state: {
-                        message: `SessÃ£o concluÃ­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
+                        message: `Sessão concluída! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
                         newBadges: newBadges
                     }
                 });
             } else {
                 navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
                     state: {
-                        message: `Sessão do simulado concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
+                        message: `Sessão do simulado concluída! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
                     }
                 });
             }
@@ -661,7 +660,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
         await applySrsAndUpdate(card, quality);
         await saveStudySession(result === 'correct' ? 'correct' : 'incorrect');
 
-        // Modo simulado: percorre a fila uma Ãºnica vez, sem reencolar erros
+        // Modo simulado: percorre a fila uma única vez, sem reencolar erros
         if (isSimulatedStudy) {
             if (currentIndex < flashcards.length - 1) {
                 setCurrentIndex(currentIndex + 1);
@@ -839,7 +838,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                             <div className="flex flex-col gap-2">
                                 <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 dark:text-indigo-300 uppercase tracking-wide">
                                     <span className="text-sm">📖</span>
-                                    <span>DicionÃ¡rio</span>
+                                    <span>Dicionário</span>
                                 </div>
                                 <MathContent tag="div" className="text-2xl font-bold text-gray-900 dark:text-gray-100" content={currentCard.term || '(sem termo)'} />
                             </div>
@@ -874,11 +873,11 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                     : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                                     }`}
                             >
-                                <span className="text-xl">🗒</span>
+                                <span className="text-xl">🗒️</span>
                                 <span>Anotações</span>
                                 {hasNote && (
                                     <span className="ml-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                        â—
+                                        ●
                                     </span>
                                 )}
                                 <span className="ml-auto text-sm">
@@ -892,7 +891,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                             <div className="mb-8 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-6 animate-slide-down">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-lg font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                                        <span>✏</span> Suas Anotações
+                                        <span>✏️</span> Suas Anotações
                                     </h3>
                                     <span className={`text-sm font-medium ${currentNote.length > 1000
                                         ? 'text-red-600 dark:text-red-400'
@@ -909,7 +908,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             setCurrentNote(e.target.value);
                                         }
                                     }}
-                                    placeholder="Digite suas anotações sobre este flashcard... (mÃ¡ximo 1000 caracteres)"
+                                    placeholder="Digite suas anotações sobre este flashcard... (máximo 1000 caracteres)"
                                     rows={6}
                                     className="w-full p-4 border-2 border-amber-200 dark:border-amber-700 rounded-lg text-base outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors bg-white dark:bg-gray-800 dark:text-white resize-y"
                                 />
@@ -922,13 +921,13 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                     >
                                         {isSavingNote ? (
                                             <>
-                                                <span className="animate-spin">â³</span>
+                                                <span className="animate-spin">⏳</span>
                                                 <span>Salvando...</span>
                                             </>
                                         ) : (
                                             <>
-                                                <span>ðŸ’¾</span>
-                                                <span>Salvar AnotaÃ§Ã£o</span>
+                                                <span>💾</span>
+                                                <span>Salvar Anotação</span>
                                             </>
                                         )}
                                     </button>
@@ -945,8 +944,8 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                 </div>
 
                                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 flex items-start gap-2">
-                                    <span>ðŸ’¡</span>
-                                    <span>Suas anotações são privadas e vinculadas a este flashcard especÃ­fico.</span>
+                                    <span>💡</span>
+                                    <span>Suas anotações são privadas e vinculadas a este flashcard específico.</span>
                                 </p>
                             </div>
                         )}
@@ -1099,7 +1098,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                     {/* Self-Evaluation Buttons */}
                                     <div className="space-y-3">
                                         <p className="text-center text-sm font-semibold text-gray-600 dark:text-gray-400 mb-4">
-                                            Como vocÃª avalia sua resposta?
+                                            Como você avalia sua resposta?
                                         </p>
 
                                         <button
@@ -1115,7 +1114,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                             onClick={() => handleSelfEvaluation('almost')}
                                             className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-3 group transform active:scale-[0.98]"
                                         >
-                                            <span className="text-2xl">âš ï¸</span>
+                                            <span className="text-2xl">⚠️</span>
                                             <span>Quase</span>
                                             <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">+2 XP</span>
                                         </button>
@@ -1185,7 +1184,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                                         {currentIndex < flashcards.length - 1 ? (
                                             <>Próximo Flashcard <span className="group-hover:translate-x-1 transition-transform">➜</span></>
                                         ) : (
-                                            'Finalizar SessÃ£o'
+                                            'Finalizar Sessão'
                                         )}
                                     </button>
                                 </div>

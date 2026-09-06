@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -219,11 +219,11 @@ const FlashcardWysiwygEditor: React.FC<FlashcardWysiwygEditorProps> = ({
         <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
                 {renderButton('B', editor.isActive('bold'), () => editor.chain().focus().toggleBold().run(), 'Negrito')}
-                {renderButton('I', editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), 'Italico')}
+                {renderButton('I', editor.isActive('italic'), () => editor.chain().focus().toggleItalic().run(), 'Itálico')}
                 {renderButton('U', editor.isActive('underline'), () => editor.chain().focus().toggleUnderline().run(), 'Sublinhado')}
                 {renderButton('X₂', editor.isActive('subscript'), () => editor.chain().focus().toggleSubscript().run(), 'Subscrito')}
                 {renderButton('X²', editor.isActive('superscript'), () => editor.chain().focus().toggleSuperscript().run(), 'Sobrescrito')}
-                {renderButton('•', editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run(), 'Lista nÃ£o ordenada')}
+                {renderButton('•', editor.isActive('bulletList'), () => editor.chain().focus().toggleBulletList().run(), 'Lista não ordenada')}
                 {renderButton('1.', editor.isActive('orderedList'), () => editor.chain().focus().toggleOrderedList().run(), 'Lista ordenada')}
                 {renderButton('Link', editor.isActive('link'), () => {
                     let href = window.prompt('Insira o link (inclua http/https):') || '';

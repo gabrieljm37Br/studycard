@@ -349,7 +349,7 @@ const Dashboard: React.FC = () => {
             setAvailableDecks(sortDecks(mappedAvailableDecks));
         } catch (err) {
             console.error('Error loading available decks:', err);
-            alert('Erro ao carregar decks dispon�veis para mover.');
+            alert('Erro ao carregar decks disponíveis para mover.');
         }
     };
 
@@ -412,13 +412,13 @@ const Dashboard: React.FC = () => {
 
             {successMessage && (
                 <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-in">
-                    <span className="text-xl">??</span>
+                    <span className="text-xl">✨</span>
                     <span className="font-semibold">{successMessage}</span>
                     <button
                         onClick={() => setSuccessMessage(null)}
                         className="bg-white/20 hover:bg-white/30 border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer text-white text-base transition-colors"
                     >
-                        �
+                        ✕
                     </button>
                 </div>
             )}
@@ -589,7 +589,7 @@ const Dashboard: React.FC = () => {
                                 onClick={() => setStatsModalOpen(false)}
                                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
-                                �
+                                ✕
                             </button>
                         </div>
 
@@ -619,7 +619,7 @@ const Dashboard: React.FC = () => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>% acerto (�ltimo estudo)</span>
+                                    <span>% acerto (último estudo)</span>
                                     <span className="font-bold">
                                         {statsData.accuracyPercent === null ? '-' : `${statsData.accuracyPercent}%`}
                                     </span>
@@ -633,7 +633,7 @@ const Dashboard: React.FC = () => {
             {showNewBadgeModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 p-10 rounded-2xl text-center max-w-md w-full animate-pop-in shadow-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="text-6xl mb-5 animate-bounce">??</div>
+                        <div className="text-6xl mb-5 animate-bounce">🏆</div>
                         <h2 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">Nova Conquista Desbloqueada!</h2>
                         {newBadges.map(badge => (
                             <div key={badge.id} className="mb-5">
@@ -646,7 +646,7 @@ const Dashboard: React.FC = () => {
                             onClick={() => setShowNewBadgeModal(false)}
                             className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-lg text-base font-semibold cursor-pointer mt-5 hover:shadow-lg hover:scale-105 transition-all"
                         >
-                            Incr�vel!
+                            Incrível!
                         </button>
                     </div>
                 </div>
@@ -667,7 +667,7 @@ const Dashboard: React.FC = () => {
                                     : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                     }`}
                             >
-                                <span className="text-xl">??</span>
+                                <span className="text-xl">📁</span>
                                 <span className="font-medium text-gray-700 dark:text-gray-200">Raiz (Meus Decks)</span>
                                 {deckToMove.parentId === null && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                             </button>
@@ -681,7 +681,7 @@ const Dashboard: React.FC = () => {
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                         }`}
                                 >
-                                    <span className="text-xl">??</span>
+                                    <span className="text-xl">📁</span>
                                     <span className="font-medium text-gray-700 dark:text-gray-200">{deck.name}</span>
                                     {deckToMove.parentId === deck.id && <span className="ml-auto text-indigo-600 dark:text-indigo-400">Atual</span>}
                                 </button>

@@ -774,7 +774,7 @@ const DeckDetails: React.FC = () => {
     };
 
     const handleBackHome = () => {
-        // Voltar sempre para a p�gina inicial
+        // Voltar sempre para a página inicial
         navigate('/dashboard', { state: { deckId } });
     };
 
