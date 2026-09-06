@@ -1,16 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
-import { applySm2 } from '../services/srsAlgorithm';
-import { MathContent } from '../components/MathContent';
-import { updateLastStudied } from '../services/deckService';
-import { CardMode, FeedbackStatus } from '../types';
-import type { FlashcardData } from '../types';
-import { renderHTML } from '@/utils/textUtils';
 import { Home } from 'lucide-react';
 import 'katex/contrib/mhchem';
 import StudyTimerBar from '../components/StudyTimerBar';
+import { useStudySession } from '../hooks/useStudySession';
+import { useCardNotes } from '../hooks/useCardNotes';
+import { StudyCardViewer } from '../components/study/StudyCardViewer';
+import { StudyNotesDrawer } from '../components/study/StudyNotesDrawer';
 
 interface StudyProps {
     simulationMode?: boolean;
@@ -21,714 +18,50 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-    const deckId = (location.state as any)?.deckId ?? searchParams.get('deck'); // fallback for ?deck=
+    const deckId = (location.state as any)?.deckId ?? searchParams.get('deck');
     const simulationId = (location.state as any)?.simulationId;
-    const [deckName, setDeckName] = useState('');
-
-    const [flashcards, setFlashcards] = useState<FlashcardData[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [userAnswer, setUserAnswer] = useState('');
-    const [selectedOption, setSelectedOption] = useState<number | null>(null);
-    const [showResult, setShowResult] = useState(false);
-    const [result, setResult] = useState<'correct' | 'incorrect' | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [sessionStats, setSessionStats] = useState({ correct: 0, incorrect: 0 });
-    const sessionRecordsRef = useRef<Map<string, { result: 'correct' | 'incorrect'; xpEarned: number }>>(new Map());
     const [timerActive, setTimerActive] = useState(false);
 
-    // Notes State
-    const [currentNote, setCurrentNote] = useState('');
-    const [showNotesPanel, setShowNotesPanel] = useState(false);
-    const [noteId, setNoteId] = useState<string | null>(null);
-    const [isSavingNote, setIsSavingNote] = useState(false);
-    const [hasNote, setHasNote] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isMarkingForEdit, setIsMarkingForEdit] = useState(false);
-    const cardContainerRef = useRef<HTMLDivElement | null>(null);
-    const currentCard = flashcards[currentIndex];
-
-    useEffect(() => {
-        // placeholder effect retained for future timers
-    }, []);
-
-    // Hook removido: useMathRender substituído por <MathContent />
-
-
-    const handleDeleteCurrentCard = async () => {
-        const card = flashcards[currentIndex];
-        if (!card) return;
-        if (!confirm('Tem certeza que deseja excluir este flashcard?')) return;
-
-        try {
-            setIsDeleting(true);
-            const { error } = await supabase
-                .from('flashcards')
-                .delete()
-                .eq('id', card.id);
-
-            if (error) throw error;
-
-            setFlashcards(prev => {
-                const updated = [...prev];
-                updated.splice(currentIndex, 1);
-                return updated;
-            });
-
-            const nextLength = flashcards.length - 1;
-            const nextIndex = Math.max(0, Math.min(currentIndex, nextLength - 1));
-            setCurrentIndex(nextIndex);
-            setShowResult(false);
-            setResult(null);
-            setSelectedOption(null);
-            setUserAnswer('');
-
-            if (nextLength <= 0) {
-                alert('Flashcard excluído. Não há mais itens neste deck para estudar.');
-                navigate('/dashboard');
-            }
-        } catch (error) {
-            console.error('Error deleting current flashcard:', error);
-            alert('Erro ao excluir flashcard. Tente novamente.');
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
-    const toggleMarkForEdit = async () => {
-        const card = flashcards[currentIndex];
-        if (!card || !user) return;
-        const nextValue = !card.needsEdit;
-
-        try {
-            setIsMarkingForEdit(true);
-            const { error } = await supabase
-                .from('flashcards')
-                .update({ needs_edit: nextValue })
-                .eq('id', card.id)
-                .eq('user_id', user.id);
-
-            if (error) throw error;
-
-            setFlashcards(prev =>
-                prev.map((fc, idx) => (idx === currentIndex || fc.id === card.id ? { ...fc, needsEdit: nextValue } : fc)),
-            );
-        } catch (error) {
-            console.error('Erro ao marcar/desmarcar flashcard para edição:', error);
-            alert('Erro ao marcar ou desmarcar este flashcard. Tente novamente.');
-        } finally {
-            setIsMarkingForEdit(false);
-        }
-    };
-
-    // Load note when flashcard changes
-    useEffect(() => {
-        if (flashcards.length > 0 && currentIndex >= 0) {
-            loadNote();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentIndex, flashcards]);
-
-    useEffect(() => {
-        if (deckId || simulationId) {
-            loadFlashcards();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [deckId, simulationId]);
-
-    useEffect(() => {
-        const loadDeckName = async () => {
-            if (!deckId || !user) {
-                setDeckName('');
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase
-                    .from('decks')
-                    .select('name')
-                    .eq('id', deckId)
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-
-                if (error) throw error;
-                setDeckName(data?.name || '');
-            } catch (error) {
-                console.error('Error loading deck name:', error);
-                setDeckName('');
-            }
-        };
-
-        loadDeckName();
-    }, [deckId, user]);
-
-    const normalizeCard = (raw: any): FlashcardData => {
-        // Normalize snake_case fields returned by Supabase
-        const card = {
-            ...raw,
-            isTrue: raw.isTrue ?? raw.is_true,
-            correctAnswerIndex: raw.correctAnswerIndex ?? raw.correct_answer_index,
-            deckId: raw.deckId ?? raw.deck_id,
-            needsEdit: raw.needsEdit ?? raw.needs_edit ?? false,
-        };
-
-        if (card.mode === CardMode.Dictionary) {
-            return {
-                ...card,
-                term: (card as any).term || card.question || '',
-                definition: (card as any).definition || card.answer || '',
-            } as any;
-        }
-        if (card.mode === CardMode.PracticalExample) {
-            return {
-                ...card,
-                question: card.question || (card as any).problem || '',
-            } as any;
-        }
-        return card as FlashcardData;
-    };
-
-    const loadFlashcards = async () => {
-        try {
-            setLoading(true);
-
-            if (simulationId) {
-                // Load from simulation
-                const { data: items, error } = await supabase
-                    .from('simulation_items')
-                    .select('*, flashcard:flashcards(*)')
-                    .eq('simulation_id', simulationId);
-
-                if (error) throw error;
-
-                // Map items to flashcards and shuffle if needed (though simulations are usually fixed order, let's keep them as is or shuffle if requested. 
-                // The requirement said "random sequence... for the simulation", which implies the sequence is fixed at creation.
-                // So we should probably respect the order they come back, or if we stored an order index.
-                // For now, let's just use them as they come.
-                const cards = items?.map((item: any) => normalizeCard(item.flashcard)) || [];
-                setFlashcards(cards);
-                sessionRecordsRef.current = new Map();
-                setSessionStats({ correct: 0, incorrect: 0 });
-
-            } else if (deckId) {
-                // Helper function to recursively get all subdeck IDs
-                const getAllSubdeckIds = async (parentDeckId: string): Promise<string[]> => {
-                    const { data: children, error } = await supabase
-                        .from('decks')
-                        .select('id')
-                        .eq('user_id', user!.id)
-                        .eq('parent_id', parentDeckId);
-
-                    if (error || !children || children.length === 0) {
-                        return [];
-                    }
-
-                    const childIds = children.map(child => child.id);
-
-                    // Recursively get subdecks of each child
-                    const nestedIds: string[] = [];
-                    for (const childId of childIds) {
-                        const nested = await getAllSubdeckIds(childId);
-                        nestedIds.push(...nested);
-                    }
-
-                    return [...childIds, ...nestedIds];
-                };
-
-                // Get all subdeck IDs recursively
-                const allSubdeckIds = await getAllSubdeckIds(deckId);
-                const deckIdsToQuery = [deckId, ...allSubdeckIds];
-
-                // Load flashcards from this deck and all nested subdecks
-                const { data, error } = await supabase
-                    .from('flashcards')
-                    .select('*')
-                    .in('deck_id', deckIdsToQuery)
-                    .eq('user_id', user!.id)
-                    .or('next_review.is.null,next_review.lte.now()');
-
-                if (error) throw error;
-
-                const normalized = (data || []).map(normalizeCard);
-                // Shuffle flashcards
-                const shuffled = normalized.sort(() => Math.random() - 0.5);
-                setFlashcards(shuffled as any);
-                sessionRecordsRef.current = new Map();
-                setSessionStats({ correct: 0, incorrect: 0 });
-            }
-        } catch (error) {
-            console.error('Error loading flashcards:', error);
-            alert('Erro ao carregar flashcards');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const loadNote = async () => {
-        if (!flashcards[currentIndex]) return;
-
-        try {
-            const { data, error } = await supabase
-                .from('flashcard_notes')
-                .select('*')
-                .eq('user_id', user!.id)
-                .eq('flashcard_id', flashcards[currentIndex].id)
-                .maybeSingle();
-
-            if (error) throw error;
-
-            if (data) {
-                setCurrentNote(data.note_text);
-                setNoteId(data.id);
-                setHasNote(true);
-            } else {
-                setCurrentNote('');
-                setNoteId(null);
-                setHasNote(false);
-            }
-        } catch (error) {
-            console.error('Error loading note:', error);
-        }
-    };
-
-    const saveNote = async () => {
-        if (!flashcards[currentIndex]) return;
-
-        setIsSavingNote(true);
-        try {
-            const noteData = {
-                user_id: user!.id,
-                flashcard_id: flashcards[currentIndex].id,
-                note_text: currentNote.trim()
-            };
-
-            if (currentNote.trim() === '') {
-                // Delete note if empty
-                if (noteId) {
-                    await supabase
-                        .from('flashcard_notes')
-                        .delete()
-                        .eq('id', noteId);
-                    setNoteId(null);
-                    setHasNote(false);
-                }
-            } else if (noteId) {
-                // Update existing note
-                await supabase
-                    .from('flashcard_notes')
-                    .update({ note_text: currentNote.trim() })
-                    .eq('id', noteId);
-                setHasNote(true);
-            } else {
-                // Insert new note
-                const { data, error } = await supabase
-                    .from('flashcard_notes')
-                    .insert(noteData)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    setNoteId(data.id);
-                    setHasNote(true);
-                }
-            }
-        } catch (error) {
-            console.error('Error saving note:', error);
-            alert('Erro ao salvar anotação');
-        } finally {
-            setIsSavingNote(false);
-        }
-    };
-
-
-    const evaluateAnswer = () => {
-        const card = flashcards[currentIndex];
-        let evaluation: 'correct' | 'incorrect' = 'incorrect';
-
-        // For Q&A, Exemplo Prático e Dicionário, use self-evaluation
-        if (card.mode === CardMode.QA || card.mode === CardMode.PracticalExample || card.mode === CardMode.Dictionary) {
-            setShowResult(true);
-            setResult(null); // No automatic result for Q&A
-            return;
-        }
-
-        if (card.mode === CardMode.TrueFalse) {
-            // True/False: selectedOption 0 = True, 1 = False
-            const userSaysTrue = selectedOption === 0;
-            // Handle potential string/boolean mismatch from DB
-            const cardIsTrue = String(card.isTrue).toLowerCase() === 'true';
-            evaluation = userSaysTrue === cardIsTrue ? 'correct' : 'incorrect';
-        } else if (card.mode === CardMode.MultipleChoice) {
-            // Multiple Choice: check if selected option matches correct index
-            // Handle potential string/number mismatch
-            evaluation = Number(selectedOption) === Number(card.correctAnswerIndex) ? 'correct' : 'incorrect';
-        } else if (card.mode === CardMode.FillInTheBlank) {
-            // Fill-in-the-Blank: Use fuzzy matching
-            const correctAnswer = card.answer;
-            const similarity = calculateSimilarity(userAnswer.toLowerCase().trim(), correctAnswer.toLowerCase().trim());
-            evaluation = similarity > 0.8 ? 'correct' : 'incorrect';
-        }
-
-        setResult(evaluation);
-        setShowResult(true);
-
-    };
-
-    const calculateSimilarity = (str1: string, str2: string): number => {
-        // Simple similarity calculation (Levenshtein-like)
-        const longer = str1.length > str2.length ? str1 : str2;
-        const shorter = str1.length > str2.length ? str2 : str1;
-
-        if (longer.length === 0) return 1.0;
-
-        // Check for exact match first
-        if (str1 === str2) return 1.0;
-
-        // Check if shorter is contained in longer
-        if (longer.includes(shorter)) return 0.7;
-
-        const editDistance = levenshteinDistance(str1, str2);
-        return (longer.length - editDistance) / longer.length;
-    };
-
-    const levenshteinDistance = (str1: string, str2: string): number => {
-        const matrix: number[][] = [];
-
-        for (let i = 0; i <= str2.length; i++) {
-            matrix[i] = [i];
-        }
-
-        for (let j = 0; j <= str1.length; j++) {
-            matrix[0][j] = j;
-        }
-
-        for (let i = 1; i <= str2.length; i++) {
-            for (let j = 1; j <= str1.length; j++) {
-                if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-                    matrix[i][j] = matrix[i - 1][j - 1];
-                } else {
-                    matrix[i][j] = Math.min(
-                        matrix[i - 1][j - 1] + 1,
-                        matrix[i][j - 1] + 1,
-                        matrix[i - 1][j] + 1
-                    );
-                }
-            }
-        }
-
-        return matrix[str2.length][str1.length];
-    };
-
-    const qualityFromSelfEval = {
-        incorrect: 0,
-        almost: 3,
-        correct: 5
-    } as const;
-
-    const qualityFromAuto = (isCorrect: boolean) => (isCorrect ? 5 : 0);
-
-    const isSimulatedStudy = simulationMode || Boolean(simulationId);
-
-    const applySrsAndUpdate = async (card: FlashcardData, quality: number, feedbackOverride?: FeedbackStatus) => {
-        if (isSimulatedStudy) {
-            // No SRS updates or requeue in modo simulado
-            return;
-        }
-        const { interval, repetition, easeFactor, nextReview } = applySm2(card, quality);
-
-        await supabase
-            .from('flashcards')
-            .update({
-                interval,
-                repetition,
-                ease_factor: easeFactor,
-                next_review: nextReview,
-                feedback: feedbackOverride ?? (quality >= 3 ? FeedbackStatus.Correct : FeedbackStatus.Incorrect)
-            })
-            .eq('id', card.id);
-
-        // If failed, keep the card in the queue for this session
-        if (quality < 3) {
-            setFlashcards(prev => {
-                const copy = [...prev];
-                const idx = copy.findIndex(fc => fc.id === card.id);
-                if (idx >= 0) {
-                    const [failed] = copy.splice(idx, 1);
-                    copy.push(failed);
-                }
-                return copy;
-            });
-        }
-    };
-
-    const computeSessionStats = () => {
-        let correct = 0;
-        let incorrect = 0;
-
-        sessionRecordsRef.current.forEach(record => {
-            if (record.result === 'correct') correct += 1;
-            else incorrect += 1;
-        });
-
-        return { correct, incorrect };
-    };
-
-    const recordSessionResult = async (cardId: string, resultValue: 'correct' | 'incorrect', xpEarned: number) => {
-        sessionRecordsRef.current.set(cardId, { result: resultValue, xpEarned });
-        setSessionStats(computeSessionStats());
-
-        if (!user) return;
-
-        const card = flashcards.find(fc => fc.id === cardId);
-        const effectiveDeckId = (card as any)?.deckId ?? deckId;
-        if (!effectiveDeckId) return;
-
-        try {
-            await supabase.from('study_sessions').insert({
-                user_id: user.id,
-                flashcard_id: cardId,
-                deck_id: effectiveDeckId,
-                result: resultValue,
-                xp_earned: xpEarned
-            });
-
-            // XP, level, streak e badges são calculados e atualizados
-            // atomicamente no PostgreSQL pela trigger trg_study_session_gamification
-
-            if (!isSimulatedStudy) {
-                await updateLastStudied(effectiveDeckId);
-            }
-        } catch (error) {
-            console.error('Error recording study result:', error);
-        }
-    };
-
-    const saveStudySession = async (sessionResult: 'correct' | 'incorrect', customXp?: number) => {
-        const card = flashcards[currentIndex];
-
-        // For Q&A self-evaluation, use custom XP; otherwise use result-based XP
-        let xpEarned: number;
-        if (customXp !== undefined) {
-            xpEarned = customXp;
-        } else {
-            xpEarned = sessionResult === 'correct' ? 10 : 0;
-        }
-
-        await recordSessionResult(card.id, sessionResult, xpEarned);
-    };
-
-    const flushSessionResults = async () => {
-        const entries = Array.from(sessionRecordsRef.current.entries());
-        const summary = computeSessionStats();
-
-        // Persist simulated session metadata (study_sessions already escritos card a card)
-        if (isSimulatedStudy && simulationId && entries.length > 0 && user) {
-            try {
-                const accuracy = flashcards.length > 0 ? Math.round((summary.correct / flashcards.length) * 100) : 0;
-                const { data: simSession, error: simSessionError } = await supabase
-                    .from('simulation_sessions')
-                    .insert({
-                        simulation_id: simulationId,
-                        user_id: user.id,
-                        total_cards: flashcards.length,
-                        correct: summary.correct,
-                        incorrect: summary.incorrect,
-                        accuracy
-                    })
-                    .select()
-                    .single();
-
-                if (simSessionError) throw simSessionError;
-
-                if (simSession?.id) {
-                    const itemsPayload = entries.map(([cardId, info]) => ({
-                        simulation_session_id: simSession.id,
-                        flashcard_id: cardId,
-                        result: info.result
-                    }));
-
-                    const { error: itemsError } = await supabase
-                        .from('simulation_session_items')
-                        .insert(itemsPayload);
-
-                    if (itemsError) throw itemsError;
-                }
-            } catch (error) {
-                console.error('Error saving simulated session summary:', error);
-            }
-        }
-
-        sessionRecordsRef.current.clear();
-        setSessionStats({ correct: 0, incorrect: 0 });
-        return summary;
-    };
-
-    const checkBadges = async () => {
-        try {
-            const { data: newBadges, error } = await supabase.rpc('sync_user_badges', { p_user_id: user!.id });
-            if (error) {
-                console.error('Error syncing badges via RPC:', error);
-                return [];
-            }
-            return (newBadges || []).filter((b: any) => b.is_new);
-        } catch (err) {
-            console.error('Error checking badges:', err);
-            return [];
-        }
-    };
-
-    const handleSelfEvaluation = async (evaluation: 'correct' | 'almost' | 'incorrect') => {
-        const xpMap = {
-            'correct': 10,
-            'almost': 2,
-            'incorrect': 0
-        };
-
-        const xpEarned = xpMap[evaluation];
-        const card = flashcards[currentIndex];
-        const quality = qualityFromSelfEval[evaluation];
-
-        await applySrsAndUpdate(card, quality, evaluation === 'almost' ? FeedbackStatus.Almost : undefined);
-
-        // Save session with custom XP and explicit result
-        await saveStudySession(evaluation === 'correct' || evaluation === 'almost' ? 'correct' : 'incorrect', xpEarned);
-
-        // Modo simulado: não reencola erros, apenas avança a fila uma vez
-        if (isSimulatedStudy) {
-            if (currentIndex < flashcards.length - 1) {
-                setCurrentIndex(currentIndex + 1);
-                setUserAnswer('');
-                setSelectedOption(null);
-                setShowResult(false);
-                setResult(null);
-                return;
-            }
-
-            const summary = await flushSessionResults();
-            navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
-                state: {
-                    message: `Sessão do simulado concluída! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
-                }
-            });
-            return;
-        }
-
-        // If failed (<3), keep studying within this session
-        if (quality < 3) {
-            // Mantém o ponteiro no mesmo índice após mover o card para o fim,
-            // evitando pular o próximo card da fila.
-            setCurrentIndex(prev => (prev >= flashcards.length - 1 ? 0 : prev));
-            setUserAnswer('');
-            setSelectedOption(null);
-            setShowResult(false);
-            setResult(null);
-            return;
-        }
-
-        // Move to next card
-        if (currentIndex < flashcards.length - 1) {
-            setCurrentIndex(currentIndex + 1);
-            setUserAnswer('');
-            setSelectedOption(null);
-            setShowResult(false);
-            setResult(null);
-        } else {
-            // End of session
-            const summary = await flushSessionResults();
-            if (!isSimulatedStudy) {
-                const newBadges = await checkBadges();
-
-                navigate('/dashboard', {
-                    state: {
-                        message: `Sessão concluída! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
-                        newBadges: newBadges
-                    }
-                });
-            } else {
-                navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
-                    state: {
-                        message: `Sessão do simulado concluída! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
-                    }
-                });
-            }
-        }
-    };
-
-    const handleNext = async () => {
-        const card = flashcards[currentIndex];
-        const quality = qualityFromAuto(result === 'correct');
-        await applySrsAndUpdate(card, quality);
-        await saveStudySession(result === 'correct' ? 'correct' : 'incorrect');
-
-        // Modo simulado: percorre a fila uma única vez, sem reencolar erros
-        if (isSimulatedStudy) {
-            if (currentIndex < flashcards.length - 1) {
-                setCurrentIndex(currentIndex + 1);
-                setUserAnswer('');
-                setSelectedOption(null);
-                setShowResult(false);
-                setResult(null);
-                return;
-            }
-
-            // End of simulation session
-            const summary = await flushSessionResults();
-            navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
-                state: {
-                    message: `Sessão do simulado concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
-                }
-            });
-            return;
-        }
-
-        if (quality < 3) {
-            const nextIndex = currentIndex < flashcards.length - 1 ? currentIndex + 1 : 0;
-            setCurrentIndex(nextIndex);
-            setUserAnswer('');
-            setSelectedOption(null);
-            setShowResult(false);
-            setResult(null);
-            return;
-        }
-
-        if (currentIndex < flashcards.length - 1) {
-            setCurrentIndex(currentIndex + 1);
-            setUserAnswer('');
-            setSelectedOption(null);
-            setShowResult(false);
-            setResult(null);
-        } else {
-            // End of session
-            const summary = await flushSessionResults();
-            if (!isSimulatedStudy) {
-                await updateStreak();
-                const newBadges = await checkBadges();
-
-                navigate('/dashboard', {
-                    state: {
-                        message: `Sessão concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`,
-                        newBadges: newBadges
-                    }
-                });
-            } else {
-                navigate(simulationId ? `/simulation/${simulationId}` : '/simulations', {
-                    state: {
-                        message: `Sessão do simulado concluí­da! 🗸 ${summary.correct} corretas, ❌ ${summary.incorrect} incorretas`
-                    }
-                });
-            }
-        }
-    };
-
-    const shuffleCards = () => {
-        const shuffled = [...flashcards].sort(() => Math.random() - 0.5);
-        setFlashcards(shuffled);
-        setCurrentIndex(0);
-        setUserAnswer('');
-        setSelectedOption(null);
-        setShowResult(false);
-        setResult(null);
-    };
+    const {
+        deckName,
+        flashcards,
+        currentCard,
+        currentIndex,
+        userAnswer,
+        setUserAnswer,
+        selectedOption,
+        setSelectedOption,
+        showResult,
+        result,
+        loading,
+        sessionStats,
+        isDeleting,
+        isMarkingForEdit,
+        evaluateAnswer,
+        handleSelfEvaluation,
+        handleNext,
+        handleDeleteCurrentCard,
+        toggleMarkForEdit,
+        shuffleCards
+    } = useStudySession({
+        deckId,
+        simulationId,
+        simulationMode,
+        user
+    });
+
+    const {
+        currentNote,
+        setCurrentNote,
+        showNotesPanel,
+        setShowNotesPanel,
+        isSavingNote,
+        hasNote,
+        saveNote
+    } = useCardNotes({
+        cardId: currentCard?.id,
+        user
+    });
 
     if (loading) {
         return (
@@ -763,9 +96,9 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
     const progressPercent = flashcards.length === 0
         ? 0
         : Math.min(100, Math.round((answeredCount / flashcards.length) * 100));
+
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-
             <div className="max-w-6xl mx-auto px-4 pt-4 flex justify-center">
                 <button
                     onClick={shuffleCards}
@@ -781,8 +114,6 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                 <StudyTimerBar variant="inline" onActiveChange={setTimerActive} />
             </div>
 
-            {/* Pomodoro Timer Floating Component */}
-            {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 py-8 md:py-12">
                 {deckId && deckName && (
                     <button
@@ -794,7 +125,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                     </button>
                 )}
 
-                {/* Progress */}
+                {/* Progresso */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -814,7 +145,7 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                     </div>
                 </div>
 
-                {/* Stats */}
+                {/* Estatísticas da Sessão */}
                 <div className="flex gap-4 mb-8">
                     <div className="flex-1 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 p-4 rounded-xl text-center shadow-sm transition-all hover:scale-105">
                         <div className="text-3xl font-bold text-green-700 dark:text-green-400 mb-1">{sessionStats.correct}</div>
@@ -826,378 +157,42 @@ const Study: React.FC<StudyProps> = ({ simulationMode = false }) => {
                     </div>
                 </div>
 
-                {/* Flashcard */}
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-10 shadow-lg border border-gray-100 dark:border-gray-700 mb-8 transition-all duration-300">
-                    {currentCard.needsEdit && (
-                        <div className="inline-flex items-center gap-2 text-amber-700 dark:text-amber-400 text-sm font-semibold mb-4">
-                            <span className="text-lg">⚠ Precisa de ajustes</span>
-                        </div>
-                    )}
-                    <h2 className="text-xl md:text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100 leading-relaxed">
-                        {currentCard.mode === CardMode.Dictionary && (
-                            <div className="flex flex-col gap-2">
-                                <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-500 dark:text-indigo-300 uppercase tracking-wide">
-                                    <span className="text-sm">📖</span>
-                                    <span>Dicionário</span>
-                                </div>
-                                <MathContent tag="div" className="text-2xl font-bold text-gray-900 dark:text-gray-100" content={currentCard.term || '(sem termo)'} />
-                            </div>
-                        )}
-                        {currentCard.mode === CardMode.QA && <MathContent tag="span" content={currentCard.question} />}
-                        {currentCard.mode === CardMode.TrueFalse && <MathContent tag="span" content={currentCard.statement} />}
-                        {currentCard.mode === CardMode.MultipleChoice && <MathContent tag="span" content={currentCard.question} />}
-                        {currentCard.mode === CardMode.FillInTheBlank && <MathContent tag="span" content={currentCard.question} />}
-                        {currentCard.mode === CardMode.PracticalExample && (
-                            <div className="space-y-4">
-                                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border-l-4 border-indigo-500">
-                                    <span className="font-bold text-indigo-700 dark:text-indigo-300 block mb-1">Problema:</span>
-                                    <MathContent tag="span" className="text-gray-700 dark:text-gray-300" content={currentCard.problem} />
-                                </div>
-                                <div>
-                                    <span className="font-bold text-gray-900 dark:text-white block mb-2">Pergunta:</span>
-                                    <MathContent tag="span" className="text-gray-700 dark:text-gray-300" content={currentCard.question} />
-                                </div>
-                            </div>
-                        )}
-                    </h2>
-                </div>
-
-                {/* Notes Button - Only visible after answering */}
-                {showResult && (
-                    <>
-                        <div className="mb-6 animate-fade-in">
-                            <button
-                                onClick={() => setShowNotesPanel(!showNotesPanel)}
-                                className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${showNotesPanel
-                                    ? 'bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400'
-                                    : 'bg-gray-50 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <span className="text-xl">🗒️</span>
-                                <span>Anotações</span>
-                                {hasNote && (
-                                    <span className="ml-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
-                                        ●
-                                    </span>
-                                )}
-                                <span className="ml-auto text-sm">
-                                    {showNotesPanel ? '▲' : '▼'}
-                                </span>
-                            </button>
-                        </div>
-
-                        {/* Notes Panel */}
-                        {showNotesPanel && (
-                            <div className="mb-8 bg-amber-50 dark:bg-amber-900/10 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-6 animate-slide-down">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                                        <span>✏️</span> Suas Anotações
-                                    </h3>
-                                    <span className={`text-sm font-medium ${currentNote.length > 1000
-                                        ? 'text-red-600 dark:text-red-400'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                        }`}>
-                                        {currentNote.length}/1000
-                                    </span>
-                                </div>
-
-                                <textarea
-                                    value={currentNote}
-                                    onChange={(e) => {
-                                        if (e.target.value.length <= 1000) {
-                                            setCurrentNote(e.target.value);
-                                        }
-                                    }}
-                                    placeholder="Digite suas anotações sobre este flashcard... (máximo 1000 caracteres)"
-                                    rows={6}
-                                    className="w-full p-4 border-2 border-amber-200 dark:border-amber-700 rounded-lg text-base outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors bg-white dark:bg-gray-800 dark:text-white resize-y"
-                                />
-
-                                <div className="flex gap-3 mt-4">
-                                    <button
-                                        onClick={saveNote}
-                                        disabled={isSavingNote}
-                                        className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white border-none rounded-lg font-semibold cursor-pointer transition-all shadow-sm disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        {isSavingNote ? (
-                                            <>
-                                                <span className="animate-spin">⏳</span>
-                                                <span>Salvando...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>💾</span>
-                                                <span>Salvar Anotação</span>
-                                            </>
-                                        )}
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            setCurrentNote('');
-                                            setShowNotesPanel(false);
-                                        }}
-                                        className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 border-none rounded-lg font-semibold cursor-pointer transition-all"
-                                    >
-                                        Cancelar
-                                    </button>
-                                </div>
-
-                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 flex items-start gap-2">
-                                    <span>💡</span>
-                                    <span>Suas anotações são privadas e vinculadas a este flashcard específico.</span>
-                                </p>
-                            </div>
-                        )}
-                    </>
+                {/* Card Viewer */}
+                {currentCard && (
+                    <StudyCardViewer
+                        card={currentCard}
+                        showResult={showResult}
+                        result={result}
+                        userAnswer={userAnswer}
+                        setUserAnswer={setUserAnswer}
+                        selectedOption={selectedOption}
+                        setSelectedOption={setSelectedOption}
+                        evaluateAnswer={evaluateAnswer}
+                        handleSelfEvaluation={handleSelfEvaluation}
+                        handleNext={handleNext}
+                        isDeleting={isDeleting}
+                        isMarkingForEdit={isMarkingForEdit}
+                        toggleMarkForEdit={toggleMarkForEdit}
+                        handleDeleteCurrentCard={handleDeleteCurrentCard}
+                        isLastCard={currentIndex >= flashcards.length - 1}
+                    />
                 )}
 
-                {/* Answer Input */}
-                {
-                    !showResult && (
-                        <div className="animate-fade-in">
-                            {(currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.FillInTheBlank || currentCard.mode === CardMode.Dictionary) && (
-                                <textarea
-                                    value={userAnswer}
-                                    onChange={(e) => setUserAnswer(e.target.value)}
-                                    placeholder="Digite sua resposta..."
-                                    rows={4}
-                                    className="w-full p-4 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base outline-none focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors bg-transparent dark:text-white mb-6 resize-y"
-                                />
-                            )}
-
-                            {currentCard.mode === CardMode.TrueFalse && (
-                                <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                                    <button
-                                        onClick={() => setSelectedOption(0)}
-                                        className={`flex-1 p-4 rounded-xl text-lg font-semibold transition-all duration-200 border-2 flex items-center justify-center gap-2 ${selectedOption === 0
-                                            ? 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-400'
-                                            : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            }`}
-                                    >
-                                        <span>✓</span> Verdadeiro
-                                    </button>
-                                    <button
-                                        onClick={() => setSelectedOption(1)}
-                                        className={`flex-1 p-4 rounded-xl text-lg font-semibold transition-all duration-200 border-2 flex items-center justify-center gap-2 ${selectedOption === 1
-                                            ? 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-400'
-                                            : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            }`}
-                                    >
-                                        <span>✗</span> Falso
-                                    </button>
-                                </div>
-                            )}
-
-                            {currentCard.mode === CardMode.MultipleChoice && currentCard.options && (
-                                <div className="flex flex-col gap-3 mb-8">
-                                    {currentCard.options.map((option: string, index: number) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => setSelectedOption(index)}
-                                            className={`w-full p-4 rounded-xl text-left text-base transition-all duration-200 border-2 flex items-center gap-3 ${selectedOption === index
-                                                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-sm'
-                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-indigo-300'
-                                                }`}
-                                        >
-                                            <span className={`w-10 h-10 min-w-[2.5rem] min-h-[2.5rem] rounded-full flex items-center justify-center text-base font-bold border shrink-0 leading-none ${selectedOption === index
-                                                ? 'bg-indigo-600 border-indigo-600 text-white'
-                                                : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-500 dark:text-gray-400'
-                                                }`}>
-                                                {String.fromCharCode(65 + index)}
-                                            </span>
-                                            <MathContent tag="span" content={option} />
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            <button
-                                onClick={evaluateAnswer}
-                                disabled={
-                                    (currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.FillInTheBlank || currentCard.mode === CardMode.Dictionary) && !userAnswer.trim() ||
-                                    (currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice) && selectedOption === null
-                                }
-                                className={`w-full py-4 bg-indigo-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer hover:bg-indigo-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transform active:scale-[0.99]`}
-                            >
-                                Verificar Resposta
-                            </button>
-                        </div>
-                    )
-                }
-
-                {/* Result */}
-                {
-                    showResult && (
-                        <div className="animate-slide-up">
-                            <div className="flex justify-end gap-3 mb-4">
-                                <button
-                                    onClick={toggleMarkForEdit}
-                                    disabled={isMarkingForEdit}
-                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors border disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 ${currentCard.needsEdit
-                                        ? 'bg-amber-100 border-amber-500 text-amber-800 hover:bg-amber-200'
-                                        : 'bg-amber-50 border-amber-400 text-amber-700 hover:bg-amber-100'
-                                        }`}
-                                >
-                                    <span>⚠</span>
-                                    {isMarkingForEdit ? 'Atualizando...' : currentCard.needsEdit ? 'Desmarcar' : 'Marcar card'}
-                                </button>
-                                <button
-                                    onClick={handleDeleteCurrentCard}
-                                    disabled={isDeleting}
-                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors border border-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    {isDeleting ? 'Excluindo...' : 'Excluir'}
-                                </button>
-                            </div>
-                            {/* Q&A Self-Evaluation */}
-                            {currentCard.mode === CardMode.QA || currentCard.mode === CardMode.PracticalExample || currentCard.mode === CardMode.Dictionary ? (
-                                <div>
-                                    <div className="p-6 rounded-xl border-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 mb-6">
-                                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                                            ðŸ“– Resposta Correta
-                                        </h3>
-
-                                        <div className="space-y-4">
-                                            <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
-                                                <MathContent
-                                                    tag="p"
-                                                    className="text-lg text-gray-800 dark:text-gray-200 font-medium leading-relaxed"
-                                                    content={
-                                                        currentCard.mode === CardMode.QA
-                                                            ? currentCard.answer
-                                                            : currentCard.mode === CardMode.Dictionary
-                                                                ? (currentCard as any).definition || ''
-                                                                : (currentCard as any).solution || ''
-                                                    }
-                                                />
-                                            </div>
-
-                                            {currentCard.mode === CardMode.PracticalExample && (currentCard as any).explanation && (
-                                                <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
-                                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Explicação</p>
-                                                    <MathContent
-                                                        tag="p"
-                                                        className="text-gray-700 dark:text-gray-300 leading-relaxed"
-                                                        content={(currentCard as any).explanation}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-4 rounded-lg">
-                                                <p className="text-sm font-bold text-yellow-800 dark:text-yellow-300 mb-2">
-                                                    ðŸ’­ Sua Resposta:
-                                                </p>
-                                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                                                    {userAnswer || "(vazio)"}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Self-Evaluation Buttons */}
-                                    <div className="space-y-3">
-                                        <p className="text-center text-sm font-semibold text-gray-600 dark:text-gray-400 mb-4">
-                                            Como você avalia sua resposta?
-                                        </p>
-
-                                        <button
-                                            onClick={() => handleSelfEvaluation('correct')}
-                                            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white border-none rounded-xl text-lg font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-3 group transform active:scale-[0.98]"
-                                        >
-                                            <span className="text-2xl">🗸</span>
-                                            <span>Acertei</span>
-                                            <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">+10 XP</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleSelfEvaluation('almost')}
-                                            className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-3 group transform active:scale-[0.98]"
-                                        >
-                                            <span className="text-2xl">⚠️</span>
-                                            <span>Quase</span>
-                                            <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">+2 XP</span>
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleSelfEvaluation('incorrect')}
-                                            className="w-full py-4 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white border-none rounded-xl text-lg font-bold cursor-pointer transition-all shadow-md flex items-center justify-center gap-3 group transform active:scale-[0.98]"
-                                        >
-                                            <span className="text-2xl">x</span>
-                                            <span>Errei</span>
-                                            <span className="text-sm opacity-90 bg-white/20 px-2 py-1 rounded-full">0 XP</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                /* Automatic Evaluation for other modes */
-                                <div>
-                                    <div className={`p-6 rounded-xl border-2 mb-6 ${result === 'correct'
-                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                                        }`}>
-                                        <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${result === 'correct' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
-                                            }`}>
-                                            {result === 'correct' ? '🗸 Correto!' : '❌ Incorreto'}
-                                        </h3>
-
-                                        <div className="space-y-4">
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                    Resposta correta
-                                                </p>
-                                                <p className="text-lg text-gray-800 dark:text-gray-200 font-medium">
-                                                    {currentCard.mode === CardMode.TrueFalse && (currentCard.isTrue ? 'Verdadeiro' : 'Falso')}
-                                                    {currentCard.mode === CardMode.MultipleChoice && <MathContent tag="span" content={currentCard.options[currentCard.correctAnswerIndex]} />}
-                                                    {currentCard.mode === CardMode.FillInTheBlank && <MathContent tag="span" content={currentCard.answer} />}
-                                                </p>
-                                            </div>
-
-                                            {(
-                                                ((currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation)
-                                            ) && (
-                                                    <div className="bg-white/50 dark:bg-black/20 p-4 rounded-lg">
-                                                        <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                                                            Explicação
-                                                        </p>
-                                                        <MathContent
-                                                            tag="p"
-                                                            className="text-gray-700 dark:text-gray-300 leading-relaxed"
-                                                            content={(currentCard.mode === CardMode.TrueFalse || currentCard.mode === CardMode.MultipleChoice || currentCard.mode === CardMode.FillInTheBlank) && currentCard.explanation ? currentCard.explanation : "Veja a solucao acima."}
-                                                        />
-                                                    </div>
-                                                )}
-
-                                            <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700/50">
-                                                <span>XP Ganho:</span>
-                                                <span className={result === 'correct' ? 'text-green-600 dark:text-green-400 font-bold' : 'text-gray-400'}>
-                                                    {result === 'correct' ? '+10 XP' : '0 XP'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={handleNext}
-                                        className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-700 text-white border-none rounded-xl text-lg font-bold cursor-pointer hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2 group"
-                                    >
-                                        {currentIndex < flashcards.length - 1 ? (
-                                            <>Próximo Flashcard <span className="group-hover:translate-x-1 transition-transform">➜</span></>
-                                        ) : (
-                                            'Finalizar Sessão'
-                                        )}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )
-                }
+                {/* Drawer de Anotações */}
+                {showResult && (
+                    <StudyNotesDrawer
+                        showNotesPanel={showNotesPanel}
+                        setShowNotesPanel={setShowNotesPanel}
+                        hasNote={hasNote}
+                        currentNote={currentNote}
+                        setCurrentNote={setCurrentNote}
+                        saveNote={saveNote}
+                        isSavingNote={isSavingNote}
+                    />
+                )}
             </div>
-
         </div>
     );
 };
 
 export default Study;
-
-
