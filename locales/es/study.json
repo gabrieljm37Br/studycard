@@ -1,0 +1,13 @@
+{
+  "checkAnswer": "Verificar Respuesta",
+  "yourAnswer": "Escribe tu respuesta...",
+  "again": "Repetir",
+  "hard": "Difícil",
+  "good": "Bueno",
+  "easy": "Fácil",
+  "correct": "Correcto",
+  "incorrect": "Incorrecto",
+  "sessionComplete": "Sesión Completada",
+  "congratulations": "¡Felicidades! Completaste esta sesión de estudio.",
+  "backToDashboard": "Volver al Panel"
+}

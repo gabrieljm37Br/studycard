@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { applySm2 } from '../services/srsAlgorithm';
 import { updateLastStudied } from '../services/deckService';
+import { isOnline, cacheFlashcards, getCachedFlashcards, queueSrsReview } from '../services/offlineSyncService';
 import { CardMode, FeedbackStatus } from '../types';
 import type { FlashcardData } from '../types';
 
@@ -97,6 +98,16 @@ export const useStudySession = ({
                 sessionRecordsRef.current = new Map();
                 setSessionStats({ correct: 0, incorrect: 0 });
             } else if (deckId) {
+                if (!isOnline()) {
+                    const cached = await getCachedFlashcards(deckId);
+                    if (cached && cached.length > 0) {
+                        setFlashcards(cached);
+                        sessionRecordsRef.current = new Map();
+                        setSessionStats({ correct: 0, incorrect: 0 });
+                        return;
+                    }
+                }
+
                 const getAllSubdeckIds = async (parentDeckId: string): Promise<string[]> => {
                     const { data: children, error } = await supabase
                         .from('decks')
@@ -125,10 +136,22 @@ export const useStudySession = ({
                 const normalized = (data || []).map(normalizeCard);
                 const shuffled = normalized.sort(() => Math.random() - 0.5);
                 setFlashcards(shuffled as any);
+                if (shuffled.length > 0) {
+                    await cacheFlashcards(deckId, shuffled as any);
+                }
                 sessionRecordsRef.current = new Map();
                 setSessionStats({ correct: 0, incorrect: 0 });
             }
         } catch (error) {
+            if (deckId) {
+                const cached = await getCachedFlashcards(deckId);
+                if (cached && cached.length > 0) {
+                    setFlashcards(cached);
+                    sessionRecordsRef.current = new Map();
+                    setSessionStats({ correct: 0, incorrect: 0 });
+                    return;
+                }
+            }
             console.error('Error loading flashcards:', error);
             alert('Erro ao carregar flashcards');
         } finally {
@@ -206,16 +229,37 @@ export const useStudySession = ({
     const applySrsAndUpdate = async (card: FlashcardData, quality: number, feedbackOverride?: FeedbackStatus) => {
         if (isSimulatedStudy) return;
         const { interval, repetition, easeFactor, nextReview } = applySm2(card, quality);
-        await supabase
-            .from('flashcards')
-            .update({
-                interval,
-                repetition,
-                ease_factor: easeFactor,
-                next_review: nextReview,
-                feedback: feedbackOverride ?? (quality >= 3 ? FeedbackStatus.Correct : FeedbackStatus.Incorrect)
-            })
-            .eq('id', card.id);
+        const feedback = feedbackOverride ?? (quality >= 3 ? FeedbackStatus.Correct : FeedbackStatus.Incorrect);
+        const srsData = {
+            interval,
+            repetition,
+            ease_factor: easeFactor,
+            next_review: nextReview,
+            feedback
+        };
+
+        if (!isOnline()) {
+            await queueSrsReview({
+                cardId: card.id,
+                srsData,
+                deckId: (card as any)?.deckId ?? deckId ?? undefined
+            });
+        } else {
+            try {
+                const { error } = await supabase
+                    .from('flashcards')
+                    .update(srsData)
+                    .eq('id', card.id);
+                if (error) throw error;
+            } catch {
+                await queueSrsReview({
+                    cardId: card.id,
+                    srsData,
+                    deckId: (card as any)?.deckId ?? deckId ?? undefined
+                });
+            }
+        }
+
         if (quality < 3) {
             setFlashcards(prev => {
                 const copy = [...prev];

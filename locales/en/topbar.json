@@ -1,0 +1,14 @@
+{
+  "level": "Level",
+  "streak": "Streak",
+  "xpTotal": "Total XP",
+  "precisionToday": "Accuracy Today",
+  "studiedToday": "Studied Today",
+  "searchPlaceholder": "Search decks...",
+  "searchDecks": "Search decks",
+  "searching": "Searching...",
+  "noDecksFound": "No decks found",
+  "profileUnavailable": "Profile unavailable",
+  "statsUnavailable": "Today stats unavailable",
+  "cardsCount": "{{count}} cards"
+}

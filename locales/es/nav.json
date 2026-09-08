@@ -1,0 +1,17 @@
+{
+  "home": "Inicio",
+  "dashboard": "Panel",
+  "generator": "Generador",
+  "simulations": "Simulacros",
+  "statistics": "Estadísticas",
+  "calendar": "Calendario",
+  "topicogram": "Línea de Tiempo",
+  "help": "Ayuda",
+  "studyCard": "StudyCard",
+  "navigation": "Navegación",
+  "logout": "Cerrar sesión",
+  "user": "Usuario",
+  "expandSidebar": "Expandir barra lateral",
+  "collapseSidebar": "Contraer barra lateral",
+  "closeSidebar": "Cerrar barra lateral"
+}

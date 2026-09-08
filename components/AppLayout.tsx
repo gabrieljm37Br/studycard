@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react';
 import Topbar from './Topbar';
+import { OfflineSyncBanner } from './OfflineSyncBanner';
 import { PageHeaderProvider, usePageHeader } from '../contexts/PageHeaderContext';
 
 const PageHeaderSync: React.FC = () => {
@@ -89,6 +90,7 @@ const AppLayout: React.FC = () => {
                         </div>
                     </div>
 
+                    <OfflineSyncBanner />
                     <Topbar />
 
                     <main className="flex-1 min-h-0 px-3 sm:px-4 md:px-6 pb-8">

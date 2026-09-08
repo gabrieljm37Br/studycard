@@ -1,11 +1,13 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Flame, Gauge, Search, Sparkles, Trophy, Zap, Target } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePageHeader } from '../contexts/PageHeaderContext';
 import { fetchProfileOverview, fetchTodayStats, searchDecks, DeckSearchResult } from '../services/dashboardHeaderService';
 import { supabase } from '../services/supabaseClient';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 type StatCardProps = {
     label: string;
@@ -29,6 +31,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, helper, icon, accent 
 );
 
 const Topbar: React.FC = () => {
+    const { t } = useTranslation(['topbar', 'common']);
     const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -62,11 +65,11 @@ const Topbar: React.FC = () => {
             setProfileError(null);
         } catch (err) {
             console.error('Erro ao carregar perfil para o topo:', err);
-            setProfileError('Perfil indispon?vel');
+            setProfileError(t('topbar:profileUnavailable', 'Perfil indisponível'));
         } finally {
             setLoadingProfile(false);
         }
-    }, [user]);
+    }, [user, t]);
 
     const loadToday = useCallback(async () => {
         if (!user) return;
@@ -79,11 +82,11 @@ const Topbar: React.FC = () => {
             setTodayError(null);
         } catch (err) {
             console.error('Erro ao carregar estatisticas de hoje:', err);
-            setTodayError('Estat?sticas de hoje indispon?veis');
+            setTodayError(t('topbar:statsUnavailable', 'Estatísticas de hoje indisponíveis'));
         } finally {
             setLoadingToday(false);
         }
-    }, [user]);
+    }, [user, t]);
 
     useEffect(() => {
         if (!user) return;
@@ -162,38 +165,41 @@ const Topbar: React.FC = () => {
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{title}</h1>
                         {subtitle && <p className="text-sm text-gray-600 dark:text-gray-400">{subtitle}</p>}
                     </div>
-                    <div className="w-full md:w-96 relative">
-                        <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-                            <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            <input
-                                type="search"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Buscar decks..."
-                                className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
-                            />
-                            {searchLoading && <span className="text-xs text-gray-500">Buscando...</span>}
-                        </div>
-                        {searchTerm.length >= 2 && (
-                            <div className="absolute mt-2 w-full max-h-72 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl z-10">
-                                {searchError && <p className="px-4 py-3 text-sm text-red-500">{searchError}</p>}
-                                {!searchError && searchResults.length === 0 && !searchLoading && (
-                                    <p className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Nenhum deck encontrado</p>
-                                )}
-                                {!searchError &&
-                                    searchResults.map((deck) => (
-                                        <button
-                                            key={deck.id}
-                                            onClick={() => handleSelectDeck(deck.id)}
-                                            className="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-                                        >
-                                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{deck.name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{deck.path}</p>
-                                            <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">{deck.flashcardsCount} flashcards</p>
-                                        </button>
-                                    ))}
+                    <div className="flex items-center gap-2.5 w-full md:w-auto">
+                        <div className="w-full md:w-80 lg:w-96 relative">
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                                <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                <input
+                                    type="search"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder={t('topbar:searchPlaceholder', 'Buscar decks...')}
+                                    className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                                />
+                                {searchLoading && <span className="text-xs text-gray-500">{t('topbar:searching', 'Buscando...')}</span>}
                             </div>
-                        )}
+                            {searchTerm.length >= 2 && (
+                                <div className="absolute mt-2 w-full max-h-72 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl z-10">
+                                    {searchError && <p className="px-4 py-3 text-sm text-red-500">{searchError}</p>}
+                                    {!searchError && searchResults.length === 0 && !searchLoading && (
+                                        <p className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{t('topbar:noDecksFound', 'Nenhum deck encontrado')}</p>
+                                    )}
+                                    {!searchError &&
+                                        searchResults.map((deck) => (
+                                            <button
+                                                key={deck.id}
+                                                onClick={() => handleSelectDeck(deck.id)}
+                                                className="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                                            >
+                                                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{deck.name}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{deck.path}</p>
+                                                <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-1">{deck.flashcardsCount} flashcards</p>
+                                            </button>
+                                        ))}
+                                </div>
+                            )}
+                        </div>
+                        <LanguageSwitcher />
                     </div>
                 </div>
 
@@ -201,9 +207,9 @@ const Topbar: React.FC = () => {
                 <div className="md:hidden -mx-3 px-3 overflow-x-auto pb-1 flex gap-3 snap-x snap-mandatory">
                     <div className="min-w-[220px] snap-start">
                         <StatCard
-                            label="Level"
+                            label={t('topbar:level', 'Level')}
                             value={loadingProfile ? '...' : `Lv ${level}`}
-                            helper={loadingProfile ? '' : `XP: ${xp} ? Pr?x.: ${100 - (xp % 100)} XP`}
+                            helper={loadingProfile ? '' : `XP: ${xp} · Próx.: ${100 - (xp % 100)} XP`}
                             icon={<Trophy className="h-5 w-5" />}
                         />
                     </div>
@@ -226,7 +232,7 @@ const Topbar: React.FC = () => {
                     </div>
                     <div className="min-w-[220px] snap-start">
                         <StatCard
-                            label="Cards estudados hoje"
+                            label={t('topbar:studiedToday', 'Cards estudados hoje')}
                             value={loadingToday ? '...' : String(studiedToday)}
                             icon={<Sparkles className="h-5 w-5" />}
                             helper={todayError || undefined}
@@ -234,7 +240,7 @@ const Topbar: React.FC = () => {
                     </div>
                     <div className="min-w-[220px] snap-start">
                         <StatCard
-                            label="Acurácia do dia"
+                            label={t('topbar:precisionToday', 'Acurácia do dia')}
                             value={loadingToday ? '...' : `${accuracyToday}%`}
                             helper={todayError ? todayError : studiedToday > 0 ? `${studiedToday} resp.` : 'Ainda sem estudos hoje'}
                             icon={<Target className="h-5 w-5" />}
@@ -243,7 +249,7 @@ const Topbar: React.FC = () => {
                     </div>
                     <div className="min-w-[220px] snap-start">
                         <StatCard
-                            label="XP ganho hoje"
+                            label={t('topbar:xpTotal', 'XP ganho hoje')}
                             value={loadingToday ? '...' : `${xpToday} XP`}
                             helper={todayError || undefined}
                             icon={<Zap className="h-5 w-5" />}
@@ -252,9 +258,9 @@ const Topbar: React.FC = () => {
                     </div>
                     <div className="min-w-[220px] snap-start">
                         <StatCard
-                            label="Streak"
+                            label={t('topbar:streak', 'Streak')}
                             value={loadingProfile ? '...' : `${streak} dia${streak === 1 ? '' : 's'}`}
-                            helper={badges.length ? `Badges: ${badges.map((b) => b.icon || '??').join(' ')}` : undefined}
+                            helper={badges.length ? `Badges: ${badges.map((b) => b.icon || '🎖️').join(' ')}` : undefined}
                             icon={<Flame className="h-5 w-5" />}
                             accent="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
                         />
@@ -264,9 +270,9 @@ const Topbar: React.FC = () => {
                 {/* Desktop/Tablet grid */}
                 <div className="hidden md:grid grid-cols-3 xl:grid-cols-6 gap-3">
                     <StatCard
-                        label="Level"
+                        label={t('topbar:level', 'Level')}
                         value={loadingProfile ? '...' : `Lv ${level}`}
-                        helper={loadingProfile ? '' : `XP: ${xp} ? Pr?x.: ${100 - (xp % 100)} XP`}
+                        helper={loadingProfile ? '' : `XP: ${xp} · Próx.: ${100 - (xp % 100)} XP`}
                         icon={<Trophy className="h-5 w-5" />}
                     />
                     <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/70 px-3 py-2.5 shadow-sm flex items-start gap-3 min-h-[88px]">
@@ -285,27 +291,27 @@ const Topbar: React.FC = () => {
                         </div>
                     </div>
                     <StatCard
-                        label="Streak"
+                        label={t('topbar:streak', 'Streak')}
                         value={loadingProfile ? '...' : `${streak} dia${streak === 1 ? '' : 's'}`}
-                        helper={badges.length ? `Badges: ${badges.map((b) => b.icon || '??').join(' ')}` : undefined}
+                        helper={badges.length ? `Badges: ${badges.map((b) => b.icon || '🎖️').join(' ')}` : undefined}
                         icon={<Flame className="h-5 w-5" />}
                         accent="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
                     />
                     <StatCard
-                        label="Cards estudados hoje"
+                        label={t('topbar:studiedToday', 'Cards estudados hoje')}
                         value={loadingToday ? '...' : String(studiedToday)}
                         icon={<Sparkles className="h-5 w-5" />}
                         helper={todayError || undefined}
                     />
                     <StatCard
-                        label="Acurácia do dia"
+                        label={t('topbar:precisionToday', 'Acurácia do dia')}
                         value={loadingToday ? '...' : `${accuracyToday}%`}
                         helper={todayError ? todayError : studiedToday > 0 ? `${studiedToday} resp.` : 'Ainda sem estudos hoje'}
                         icon={<Target className="h-5 w-5" />}
                         accent="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
                     />
                     <StatCard
-                        label="XP ganho hoje"
+                        label={t('topbar:xpTotal', 'XP ganho hoje')}
                         value={loadingToday ? '...' : `${xpToday} XP`}
                         helper={todayError || undefined}
                         icon={<Zap className="h-5 w-5" />}

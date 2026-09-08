@@ -10,6 +10,7 @@ import { Library, Folder, BookX, BarChart2 } from 'lucide-react';
 import { useDeckData } from '../hooks/useDeckData';
 import { useDeckCards } from '../hooks/useDeckCards';
 import { DeckCardItem } from '../components/deck-details/DeckCardItem';
+import { VirtualCardList } from '../components/deck-details/VirtualCardList';
 import { MoveCardModal } from '../components/deck-details/MoveCardModal';
 import { CardEditModal } from '../components/deck-details/CardEditModal';
 
@@ -197,19 +198,14 @@ const DeckDetails: React.FC = () => {
                         </div>
 
                         {/* Flashcards List */}
-                        <div className="space-y-4">
-                            {filteredFlashcards.map(card => (
-                                <DeckCardItem
-                                    key={card.id}
-                                    card={card}
-                                    isSelected={selectedCards.has(card.id)}
-                                    onToggleSelect={toggleCardSelection}
-                                    onEdit={(c) => { setCardToEdit(c); setShowEditModal(true); }}
-                                    onMove={(c) => { setCardToMove(c); setShowMoveCardModal(true); }}
-                                    onDelete={handleDeleteCard}
-                                />
-                            ))}
-                        </div>
+                        <VirtualCardList
+                            cards={filteredFlashcards}
+                            selectedCards={selectedCards}
+                            onToggleSelect={toggleCardSelection}
+                            onEdit={(c) => { setCardToEdit(c); setShowEditModal(true); }}
+                            onMove={(c) => { setCardToMove(c); setShowMoveCardModal(true); }}
+                            onDelete={handleDeleteCard}
+                        />
                     </>
                 )}
             </div>

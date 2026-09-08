@@ -1,0 +1,13 @@
+{
+  "checkAnswer": "Verificar Resposta",
+  "yourAnswer": "Digite sua resposta...",
+  "again": "Errei",
+  "hard": "Difícil",
+  "good": "Bom",
+  "easy": "Fácil",
+  "correct": "Acertei",
+  "incorrect": "Errei",
+  "sessionComplete": "Sessão Concluída",
+  "congratulations": "Parabéns! Você completou esta sessão de estudo.",
+  "backToDashboard": "Voltar ao Dashboard"
+}

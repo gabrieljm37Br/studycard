@@ -1,0 +1,14 @@
+{
+  "level": "Nível",
+  "streak": "Ofensiva",
+  "xpTotal": "XP Total",
+  "precisionToday": "Precisão Hoje",
+  "studiedToday": "Estudados Hoje",
+  "searchPlaceholder": "Buscar decks...",
+  "searchDecks": "Buscar decks",
+  "searching": "Buscando...",
+  "noDecksFound": "Nenhum deck encontrado",
+  "profileUnavailable": "Perfil indisponível",
+  "statsUnavailable": "Estatísticas de hoje indisponíveis",
+  "cardsCount": "{{count}} cards"
+}

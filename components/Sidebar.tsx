@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
     Home,
     LayoutDashboard,
@@ -24,23 +25,25 @@ type SidebarProps = {
 };
 
 type NavItem = {
+    key: string;
     label: string;
     path: string;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
 const navItems: NavItem[] = [
-    { label: 'Início', path: '/home', icon: Home },
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Gerador', path: '/generator', icon: Sparkles },
-    { label: 'Simulados', path: '/simulations', icon: PlayCircle },
-    { label: 'Estatísticas', path: '/statistics', icon: BarChart2 },
-    { label: 'Calendário', path: '/calendar', icon: Calendar },
-    { label: 'Linha do Tempo', path: '/topicogram', icon: Route },
-    { label: 'Ajuda', path: '/help', icon: HelpCircle }
+    { key: 'home', label: 'Início', path: '/home', icon: Home },
+    { key: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { key: 'generator', label: 'Gerador', path: '/generator', icon: Sparkles },
+    { key: 'simulations', label: 'Simulados', path: '/simulations', icon: PlayCircle },
+    { key: 'statistics', label: 'Estatísticas', path: '/statistics', icon: BarChart2 },
+    { key: 'calendar', label: 'Calendário', path: '/calendar', icon: Calendar },
+    { key: 'topicogram', label: 'Linha do Tempo', path: '/topicogram', icon: Route },
+    { key: 'help', label: 'Ajuda', path: '/help', icon: HelpCircle }
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
+    const { t } = useTranslation('nav');
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const { user, signOut } = useAuth();
@@ -53,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
         localStorage.setItem('flashcard_sidebar_collapsed', String(isCollapsed));
     }, [isCollapsed]);
 
-    const userEmail = useMemo(() => user?.email ?? 'Usuário', [user]);
+    const userEmail = useMemo(() => user?.email ?? t('user', 'Usuário'), [user, t]);
 
     const handleLogout = async () => {
         await signOut();
@@ -70,21 +73,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
                 <button
                     onClick={() => setIsCollapsed(prev => !prev)}
                     className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors hidden md:inline-flex"
-                    aria-label={isCollapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
+                    aria-label={isCollapsed ? t('expandSidebar', 'Expandir sidebar') : t('collapseSidebar', 'Recolher sidebar')}
                 >
                     <PanelsTopLeft className="h-5 w-5" />
                 </button>
                 {!isCollapsed && (
                     <div>
-                        <p className="text-xs uppercase tracking-[0.18em] text-gray-400">StudyCard</p>
-                        <p className="text-sm font-semibold text-white">Navegação</p>
+                        <p className="text-xs uppercase tracking-[0.18em] text-gray-400">{t('studyCard', 'StudyCard')}</p>
+                        <p className="text-sm font-semibold text-white">{t('navigation', 'Navegação')}</p>
                     </div>
                 )}
                 {isMobileOpen && (
                     <button
                         onClick={onMobileClose}
                         className="ml-auto p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors md:hidden"
-                        aria-label="Fechar menu lateral"
+                        aria-label={t('closeSidebar', 'Fechar menu lateral')}
                     >
                         <X className="h-5 w-5" />
                     </button>
@@ -110,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
                                     }
                                 >
                                     <Icon className="h-5 w-5 shrink-0" />
-                                    {!isCollapsed && <span className="text-sm font-medium">{item.label}</span>}
+                                    {!isCollapsed && <span className="text-sm font-medium">{t(item.key, item.label)}</span>}
                                 </NavLink>
                             </li>
                         );
@@ -145,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onMobileClose }) => {
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-red-600/90 hover:bg-red-600 text-white transition-colors"
                 >
                     <LogOut className="h-5 w-5" />
-                    {!isCollapsed && <span className="text-sm font-semibold">Sair</span>}
+                    {!isCollapsed && <span className="text-sm font-semibold">{t('logout', 'Sair')}</span>}
                 </button>
             </div>
         </div>

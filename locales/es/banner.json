@@ -1,0 +1,9 @@
+{
+  "offlineNotice": "Modo Offline Activo: puedes continuar estudiando con normalidad.",
+  "pendingReviews_one": "1 revisión offline pendiente de sincronización",
+  "pendingReviews_other": "{{count}} revisiones offline pendientes de sincronización",
+  "syncing": "Sincronizando revisiones...",
+  "syncNow": "Sincronizar ahora",
+  "syncSuccess": "¡Sincronización completada con éxito!",
+  "syncError": "Error al sincronizar revisiones con el servidor."
+}

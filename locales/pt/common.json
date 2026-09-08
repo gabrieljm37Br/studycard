@@ -1,0 +1,14 @@
+{
+  "appName": "StudyCard",
+  "loading": "Carregando...",
+  "save": "Salvar",
+  "cancel": "Cancelar",
+  "delete": "Excluir",
+  "edit": "Editar",
+  "confirm": "Confirmar",
+  "close": "Fechar",
+  "selectLanguage": "Selecionar idioma",
+  "language_pt": "Português",
+  "language_en": "Inglês",
+  "language_es": "Espanhol"
+}

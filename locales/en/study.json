@@ -1,0 +1,13 @@
+{
+  "checkAnswer": "Check Answer",
+  "yourAnswer": "Type your answer...",
+  "again": "Again",
+  "hard": "Hard",
+  "good": "Good",
+  "easy": "Easy",
+  "correct": "Correct",
+  "incorrect": "Incorrect",
+  "sessionComplete": "Session Completed",
+  "congratulations": "Congratulations! You completed this study session.",
+  "backToDashboard": "Back to Dashboard"
+}

@@ -1,0 +1,17 @@
+{
+  "home": "Home",
+  "dashboard": "Dashboard",
+  "generator": "Generator",
+  "simulations": "Simulations",
+  "statistics": "Statistics",
+  "calendar": "Calendar",
+  "topicogram": "Timeline",
+  "help": "Help",
+  "studyCard": "StudyCard",
+  "navigation": "Navigation",
+  "logout": "Log Out",
+  "user": "User",
+  "expandSidebar": "Expand sidebar",
+  "collapseSidebar": "Collapse sidebar",
+  "closeSidebar": "Close sidebar"
+}

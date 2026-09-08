@@ -1,0 +1,14 @@
+{
+  "level": "Nivel",
+  "streak": "Racha",
+  "xpTotal": "XP Total",
+  "precisionToday": "Precisión Hoy",
+  "studiedToday": "Estudiados Hoy",
+  "searchPlaceholder": "Buscar barajas...",
+  "searchDecks": "Buscar barajas",
+  "searching": "Buscando...",
+  "noDecksFound": "No se encontraron barajas",
+  "profileUnavailable": "Perfil no disponible",
+  "statsUnavailable": "Estadísticas de hoy no disponibles",
+  "cardsCount": "{{count}} tarjetas"
+}

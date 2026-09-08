@@ -1,0 +1,9 @@
+{
+  "offlineNotice": "Offline Mode Active: you can continue studying normally.",
+  "pendingReviews_one": "1 offline review waiting to sync",
+  "pendingReviews_other": "{{count}} offline reviews waiting to sync",
+  "syncing": "Syncing reviews...",
+  "syncNow": "Sync now",
+  "syncSuccess": "Synchronization completed successfully!",
+  "syncError": "Failed to synchronize reviews with server."
+}
